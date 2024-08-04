@@ -1,0 +1,11 @@
+[package]
+name = "axle2D"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.86"
+
+[dependencies.sdl2]
+features = ["image", "gfx"]
+version = "0.37.0"
