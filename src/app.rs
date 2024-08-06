@@ -5,7 +5,7 @@ use crate::view::renderer::Renderer;
 
 pub struct App {
     pub config: Rc<GlobalConfig>,
-    renderer: Renderer
+    renderer: Renderer,
 }
 
 impl App {
@@ -15,5 +15,13 @@ impl App {
             config,
             renderer
         }
+    }
+
+    pub fn start(&self) {
+
+    }
+
+    pub fn update(&mut self) {
+        self.renderer.render();
     }
 }

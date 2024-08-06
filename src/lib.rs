@@ -3,6 +3,7 @@
 //mods
 pub mod ecs;
 pub mod engine;
-pub mod App;
+pub mod app;
 pub mod view;
 pub mod config;
+mod App;
