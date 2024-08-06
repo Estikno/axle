@@ -39,6 +39,7 @@ name = "example"
 version = "0.1.0"
 dependencies = [
  "axle2D",
+ "sdl2",
 ]
 
 [[package]]
