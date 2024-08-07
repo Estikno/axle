@@ -1,10 +1,9 @@
 use std::ops::{Add, Div, Mul, Sub};
 
-
 /// A 2-dimensional vector.
 ///
 /// This struct represents a 2-dimensional vector with `x` and `y` coordinates.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Vector2 {
     /// The x-coordinate of the vector.
     pub x: f32,
@@ -407,5 +406,213 @@ impl Vector2 {
         // Calculate the cross product of the two vectors and then take the arctangent of the result.
         // Convert the result to degrees.
         (Vector2::cross(from, to)).atan2(Vector2::dot(from, to)).to_degrees()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use assert_approx_eq::assert_approx_eq;
+
+    #[test]
+    fn test_add() {
+        let v1 = Vector2::new(1.0, 2.0);
+        let v2 = Vector2::new(3.0, 4.0);
+        let result = v1 + v2;
+        assert_eq!(result, Vector2::new(4.0, 6.0));
+    }
+
+    #[test]
+    fn test_sub() {
+        let v1 = Vector2::new(5.0, 7.0);
+        let v2 = Vector2::new(3.0, 2.0);
+        let result = v1 - v2;
+        assert_eq!(result, Vector2::new(2.0, 5.0));
+    }
+
+    #[test]
+    fn test_mul() {
+        let v = Vector2::new(2.0, 3.0);
+        let result = v * 2.0;
+        assert_eq!(result, Vector2::new(4.0, 6.0));
+    }
+
+    #[test]
+    fn test_div() {
+        let v = Vector2::new(8.0, 4.0);
+        let result = v / 2.0;
+        assert_eq!(result, Vector2::new(4.0, 2.0));
+    }
+
+    #[test]
+    fn test_new() {
+        let v = Vector2::new(1.0, 2.0);
+        assert_eq!(v, Vector2 { x: 1.0, y: 2.0 });
+    }
+
+    #[test]
+    fn test_down() {
+        let v = Vector2::down();
+        assert_eq!(v, Vector2::new(0.0, -1.0));
+    }
+
+    #[test]
+    fn test_left() {
+        let v = Vector2::left();
+        assert_eq!(v, Vector2::new(-1.0, 0.0));
+    }
+
+    #[test]
+    fn test_right() {
+        let v = Vector2::right();
+        assert_eq!(v, Vector2::new(1.0, 0.0));
+    }
+
+    #[test]
+    fn test_up() {
+        let v = Vector2::up();
+        assert_eq!(v, Vector2::new(0.0, 1.0));
+    }
+
+    #[test]
+    fn test_zero() {
+        let v = Vector2::zero();
+        assert_eq!(v, Vector2::new(0.0, 0.0));
+    }
+
+    #[test]
+    fn test_one() {
+        let v = Vector2::one();
+        assert_eq!(v, Vector2::new(1.0, 1.0));
+    }
+
+    #[test]
+    fn test_sqr_magnitude() {
+        let v = Vector2::new(3.0, 4.0);
+        let result = v.sqr_magnitude();
+        assert_eq!(result, 25.0);
+    }
+
+    #[test]
+    fn test_magnitude() {
+        let v = Vector2::new(3.0, 4.0);
+        let result = v.magnitude();
+        assert_approx_eq!(result, 5.0, 1e-6);
+    }
+
+    #[test]
+    fn test_normalized() {
+        let v = Vector2::new(3.0, 4.0);
+        let result = v.normalized();
+        assert_approx_eq!(result.magnitude(), 1.0, 1e-6);
+    }
+
+    #[test]
+    fn test_normalize() {
+        let mut v = Vector2::new(3.0, 4.0);
+        v.normalize();
+        assert_approx_eq!(v.magnitude(), 1.0, 1e-6);
+    }
+
+    #[test]
+    fn test_clamp_magnitude() {
+        let mut v = Vector2::new(3.0, 4.0);
+        v.clamp_magnitude(2.5);
+        assert_approx_eq!(v.magnitude(), 2.5, 1e-6);
+    }
+
+    #[test]
+    fn test_perpendicular() {
+        let v = Vector2::new(1.0, 0.0);
+        let result = v.perpendicular();
+        assert_eq!(result, Vector2::new(0.0, 1.0));
+    }
+
+    #[test]
+    fn test_angle() {
+        let v1 = Vector2::new(1.0, 0.0);
+        let v2 = Vector2::new(0.0, 1.0);
+        let result = Vector2::angle(&v1, &v2);
+        assert_approx_eq!(result, 90.0, 1e-6);
+    }
+
+    #[test]
+    fn test_dot() {
+        let v1 = Vector2::new(1.0, 2.0);
+        let v2 = Vector2::new(3.0, 4.0);
+        let result = Vector2::dot(&v1, &v2);
+        assert_eq!(result, 11.0);
+    }
+
+    #[test]
+    fn test_distance() {
+        let v1 = Vector2::new(1.0, 2.0);
+        let v2 = Vector2::new(4.0, 6.0);
+        let result = Vector2::distance(&v1, &v2);
+        assert_approx_eq!(result, 5.0, 1e-6);
+    }
+
+    #[test]
+    fn test_lerp() {
+        let v1 = Vector2::new(0.0, 0.0);
+        let v2 = Vector2::new(10.0, 10.0);
+        let result = Vector2::lerp(&v1, &v2, 0.5);
+        assert_eq!(result, Vector2::new(5.0, 5.0));
+    }
+
+    #[test]
+    fn test_lerp_unclamped() {
+        let v1 = Vector2::new(0.0, 0.0);
+        let v2 = Vector2::new(10.0, 10.0);
+        let result = Vector2::lerp_unclamped(&v1, &v2, 1.5);
+        assert_eq!(result, Vector2::new(15.0, 15.0));
+    }
+
+    #[test]
+    fn test_max() {
+        let v1 = Vector2::new(1.0, 3.0);
+        let v2 = Vector2::new(2.0, 2.0);
+        let result = Vector2::max(&v1, &v2);
+        assert_eq!(result, Vector2::new(2.0, 3.0));
+    }
+
+    #[test]
+    fn test_min() {
+        let v1 = Vector2::new(1.0, 3.0);
+        let v2 = Vector2::new(2.0, 2.0);
+        let result = Vector2::min(&v1, &v2);
+        assert_eq!(result, Vector2::new(1.0, 2.0));
+    }
+
+    #[test]
+    fn test_reflect() {
+        let in_direction = Vector2::new(1.0, -1.0);
+        let in_normal = Vector2::new(0.0, 1.0);
+        let result = Vector2::reflect(&in_direction, &in_normal);
+        assert_eq!(result, Vector2::new(1.0, 1.0));
+    }
+
+    #[test]
+    fn test_scale() {
+        let v1 = Vector2::new(2.0, 3.0);
+        let v2 = Vector2::new(4.0, 5.0);
+        let result = Vector2::scale(&v1, &v2);
+        assert_eq!(result, Vector2::new(8.0, 15.0));
+    }
+
+    #[test]
+    fn test_cross() {
+        let v1 = Vector2::new(1.0, 2.0);
+        let v2 = Vector2::new(3.0, 4.0);
+        let result = Vector2::cross(&v1, &v2);
+        assert_eq!(result, -2.0);
+    }
+
+    #[test]
+    fn test_signed_angle() {
+        let v1 = Vector2::new(1.0, 0.0);
+        let v2 = Vector2::new(0.0, -1.0);
+        let result = Vector2::signed_angle(&v1, &v2);
+        assert_approx_eq!(result, -90.0, 1e-6);
     }
 }
