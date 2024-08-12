@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use crate::config::GlobalConfig;
+use crate::ecs::game_object::GameObject;
 
 //sdl2
 use sdl2::Sdl;
@@ -42,14 +43,17 @@ impl Renderer {
         }
     }
 
-    pub fn render(&mut self) {
+    pub fn render(&mut self, objects: &mut Vec<Box<dyn GameObject>>) {
         //background
         self.canvas.set_draw_color(self.background_color);
         self.canvas.clear();
 
         //obsticles
-
         //player
+        for object in objects {
+            object.update((1_f32 / self.config.fps as f32));
+            object.render(&mut self.canvas);
+        }
 
         //present the render
         self.canvas.present();
