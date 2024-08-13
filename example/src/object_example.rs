@@ -11,10 +11,10 @@ pub struct Rectangle {
 }
 
 impl Rectangle {
-    pub fn new() -> Rectangle {
+    pub fn new(initial_pos: Vector2, initial_rot: f32, initial_scale: Vector2) -> Rectangle {
         Rectangle {
+            transform: Transform::new(initial_pos, initial_rot, initial_scale),
             rigidbody: None,
-            transform: Transform::default(),
             shape: Shape::Circle { radius: 20_f32 }
         }
     }

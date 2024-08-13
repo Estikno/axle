@@ -2,9 +2,6 @@ use crate::engine::Transform;
 use crate::engine::Vector2;
 use crate::physics::shape::Shape;
 
-//sld2
-use sdl2::{render::Canvas, video::Window};
-
 pub trait GameObject {
     fn start(&mut self) {
         

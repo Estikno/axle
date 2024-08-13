@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use crate::config::GlobalConfig;
 use crate::view::renderer::Renderer;
@@ -32,10 +32,15 @@ impl App {
     pub fn update(&mut self) -> (bool, Instant) {
         let frame_start = Instant::now();
 
-        self.renderer.render(&mut self.objects);
+        //input
         self.input.update();
+        let input_process = self.input.process_event();
+
+        //render
+        self.renderer.render(&mut self.objects);
         
-        (self.input.process_event(), frame_start)
+        //return results
+        (input_process, frame_start)
     }
 
     pub fn wait(&self, frame_start: Instant) {
