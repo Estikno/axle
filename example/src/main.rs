@@ -17,10 +17,8 @@ fn main() {
 
     let mut app = App::new(rc_global_config);
 
-    let mut new_object = object_example::Rectangle {
-        position: Vector2::new(100_f32, 100_f32),
-        size: Vector2::new(100_f32, 100_f32),
-    };
+    let mut new_object = object_example::Rectangle::new();
+    new_object.set_rigidbody();
 
     app.add_object(Box::new(new_object));
         
