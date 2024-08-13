@@ -1,5 +1,6 @@
 use crate::engine::Transform;
 use crate::engine::Vector2;
+use crate::physics::shape::Shape;
 
 //sld2
 use sdl2::{render::Canvas, video::Window};
@@ -13,7 +14,8 @@ pub trait GameObject {
     }
 
     fn get_position(&self) -> Vector2;
-    fn render(&self, canvas: &mut Canvas<Window>);
+    //fn render(&self, canvas: &mut Canvas<Window>);
     fn transform(&self) -> &Transform;
     fn transform_mut(&mut self) -> &mut Transform;
+    fn get_shape(&self) -> &Shape;
 }

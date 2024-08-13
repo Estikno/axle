@@ -1,4 +1,4 @@
-
+#[derive(Clone)]
 pub enum Shape {
     Rectangle { width: f32, height: f32 },
     Circle { radius: f32 }

@@ -18,7 +18,7 @@ fn main() {
     let mut app = App::new(rc_global_config);
 
     let mut new_object = object_example::Rectangle::new();
-    new_object.set_rigidbody();
+    //new_object.set_rigidbody();
 
     app.add_object(Box::new(new_object));
         

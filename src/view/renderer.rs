@@ -2,6 +2,7 @@ use std::rc::Rc;
 
 use crate::config::GlobalConfig;
 use crate::ecs::game_object::GameObject;
+use crate::physics::shape::Shape;
 
 //sdl2
 use sdl2::Sdl;
@@ -9,6 +10,8 @@ use sdl2::render::Canvas;
 use sdl2::video::Window;
 use sdl2::pixels::Color;
 use sdl2::VideoSubsystem;
+use sdl2::gfx::primitives::DrawRenderer;
+use sdl2::rect::Rect;
 
 pub struct Renderer {
     //main parameters
@@ -51,8 +54,21 @@ impl Renderer {
         //obsticles
         //player
         for object in objects {
+            //update object
             object.update(1_f32 / self.config.fps as f32);
-            object.render(&mut self.canvas);
+
+            //render it
+            //object.render(&mut self.canvas);
+            let shape = object.get_shape();
+            
+            match shape {
+                Shape::Circle { radius } => {
+                    self.canvas.filled_circle(object.get_position().x as i16, object.get_position().y as i16, radius.clone() as i16, Color::RED).unwrap_or_default();
+                },
+                Shape::Rectangle { width, height } => {
+                    self.canvas.fill_rect(Rect::new(object.get_position().x as i32, object.get_position().y as i32, width.clone() as u32, height.clone() as u32)).unwrap_or_default();
+                }
+            }
         }
 
         //present the render
