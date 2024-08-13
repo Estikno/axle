@@ -1,4 +1,5 @@
 use axle2D::ecs::game_object::GameObject;
+use axle2D::engine::Keycode;
 use axle2D::engine::Vector2;
 use axle2D::engine::Transform;
 use axle2D::physics::rigid_body::RigidBody;
@@ -46,5 +47,20 @@ impl GameObject for Rectangle {
 
     fn get_shape(&self) -> &Shape {
         &self.shape
+    }
+
+    fn update(&mut self, delta_time: f32, input: &axle2D::engine::input::Input) {
+        if input.is_key_held(Keycode::W) {
+            self.transform.position.y -= 2.0;
+        }
+        if input.is_key_held(Keycode::S) {
+            self.transform.position.y += 2.0;
+        }
+        if input.is_key_held(Keycode::A) {
+            self.transform.position.x -= 2.0;
+        }
+        if input.is_key_held(Keycode::D) {
+            self.transform.position.x += 2.0;
+        }
     }
 }

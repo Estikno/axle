@@ -54,10 +54,7 @@ impl Renderer {
         //obsticles
         //player
         for object in objects {
-            //update object
-            object.update(1_f32 / self.config.fps as f32);
-
-            //render it
+            //render objects
             //object.render(&mut self.canvas);
             let shape = object.get_shape();
             

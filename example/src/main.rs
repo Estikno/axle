@@ -31,18 +31,6 @@ fn main() {
 
         if exit { break }
 
-        if app.input.is_key_pressed(Keycode::W) {
-            println!("Mouse left pressed");
-        }
-
-        if app.input.is_key_released(Keycode::W) {
-            println!("Mouse left released");
-        }
-
-        if app.input.is_key_held(Keycode::W) {
-            println!("Mouse left holding");
-        }
-
         app.wait(frame_start);
     }
 }

@@ -1,3 +1,4 @@
+use crate::engine::input::Input;
 use crate::engine::Transform;
 use crate::engine::Vector2;
 use crate::physics::shape::Shape;
@@ -6,7 +7,7 @@ pub trait GameObject {
     fn start(&mut self) {
         
     }
-    fn update(&mut self, delta_time: f32) {
+    fn update(&mut self, delta_time: f32, input: &Input) {
         
     }
 

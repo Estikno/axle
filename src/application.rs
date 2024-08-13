@@ -36,6 +36,11 @@ impl App {
         self.input.update();
         let input_process = self.input.process_event();
 
+        //update
+        for object in &mut self.objects {
+            object.update(1.0 / self.config.fps as f32, &self.input);
+        }
+
         //render
         self.renderer.render(&mut self.objects);
         
