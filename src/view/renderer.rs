@@ -51,7 +51,7 @@ impl Renderer {
         //obsticles
         //player
         for object in objects {
-            object.update((1_f32 / self.config.fps as f32));
+            object.update(1_f32 / self.config.fps as f32);
             object.render(&mut self.canvas);
         }
 

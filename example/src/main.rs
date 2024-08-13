@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use axle2D::app::App;
+use axle2D::application::App;
 use axle2D::config::{GlobalConfig, Resolution};
 
 use axle2D::engine::Vector2;
