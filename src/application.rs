@@ -42,6 +42,7 @@ impl App {
         let objects_len = self.objects.len();
         let mut object_cols: Vec<((usize, usize), (Vector2, f32))> = Vec::new();
 
+        //determine if circles collide and push each case into a vector
         for i in 0..(objects_len - 1) {
             for j in (i+1)..objects_len {
                 if let Some((normal, depth)) = 
@@ -51,6 +52,7 @@ impl App {
             }
         }
 
+        //go through the collisions vector and apply the collision to each pair of objects
         for info in object_cols.into_iter() {
             let transform_mut_a = self.objects[info.0.0].transform_mut();
             transform_mut_a.position = transform_mut_a.position + (info.1.0 * info.1.1 / 2.0);
