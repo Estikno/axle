@@ -39,12 +39,20 @@ impl App {
         let input_process = self.input.process_event();
 
         //collisions
+        /*for i in 0..(objects_len - 1) {
         let objects_len = self.objects.len();
         let mut object_cols: Vec<((usize, usize), (Vector2, f32))> = Vec::new();
 
         //determine if circles collide and push each case into a vector
-        for i in 0..(objects_len - 1) {
+            if let None = self.objects[i].get_rigidbody() {
+                continue;
+            }
+
             for j in (i+1)..objects_len {
+                if let None = self.objects[j].get_rigidbody() {
+                    continue;
+                }
+
                 if let Some((normal, depth)) = 
                     collisions::intersect_circles(self.objects[i].get_position(), 20.0, self.objects[j].get_position(), 20.0) {
                     object_cols.push(((i, j), (normal, depth)));
@@ -59,7 +67,7 @@ impl App {
 
             let transform_mut_b = self.objects[info.0.1].transform_mut();
             transform_mut_b.position = transform_mut_b.position - (info.1.0 * info.1.1 / 2.0);
-        }
+        }*/
 
         //update
         for object in &mut self.objects {

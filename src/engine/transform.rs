@@ -41,5 +41,12 @@ impl Transform {
             scale,    // use the given scale
         }
     }
+
+    pub fn transform(&self, v: &Vector2) -> Vector2 {
+        Vector2::new(
+            (self.rotation.cos() * v.x - self.rotation.sin() * v.y) + self.position.x, 
+            (self.rotation.sin() * v.x + self.rotation.cos() * v.y) + self.position.y
+        )
+    }
 }
 

@@ -82,16 +82,35 @@ impl Renderer {
         for object in objects {
             // Render objects
             let shape = object.get_shape();
-
             
             match shape {
                 Shape::Circle { radius } => {
                     // Render circle
                     self.canvas.filled_circle(object.get_position().x as i16, object.get_position().y as i16, radius.clone() as i16, Color::RED).unwrap_or_default();
                 },
-                Shape::Rectangle { width, height } => {
+                Shape::Rectangle { width, height, tranformed_vertices, triangles, .. } => {
                     // Render rectangle
-                    self.canvas.fill_rect(Rect::new(object.get_position().x as i32, object.get_position().y as i32, width.clone() as u32, height.clone() as u32)).unwrap_or_default();
+                    //self.canvas.set_draw_color(Color::GREEN);
+                    //self.canvas.fill_rect(Rect::new(object.get_position().x as i32, object.get_position().y as i32, width.clone() as u32, height.clone() as u32)).unwrap_or_default();
+                    self.canvas.filled_trigon(
+                        (tranformed_vertices[triangles[0] as usize].x + object.get_position().x) as i16, 
+                        (tranformed_vertices[triangles[0] as usize].y + object.get_position().y) as i16, 
+                        (tranformed_vertices[triangles[1] as usize].x + object.get_position().x) as i16, 
+                        (tranformed_vertices[triangles[1] as usize].y + object.get_position().y) as i16, 
+                        (tranformed_vertices[triangles[2] as usize].x + object.get_position().x) as i16,
+                        (tranformed_vertices[triangles[2] as usize].y + object.get_position().y) as i16,
+                        Color::GREEN
+                    ).unwrap_or_default();
+                    
+                    self.canvas.filled_trigon(
+                        (tranformed_vertices[triangles[3] as usize].x + object.get_position().x) as i16,
+                        (tranformed_vertices[triangles[3] as usize].y + object.get_position().y) as i16,
+                        (tranformed_vertices[triangles[4] as usize].x + object.get_position().x) as i16,
+                        (tranformed_vertices[triangles[4] as usize].y + object.get_position().y) as i16, 
+                        (tranformed_vertices[triangles[5] as usize].x + object.get_position().x) as i16,
+                        (tranformed_vertices[triangles[5] as usize].y + object.get_position().y) as i16, 
+                        Color::GREEN
+                    ).unwrap_or_default();
                 }
             }
         }

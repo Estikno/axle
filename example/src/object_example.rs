@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use axle2D::ecs::game_object::GameObject;
 use axle2D::engine::Keycode;
 use axle2D::engine::Vector2;
@@ -17,7 +19,7 @@ impl Rectangle {
         Rectangle {
             transform: Transform::new(initial_pos, initial_rot, initial_scale),
             rigidbody: None,
-            shape: Shape::Circle { radius: 20_f32 },
+            shape: Shape::create_rectangle(10.0 * 3.0, 10.0 * 3.0),
             movable
         }
     }
@@ -52,6 +54,9 @@ impl GameObject for Rectangle {
     }
 
     fn update(&mut self, delta_time: f32, input: &axle2D::engine::input::Input) {
+        self.transform.rotation += PI / 50.0;
+        self.shape.get_transform_vertices(&self.transform);
+
         if !self.movable {
             return;
         }
