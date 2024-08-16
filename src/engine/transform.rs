@@ -44,7 +44,17 @@ impl Transform {
         }
     }
 
-    pub fn transform_vertices(&self, v: &Vector2) -> Vector2 {
+    /// Rotates a vector in 2D by the transform's rotation.
+    /// The resultant vector is represented in local space, meaning it is not affected by the transform's position.
+    ///
+    /// # Arguments
+    ///
+    /// * `v` - The vector to be rotated.
+    ///
+    /// # Returns
+    ///
+    /// A new vector that is the result of rotating `v` by the transform's rotation.
+    pub fn transform_vector(&self, v: &Vector2) -> Vector2 {
         // Formula for rotating a vector in 2D
         // x2=cosβx1−sinβy1
         // y2=sinβx1+cosβy1
