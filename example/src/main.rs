@@ -26,49 +26,49 @@ fn main() {
     //new_object.set_rigidbody();
 
     let objects = vec![object_example::Rectangle::new(
-        Vector2::new(50_f32, 100_f32),
+        Vector2::new(50_f32, 50_f32),
         0_f32,
         Vector2::one(),
         false
     ),
     object_example::Rectangle::new(
-        Vector2::new(100_f32, 500_f32),
+        Vector2::new(100_f32, 50_f32),
         0_f32,
         Vector2::one(),
         false
     ),
     object_example::Rectangle::new(
-        Vector2::new(500_f32, 400_f32),
+        Vector2::new(150_f32, 50_f32),
         0_f32,
         Vector2::one(),
         false
     ),
     object_example::Rectangle::new(
-        Vector2::new(300_f32, 200_f32),
+        Vector2::new(200_f32, 50_f32),
         0_f32,
         Vector2::one(),
         false
     ),
     object_example::Rectangle::new(
-        Vector2::new(281_f32, 90_f32),
+        Vector2::new(250_f32, 50_f32),
         0_f32,
         Vector2::one(),
         false
     ),
     object_example::Rectangle::new(
-        Vector2::new(900_f32, 32_f32),
+        Vector2::new(300_f32, 50_f32),
         0_f32,
         Vector2::one(),
         false
     ),
     object_example::Rectangle::new(
-        Vector2::new(42_f32, 45_f32),
+        Vector2::new(350_f32, 50_f32),
         0_f32,
         Vector2::one(),
         false
     ),
     object_example::Rectangle::new(
-        Vector2::new(423_f32, 185_f32),
+        Vector2::new(400_f32, 50_f32),
         0_f32,
         Vector2::one(),
         false

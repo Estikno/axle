@@ -54,11 +54,11 @@ impl GameObject for Rectangle {
     }
 
     fn update(&mut self, delta_time: f32, input: &axle2D::engine::input::Input) {
-        //self.transform.rotation -= PI / 20.0;
+        //self.transform.rotation += PI / 40.0;
         //println!("{:?}", self.transform.right());
-        //self.transform.rotate(4.0);
-        //self.transform.look_at_position(&Vector2::new(100.0, 100.0));
-        self.transform.rotate_around(&Vector2::new(100.0, 100.0), 5.0);
+        //self.transform.rotate(10.0);
+        self.transform.look_at_position(&Vector2::new(200.0, 200.0));
+        self.transform.rotate_around(&Vector2::new(200.0, 200.0), 1.0);
         self.shape.get_transform_vertices(&self.transform);
 
         if !self.movable {
@@ -66,10 +66,10 @@ impl GameObject for Rectangle {
         }
         
         if input.is_key_held(Keycode::W) {
-            self.transform.position.y -= 2.0;
+            self.transform.position.y += 2.0;
         }
         if input.is_key_held(Keycode::S) {
-            self.transform.position.y += 2.0;
+            self.transform.position.y -= 2.0;
         }
         if input.is_key_held(Keycode::A) {
             self.transform.position.x -= 2.0;

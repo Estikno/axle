@@ -44,15 +44,15 @@ impl Transform {
         }
     }
 
-    pub fn transform(&self, v: &Vector2) -> Vector2 {
+    pub fn transform_vertices(&self, v: &Vector2) -> Vector2 {
         // Formula for rotating a vector in 2D
         // x2=cosβx1−sinβy1
         // y2=sinβx1+cosβy1
         // https://matthew-brett.github.io/teaching/rotation_2d.html
         
         Vector2::new(
-            (self.rotation.cos() * v.x - self.rotation.sin() * v.y) + self.position.x, 
-            -(self.rotation.sin() * v.x + self.rotation.cos() * v.y) + self.position.y // !added the negative sign because the Y axis has to be inverted
+            self.rotation.cos() * v.x - self.rotation.sin() * v.y, 
+            self.rotation.sin() * v.x + self.rotation.cos() * v.y
         )
     }
 
@@ -107,7 +107,7 @@ impl Transform {
         // Calculate the angle between the current rotation's red axis and the direction.
         let angle_radians = Vector2::signed_angle(&Vector2::right(), &direction_normalized).to_radians();
         // Set the rotation of the transform to the calculated angle.
-        self.rotation = -angle_radians; // !added minus sign because of inverted Y system in SDL2
+        self.rotation = angle_radians;
     }
 
     /// Sets the rotation of the transform to face towards a target'a position
@@ -122,7 +122,7 @@ impl Transform {
         // Calculate the angle between the current rotation's red axis and the direction.
         let angle_radians = Vector2::signed_angle(&Vector2::right(), &direction_normalized).to_radians();
         // Set the rotation of the transform to the calculated angle.
-        self.rotation = -angle_radians; // !added minus sign because of inverted Y system in SDL2
+        self.rotation = angle_radians;
     }
 
     /// Rotates the transform by the given angle in degrees
@@ -152,10 +152,9 @@ impl Transform {
 
         // Rotate the transform's position around the given point.
         // The angle is calculated by adding the specified angle to the angle between the positive X-axis and the direction vector.
-        // !The minus sign is added to the angle because of the inverted Y system in SDL2.
         self.position = Vector2::new(
-            point.x + radius * (-angle + angle_between_zero).to_radians().cos(),
-            point.y + radius * (-angle + angle_between_zero).to_radians().sin()
+            point.x + radius * (angle + angle_between_zero).to_radians().cos(),
+            point.y + radius * (angle + angle_between_zero).to_radians().sin()
         );
     }
 }

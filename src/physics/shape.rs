@@ -51,7 +51,7 @@ impl Shape {
                 if *transform_update_required {
                     for i in 0..4 {
                         let v = vertices[i];
-                        tranformed_vertices[i] = transform.transform(&v);
+                        tranformed_vertices[i] = transform.transform_vertices(&v);
                     }
                 }
 
