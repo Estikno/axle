@@ -5,11 +5,21 @@ use crate::engine::{Transform, Vector2};
 pub enum Shape {
     /// A rectangle with the specified width and height.
     Rectangle { 
+        /// Width of the rectangle
         width: f32, 
-        height: f32, 
+        /// Height of the rectangle
+        height: f32,
+        /// An array of vector2 representing the coordinates of the vertices. Rotation not aplied, for that get transformed_vertices variable.
+        /// The order is: top-left, top-right, bottom-right, bottom-left.
+        /// The coordinates are local with the central point of the system located at the center of the rectangle.
         vertices: [Vector2; 4], 
-        tranformed_vertices: [Vector2; 4], 
+        /// An array of vector2 representing the coordinates of the vertices in which rotation is applied
+        /// The order is: top-left, top-right, bottom-right, bottom-left.
+        /// The coordinates are local with the central point of the system located at the center of the rectangle.
+        tranformed_vertices: [Vector2; 4],
+        /// A bool that indicates if it is necessary to update the transformed vertices
         transform_update_required: bool,
+        /// The order of coordinates of the triangles that have to be drawn in order to display the rectangle
         triangles: [u8; 6],
     },
     /// A circle with the specified radius.
