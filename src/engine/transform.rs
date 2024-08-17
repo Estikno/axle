@@ -1,5 +1,3 @@
-use std::f32::consts::PI;
-
 use crate::engine::Vector2;
 
 /// Struct representing a 2D transformation
@@ -45,7 +43,7 @@ impl Transform {
     }
 
     /// Rotates a vector in 2D by the transform's rotation.
-    /// The resultant vector is represented in local space, meaning it is not affected by the transform's position.
+    /// The resultant vector is represented in local space, meaning it is not affected by the transform's position or scale.
     ///
     /// # Arguments
     ///
@@ -166,6 +164,33 @@ impl Transform {
             point.x + radius * (angle + angle_between_zero).to_radians().cos(),
             point.y + radius * (angle + angle_between_zero).to_radians().sin()
         );
+    }
+
+    // TODO: Take into account rotation and scale in this function. Or add other methods in which this is considered
+    // TODO: usefull link: https://shorturl.at/c9SCq
+    /// Transforms a point from local space to world space.
+    /// This functions does not take into account neither rotation nor scale
+    /// 
+    /// # Arguments
+    /// 
+    /// * `point` - The point to transform
+    /// 
+    /// # Returns
+    /// 
+    /// A `Vector2` representing the transformed point
+    pub fn transform_point(&self, point: &Vector2) -> Vector2 {
+        // Add the the point to the position of the transform to get the world position of the point
+        point.clone() + self.position
+    }
+
+    /// Translates the transform by the given translation vector.
+    ///
+    /// # Arguments
+    ///
+    /// * `translation` - The translation vector to apply to the transform.
+    pub fn translate(&mut self, translation: &Vector2) {
+        // Add the translation vector to the position of the transform.
+        self.position = self.position + translation.clone();
     }
 }
 

@@ -2,6 +2,7 @@ use std::rc::Rc;
 
 use crate::config::GlobalConfig;
 use crate::ecs::game_object::GameObject;
+use crate::engine::Vector2;
 use crate::physics::shape::Shape;
 use crate::utils::coordinate::convert_vector_y;
 
@@ -82,6 +83,7 @@ impl Renderer {
         for object in objects {
             // Render objects
             let shape = object.get_shape();
+            let transform = object.transform();
             let position_adjusted = convert_vector_y(&object.get_position());
             
             match shape {
@@ -90,34 +92,58 @@ impl Renderer {
                     self.canvas.filled_circle(position_adjusted.x as i16, position_adjusted.y as i16, radius.clone() as i16, Color::RED).unwrap_or_default();
                 },
                 Shape::Rectangle { width, height, tranformed_vertices, triangles, .. } => {
-                    // Render rectangle
-                    //self.canvas.set_draw_color(Color::GREEN);
-                    //self.canvas.fill_rect(Rect::new(object.get_position().x as i32, object.get_position().y as i32, width.clone() as u32, height.clone() as u32)).unwrap_or_default();
-                    self.canvas.filled_trigon(
-                        (tranformed_vertices[triangles[0] as usize].x + position_adjusted.x) as i16, 
-                        (-tranformed_vertices[triangles[0] as usize].y + position_adjusted.y) as i16, 
-                        (tranformed_vertices[triangles[1] as usize].x + position_adjusted.x) as i16, 
-                        (-tranformed_vertices[triangles[1] as usize].y + position_adjusted.y) as i16, 
-                        (tranformed_vertices[triangles[2] as usize].x + position_adjusted.x) as i16,
-                        (-tranformed_vertices[triangles[2] as usize].y + position_adjusted.y) as i16,
+                    // Render rectangle as two triangles to manage rotations
+                    /*self.canvas.filled_trigon(
+                        convert_vector_y(&tranformed_vertices[triangles[0] as usize]).x as i16, 
+                        convert_vector_y(&tranformed_vertices[triangles[0] as usize]).y as i16, 
+                        convert_vector_y(&tranformed_vertices[triangles[1] as usize]).x as i16, 
+                        convert_vector_y(&tranformed_vertices[triangles[1] as usize]).y as i16, 
+                        convert_vector_y(&tranformed_vertices[triangles[2] as usize]).x as i16,
+                        convert_vector_y(&tranformed_vertices[triangles[2] as usize]).y as i16,
                         Color::GREEN
                     ).unwrap_or_default();
                     
                     self.canvas.filled_trigon(
-                        (tranformed_vertices[triangles[3] as usize].x + position_adjusted.x) as i16,
-                        (-tranformed_vertices[triangles[3] as usize].y + position_adjusted.y) as i16,
-                        (tranformed_vertices[triangles[4] as usize].x + position_adjusted.x) as i16,
-                        (-tranformed_vertices[triangles[4] as usize].y + position_adjusted.y) as i16, 
-                        (tranformed_vertices[triangles[5] as usize].x + position_adjusted.x) as i16,
-                        (-tranformed_vertices[triangles[5] as usize].y + position_adjusted.y) as i16, 
+                        convert_vector_y(&tranformed_vertices[triangles[3] as usize]).x as i16,
+                        convert_vector_y(&tranformed_vertices[triangles[3] as usize]).y as i16,
+                        convert_vector_y(&tranformed_vertices[triangles[4] as usize]).x as i16,
+                        convert_vector_y(&tranformed_vertices[triangles[4] as usize]).y as i16, 
+                        convert_vector_y(&tranformed_vertices[triangles[5] as usize]).x as i16,
+                        convert_vector_y(&tranformed_vertices[triangles[5] as usize]).y as i16, 
                         Color::GREEN
-                    ).unwrap_or_default();
+                    ).unwrap_or_default();*/
+
+                    self.draw_triangle(
+                        &convert_vector_y(&tranformed_vertices[triangles[0] as usize]), 
+                        &convert_vector_y(&tranformed_vertices[triangles[1] as usize]), 
+                        &convert_vector_y(&tranformed_vertices[triangles[2] as usize]), 
+                        Color::GREEN
+                    );
+
+                    self.draw_triangle(
+                        &convert_vector_y(&tranformed_vertices[triangles[3] as usize]), 
+                        &convert_vector_y(&tranformed_vertices[triangles[4] as usize]), 
+                        &convert_vector_y(&tranformed_vertices[triangles[5] as usize]), 
+                        Color::GREEN
+                    );
                 }
             }
         }
 
         // Present the render
         self.canvas.present();
+    }
+
+    fn draw_triangle(&mut self, pos_1: &Vector2, pos_2: &Vector2, pos_3: &Vector2, color: Color) {
+        self.canvas.filled_trigon(
+            pos_1.x as i16, 
+            pos_1.y as i16, 
+            pos_2.x as i16, 
+            pos_2.y as i16, 
+            pos_3.x as i16,
+            pos_3.y as i16,
+            color
+        ).unwrap_or_default()
     }
 }
 

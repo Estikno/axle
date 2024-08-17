@@ -15,7 +15,7 @@ pub enum Shape {
         vertices: [Vector2; 4], 
         /// An array of vector2 representing the coordinates of the vertices in which rotation is applied
         /// The order is: top-left, top-right, bottom-right, bottom-left.
-        /// The coordinates are local with the central point of the system located at the center of the rectangle.
+        /// The coordinates are global
         tranformed_vertices: [Vector2; 4],
         /// A bool that indicates if it is necessary to update the transformed vertices
         transform_update_required: bool,
@@ -51,7 +51,7 @@ impl Shape {
                 if *transform_update_required {
                     for i in 0..4 {
                         let v = vertices[i];
-                        tranformed_vertices[i] = transform.transform_vector(&v);
+                        tranformed_vertices[i] = transform.transform_point(&transform.transform_vector(&v));
                     }
                 }
 

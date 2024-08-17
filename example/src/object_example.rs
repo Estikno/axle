@@ -57,13 +57,16 @@ impl GameObject for Rectangle {
         //self.transform.rotation += PI / 40.0;
         //println!("{:?}", self.transform.right());
         //self.transform.rotate(10.0);
-        self.transform.look_at_position(&Vector2::new(200.0, 200.0));
-        self.transform.rotate_around(&Vector2::new(200.0, 200.0), 1.0);
+        //self.transform.translate(&(self.transform.up()));
+        //self.transform.look_at_position(&Vector2::new(200.0, 200.0));
+        //self.transform.rotate_around(&Vector2::new(200.0, 200.0), 1.0);
         self.shape.get_transform_vertices(&self.transform);
 
         if !self.movable {
             return;
         }
+
+        //println!("{:?}", self.transform.transform_point(&(Vector2::right() * 2.0)));
         
         if input.is_key_held(Keycode::W) {
             self.transform.position.y += 2.0;
