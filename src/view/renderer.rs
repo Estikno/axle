@@ -82,10 +82,17 @@ impl Renderer {
         // Game objects
         for object in objects {
             // Render objects
-            let shape = object.get_shape();
-            let transform = object.transform();
             let position_adjusted = convert_vector_y(&object.get_position());
+            let transform = object.transform().clone();
             
+            if object.transform_mut().has_changed() {
+                let shape = object.get_shape_mut();
+                shape.update_transformed_vertices();
+                shape.get_transform_vertices(&transform);
+            }
+            
+            let shape = object.get_shape();
+
             match shape {
                 Shape::Circle { radius } => {
                     // Render circle

@@ -3,7 +3,7 @@ use crate::engine::Vector2;
 /// Struct representing a 2D transformation
 ///
 /// This struct contains the position, rotation, and scale of a 2D object.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct Transform {
     /// Position of the object
     pub position: Vector2,
@@ -11,6 +11,10 @@ pub struct Transform {
     pub rotation: f32,
     /// Scale of the object
     pub scale: Vector2,
+
+    old_position: Vector2,
+    old_rotation: f32,
+    old_scale: Vector2,
 }
 
 impl Transform {
@@ -20,6 +24,9 @@ impl Transform {
             position: Vector2::zero(), // position at (0, 0)
             rotation: 0.0,            // rotation is 0 degrees
             scale: Vector2::one(),    // scale is (1, 1)¡
+            old_position: Vector2::zero(),
+            old_rotation: 0.0,
+            old_scale: Vector2::one(),
         }
     }
 
@@ -39,7 +46,23 @@ impl Transform {
             position,  // use the given position
             rotation, // use the given rotation
             scale,    // use the given scale
+
+            old_position: Vector2::zero(),
+            old_rotation: 0.0,
+            old_scale: Vector2::zero(),
         }
+    }
+
+    pub fn has_changed(&mut self) -> bool {
+        let position_changed = self.position != self.old_position;
+        let rotation_changed = self.rotation != self.old_rotation;
+        let scale_changed = self.scale != self.old_scale;
+
+        self.old_position = self.position;
+        self.old_rotation = self.rotation;
+        self.old_scale = self.scale;
+
+        position_changed || rotation_changed || scale_changed
     }
 
     /// Rotates a vector in 2D by the transform's rotation.

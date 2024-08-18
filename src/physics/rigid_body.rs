@@ -20,9 +20,6 @@ pub struct RigidBody {
     /// Whether the rigid body is static or not. A static rigid body is one
     /// that does not move when other objects collide with it.
     pub is_static: bool,
-
-    /// The shape of the rigid body.
-    pub shape: Shape,
 }
 
 impl RigidBody {
@@ -38,14 +35,13 @@ impl RigidBody {
     /// # Returns
     ///
     /// A new RigidBody.
-    pub fn new(mass: f32, restitution: f32, is_static: bool, shape: Shape) -> Self {
+    pub fn new(mass: f32, restitution: f32, is_static: bool) -> Self {
         Self {
             linear_velocity: Vector2::new(0.0, 0.0), // initialize linear velocity to (0, 0)
             angular_velocity: 0_f32, // initialize angular velocity to 0
             mass,
             restitution: restitution.clamp(0.0, 1.0), // clamp restitution between 0 and 1
-            is_static,
-            shape
+            is_static
         }
     }
 }

@@ -1,7 +1,7 @@
 use crate::engine::{Transform, Vector2};
 
 /// Represents a shape in 2D space.
-#[derive(Clone)]
+#[derive(Debug)]
 pub enum Shape {
     /// A rectangle with the specified width and height.
     Rectangle { 
@@ -55,6 +55,7 @@ impl Shape {
                     }
                 }
 
+                *transform_update_required = false;
                 Some(tranformed_vertices.clone())
             },
             _ => None,
@@ -86,11 +87,21 @@ impl Shape {
     /// Returns the dimensions of the shape, if it is a rectangle.
     ///
     /// # Returns
+    /// 
     /// The dimensions of the shape (width and height), or `None` if it is not a rectangle.
     pub fn get_dimensions(&self) -> Option<Vector2> {
         match self {
             Shape::Rectangle { width, height, .. } => Some(Vector2::new(*width, *height)),
             _ => None,
+        }
+    }
+
+    pub fn update_transformed_vertices(&mut self) {
+        match self {
+            Shape::Rectangle { transform_update_required, .. } => {
+                *transform_update_required = true;
+            },
+            _ => {}
         }
     }
 }

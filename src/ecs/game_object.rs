@@ -31,6 +31,8 @@ pub trait GameObject {
     /// Get a reference to the game object's shape.
     fn get_shape(&self) -> &Shape;
 
+    fn get_shape_mut(&mut self) -> &mut Shape;
+
     /// Get a reference to the game object's rigid body, if it has one.
     fn get_rigidbody(&self) -> Option<&RigidBody>;
 }

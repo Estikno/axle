@@ -29,8 +29,7 @@ impl Rectangle {
             RigidBody::new(
                 1.0, 
                 1.0, 
-                false, 
-                self.shape.clone()
+                false,
             )
         );
     }
@@ -53,14 +52,18 @@ impl GameObject for Rectangle {
         &self.shape
     }
 
+    fn get_shape_mut(&mut self) -> &mut Shape {
+        &mut self.shape
+    }
+
     fn update(&mut self, delta_time: f32, input: &axle2D::engine::input::Input) {
         //self.transform.rotation += PI / 40.0;
         //println!("{:?}", self.transform.right());
-        //self.transform.rotate(10.0);
+        self.transform.rotate(10.0);
         //self.transform.translate(&(self.transform.up()));
         //self.transform.look_at_position(&Vector2::new(200.0, 200.0));
         //self.transform.rotate_around(&Vector2::new(200.0, 200.0), 1.0);
-        self.shape.get_transform_vertices(&self.transform);
+        //self.shape.get_transform_vertices(&self.transform);
 
         if !self.movable {
             return;
