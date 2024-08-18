@@ -1,6 +1,9 @@
 use std::rc::Rc;
 use std::time::Instant;
 
+use sdl2::hint::set;
+use sdl2::pixels::Color;
+
 use crate::config::GlobalConfig;
 use crate::engine::Vector2;
 use crate::view::renderer::Renderer;
@@ -39,11 +42,15 @@ impl App {
         let input_process = self.input.process_event();
 
         //collisions
-        /*for i in 0..(objects_len - 1) {
         let objects_len = self.objects.len();
         let mut object_cols: Vec<((usize, usize), (Vector2, f32))> = Vec::new();
 
-        //determine if circles collide and push each case into a vector
+        //reset color
+        for object in &mut self.objects {
+            object.get_shape_mut().set_color(Color::GREEN);
+        }
+        
+        for i in 0..(objects_len - 1) {
             if let None = self.objects[i].get_rigidbody() {
                 continue;
             }
@@ -53,15 +60,21 @@ impl App {
                     continue;
                 }
 
-                if let Some((normal, depth)) = 
+                if collisions::intersect_polygons(&self.objects[i].get_shape().get_transform_vertices().unwrap(), &self.objects[j].get_shape().get_transform_vertices().unwrap()) {
+                    self.objects[i].get_shape_mut().set_color(Color::RED);
+                    self.objects[j].get_shape_mut().set_color(Color::RED);
+                }
+
+                //circle collision
+                /*if let Some((normal, depth)) = 
                     collisions::intersect_circles(self.objects[i].get_position(), 20.0, self.objects[j].get_position(), 20.0) {
                     object_cols.push(((i, j), (normal, depth)));
-                }
+                }*/
             }
         }
 
         //go through the collisions vector and apply the collision to each pair of objects
-        for info in object_cols.into_iter() {
+        /*for info in object_cols.into_iter() {
             let transform_mut_a = self.objects[info.0.0].transform_mut();
             transform_mut_a.position = transform_mut_a.position + (info.1.0 * info.1.1 / 2.0);
 

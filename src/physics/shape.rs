@@ -1,3 +1,5 @@
+use sdl2::pixels::Color;
+
 use crate::engine::{Transform, Vector2};
 
 /// Represents a shape in 2D space.
@@ -21,6 +23,7 @@ pub enum Shape {
         transform_update_required: bool,
         /// The order of coordinates of the triangles that have to be drawn in order to display the rectangle
         triangles: [u8; 6],
+        color: Color
     },
     /// A circle with the specified radius.
     Circle { radius: f32 }
@@ -42,10 +45,10 @@ impl Shape {
 
         let triangles = [0, 1, 2, 0, 2, 3];
 
-        Shape::Rectangle { width, height, vertices, tranformed_vertices: vertices, transform_update_required: true, triangles }
+        Shape::Rectangle { width, height, vertices, tranformed_vertices: vertices, transform_update_required: true, triangles, color: Color::GREEN }
     }
 
-    pub fn get_transform_vertices(&mut self, transform: &Transform) -> Option<[Vector2; 4]> {
+    pub fn update_transform_vertices(&mut self, transform: &Transform) -> Option<[Vector2; 4]> {
         match self {
             Shape::Rectangle { tranformed_vertices, transform_update_required, vertices, .. } => {
                 if *transform_update_required {
@@ -56,6 +59,15 @@ impl Shape {
                 }
 
                 *transform_update_required = false;
+                Some(tranformed_vertices.clone())
+            },
+            _ => None,
+        }
+    }
+
+    pub fn get_transform_vertices(&self) -> Option<[Vector2; 4]> {
+        match self {
+            Shape::Rectangle { tranformed_vertices, .. } => {
                 Some(tranformed_vertices.clone())
             },
             _ => None,
@@ -96,10 +108,19 @@ impl Shape {
         }
     }
 
-    pub fn update_transformed_vertices(&mut self) {
+    pub fn need_to_update_transformed_vertices(&mut self) {
         match self {
             Shape::Rectangle { transform_update_required, .. } => {
                 *transform_update_required = true;
+            },
+            _ => {}
+        }
+    }
+
+    pub fn set_color(&mut self, new_color: Color) {
+        match self {
+            Shape::Rectangle { color, ..} => {
+                *color = new_color;
             },
             _ => {}
         }

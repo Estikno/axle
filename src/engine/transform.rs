@@ -53,6 +53,9 @@ impl Transform {
         }
     }
 
+    /// Checks if the transform has been changed since the call of the function.
+    ///
+    /// Returns `true` if the position, rotation, or scale has changed, and `false` otherwise.
     pub fn has_changed(&mut self) -> bool {
         let position_changed = self.position != self.old_position;
         let rotation_changed = self.rotation != self.old_rotation;

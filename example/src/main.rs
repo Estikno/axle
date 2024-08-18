@@ -23,7 +23,7 @@ fn main() {
         Vector2::one(),
         true
     );
-    //new_object.set_rigidbody();
+    new_object.set_rigidbody();
 
     let objects = vec![object_example::Rectangle::new(
         Vector2::new(50_f32, 50_f32),
@@ -77,7 +77,7 @@ fn main() {
     app.add_object(Box::new(new_object));
 
     for mut object in objects.into_iter() {
-        //object.set_rigidbody();
+        object.set_rigidbody();
         app.add_object(Box::new(object));
     }
         

@@ -87,8 +87,8 @@ impl Renderer {
             
             if object.transform_mut().has_changed() {
                 let shape = object.get_shape_mut();
-                shape.update_transformed_vertices();
-                shape.get_transform_vertices(&transform);
+                shape.need_to_update_transformed_vertices();
+                shape.update_transform_vertices(&transform);
             }
             
             let shape = object.get_shape();
@@ -98,7 +98,7 @@ impl Renderer {
                     // Render circle
                     self.canvas.filled_circle(position_adjusted.x as i16, position_adjusted.y as i16, radius.clone() as i16, Color::RED).unwrap_or_default();
                 },
-                Shape::Rectangle { width, height, tranformed_vertices, triangles, .. } => {
+                Shape::Rectangle { width, height, tranformed_vertices, triangles, color, .. } => {
                     // Render rectangle as two triangles to manage rotations
                     /*self.canvas.filled_trigon(
                         convert_vector_y(&tranformed_vertices[triangles[0] as usize]).x as i16, 
@@ -124,14 +124,14 @@ impl Renderer {
                         &convert_vector_y(&tranformed_vertices[triangles[0] as usize]), 
                         &convert_vector_y(&tranformed_vertices[triangles[1] as usize]), 
                         &convert_vector_y(&tranformed_vertices[triangles[2] as usize]), 
-                        Color::GREEN
+                        color.clone()
                     );
 
                     self.draw_triangle(
                         &convert_vector_y(&tranformed_vertices[triangles[3] as usize]), 
                         &convert_vector_y(&tranformed_vertices[triangles[4] as usize]), 
                         &convert_vector_y(&tranformed_vertices[triangles[5] as usize]), 
-                        Color::GREEN
+                        color.clone()
                     );
                 }
             }

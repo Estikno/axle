@@ -1,4 +1,4 @@
-use std::ops::{Add, Div, Mul, Sub};
+use std::{ops::{Add, Div, Mul, Sub}, vec};
 
 /// A 2-dimensional vector.
 ///
@@ -406,6 +406,41 @@ impl Vector2 {
         // Calculate the cross product of the two vectors and then take the arctangent of the result.
         // Convert the result to degrees.
         (Vector2::cross(from, to)).atan2(Vector2::dot(from, to)).to_degrees()
+    }
+
+    /// Projects a vector onto another vector.
+    ///
+    /// To understand vector projection, imagine that `on_normal` is
+    /// resting on a line pointing in its direction. Somewhere along that line will be the nearest point to the tip of `vector`.
+    /// The projection is just `on_normal` rescaled so that it reaches that point on the line.
+    ///
+    /// # Arguments
+    ///
+    /// * `vector` - The vector to be projected.
+    /// * `on_normal` - The vector to project onto.
+    ///
+    /// # Returns
+    ///
+    /// The vector projection of `vector` onto `on_normal`.
+    pub fn project(vector: &Vector2, on_normal: &Vector2) -> Vector2 {
+        // v' = (|v| * cos θ) * n
+        // n has to be normalized
+        // https://en.wikipedia.org/wiki/Vector_projection
+        on_normal.normalized() * Vector2::scalar_projection(vector, on_normal)
+    }
+
+    /// Calculates the scalar projection of a vector onto another vector.
+    ///
+    /// # Arguments
+    ///
+    /// * `vector` - The vector to be projected.
+    /// * `on_normal` - The vector to project onto.
+    ///
+    /// # Returns
+    ///
+    /// The scalar projection of `vector` onto `on_normal`.
+    pub fn scalar_projection(vector: &Vector2, on_normal: &Vector2) -> f32 {
+        Vector2::dot(vector, &on_normal.normalized())
     }
 }
 
