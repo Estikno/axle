@@ -4,5 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-axle2D = { path = "../" }
+axle = { path = "../" }
 #sdl2 = "0.37.0"

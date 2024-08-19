@@ -1,12 +1,12 @@
 use std::rc::Rc;
 
-use axle2D::application::App;
-use axle2D::config::{GlobalConfig, Resolution};
+use axle::application::App;
+use axle::config::{GlobalConfig, Resolution};
 
-use axle2D::engine::Vector2;
+use axle::engine::Vector2;
 
-use axle2D::engine::Keycode;
-use axle2D::engine::MouseButton;
+use axle::engine::Keycode;
+use axle::engine::MouseButton;
 
 //mods
 mod object_example;

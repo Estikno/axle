@@ -12,6 +12,9 @@ rust-version = "1.79.0"
 members = [
     "crates/*"
 ]
+exclude = [
+    "example"
+]
 
 [dependencies]
 anyhow = "1.0.86"

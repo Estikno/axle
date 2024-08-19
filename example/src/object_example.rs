@@ -1,11 +1,11 @@
 use std::f32::consts::PI;
 
-use axle2D::ecs::game_object::GameObject;
-use axle2D::engine::Keycode;
-use axle2D::engine::Vector2;
-use axle2D::engine::Transform;
-use axle2D::physics::rigid_body::RigidBody;
-use axle2D::physics::shape::Shape;
+use axle::ecs::game_object::GameObject;
+use axle::engine::Keycode;
+use axle::engine::Vector2;
+use axle::engine::Transform;
+use axle::physics::rigid_body::RigidBody;
+use axle::physics::shape::Shape;
 
 pub struct Rectangle {
     transform: Transform,
@@ -56,7 +56,7 @@ impl GameObject for Rectangle {
         &mut self.shape
     }
 
-    fn update(&mut self, delta_time: f32, input: &axle2D::engine::input::Input) {
+    fn update(&mut self, delta_time: f32, input: &axle::engine::input::Input) {
         //self.transform.rotation += PI / 40.0;
         //println!("{:?}", self.transform.right());
         self.transform.rotate(PI/20.0);
