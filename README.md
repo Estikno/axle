@@ -7,7 +7,7 @@
     <img src="images/logo.png" alt="Logo" width="80" height="80">
   </a>-->
 
-  <h1 align="center">Axle 2D</h1>
+  <h1 align="center">Axle</h1>
 
   <p align="center">
     A simple lightweight 2D game engine written in Rust
