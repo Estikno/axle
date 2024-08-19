@@ -1,7 +1,6 @@
 use std::rc::Rc;
 use std::time::Instant;
 
-use sdl2::hint::set;
 use sdl2::pixels::Color;
 
 use crate::config::GlobalConfig;

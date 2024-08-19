@@ -139,7 +139,7 @@ impl Transform {
         // Calculate the direction from the current position to the target's position.
         let direction_normalized = (target.position - self.position).normalized();
         // Calculate the angle between the current rotation's red axis and the direction.
-        let angle_radians = Vector2::signed_angle(&Vector2::right(), &direction_normalized).to_radians();
+        let angle_radians = Vector2::signed_angle(&Vector2::right(), &direction_normalized);
         // Set the rotation of the transform to the calculated angle.
         self.rotation = angle_radians;
     }
@@ -154,21 +154,21 @@ impl Transform {
         // Calculate the direction from the current position to the target position.
         let direction_normalized = (target.clone() - self.position).normalized();
         // Calculate the angle between the current rotation's red axis and the direction.
-        let angle_radians = Vector2::signed_angle(&Vector2::right(), &direction_normalized).to_radians();
+        let angle_radians = Vector2::signed_angle(&Vector2::right(), &direction_normalized);
         // Set the rotation of the transform to the calculated angle.
         self.rotation = angle_radians;
     }
 
-    /// Rotates the transform by the given angle in degrees
+    /// Rotates the transform by the given angle in radians
     ///
     /// # Arguments
     ///
-    /// * `angle` - The angle to rotate by in degrees.
+    /// * `angle` - The angle to rotate by in radians.
     pub fn rotate(&mut self, angle: f32) {
-        self.rotation += angle.to_radians()
+        self.rotation += angle;
     }
 
-    /// Rotates the transform around a given point by the specified angle in degrees.
+    /// Rotates the transform around a given point by the specified angle in radians.
     ///
     /// # Arguments
     ///
@@ -187,8 +187,8 @@ impl Transform {
         // Rotate the transform's position around the given point.
         // The angle is calculated by adding the specified angle to the angle between the positive X-axis and the direction vector.
         self.position = Vector2::new(
-            point.x + radius * (angle + angle_between_zero).to_radians().cos(),
-            point.y + radius * (angle + angle_between_zero).to_radians().sin()
+            point.x + radius * (angle + angle_between_zero).cos(),
+            point.y + radius * (angle + angle_between_zero).sin()
         );
     }
 

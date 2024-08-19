@@ -1,4 +1,4 @@
-use std::{ops::{Add, Div, Mul, Sub}, vec};
+use std::ops::{Add, Div, Mul, Sub};
 
 /// A 2-dimensional vector.
 ///
@@ -180,6 +180,10 @@ impl Vector2 {
         // Calculate the magnitude of the vector.
         let magnitude = self.magnitude();
 
+        if magnitude == 0.0 {
+            panic!("Cannot normalize a vector with a magnitude of 0.");
+        }
+
         // Create a new vector with the same direction as the current vector, but with a magnitude of 1.
         Self {
             x: self.x / magnitude,
@@ -195,6 +199,10 @@ impl Vector2 {
     pub fn normalize(&mut self) {
         // Calculate the magnitude of the vector.
         let magnitude = self.magnitude();
+        
+        if magnitude == 0.0 {
+            panic!("Cannot normalize a vector with a magnitude of 0.");
+        }
 
         // Divide the x and y coordinates of the current vector by the magnitude.
         self.x /= magnitude;
@@ -212,7 +220,13 @@ impl Vector2 {
     /// This function panics if the current vector has a magnitude of 0.
     pub fn clamp_magnitude(&mut self, max_magnitude: f32) {
         // Calculate the factor by which the current vector needs to be multiplied to have a maximum magnitude.
-        let f = max_magnitude / self.magnitude();
+        let magnitude = self.magnitude();
+
+        if magnitude == 0.0 {
+            panic!("Cannot clamp a vector with a magnitude of 0.");
+        }
+
+        let f = max_magnitude / magnitude;
 
         // Multiply the x and y coordinates of the current vector by the factor.
         self.x *= f;
@@ -235,7 +249,7 @@ impl Vector2 {
 
 //static implementations
 impl Vector2 {
-    /// Calculates the angle in degrees between two vectors.
+    /// Calculates the angle in radians between two vectors.
     ///
     /// # Arguments
     ///
@@ -244,11 +258,11 @@ impl Vector2 {
     ///
     /// # Returns
     ///
-    /// The angle in degrees between the two vectors.
+    /// The angle in radians between the two vectors.
     pub fn angle(from: &Vector2, to: &Vector2) -> f32 {
         // Calculate the dot product of the two vectors divided by the product of their magnitudes.
-        // Then take the arccosine of the result and convert it to degrees.
-        (Vector2::dot(from, to)/(from.magnitude() * to.magnitude())).acos().to_degrees()
+        // Then take the arccosine of the result.
+        (Vector2::dot(from, to)/(from.magnitude() * to.magnitude())).acos()
     }
 
     /// Calculates the dot product of two vectors.
@@ -392,7 +406,7 @@ impl Vector2 {
         a.x * b.y - a.y * b.x
     }
 
-    /// Calculates the signed angle in degrees between two vectors.
+    /// Calculates the signed angle in radians between two vectors.
     ///
     /// # Arguments
     ///
@@ -401,11 +415,10 @@ impl Vector2 {
     ///
     /// # Returns
     ///
-    /// The signed angle in degrees between the two vectors.
+    /// The signed angle in radians between the two vectors.
     pub fn signed_angle(from: &Vector2, to: &Vector2) -> f32 {
         // Calculate the cross product of the two vectors and then take the arctangent of the result.
-        // Convert the result to degrees.
-        (Vector2::cross(from, to)).atan2(Vector2::dot(from, to)).to_degrees()
+        (Vector2::cross(from, to)).atan2(Vector2::dot(from, to))
     }
 
     /// Projects a vector onto another vector.
@@ -446,6 +459,8 @@ impl Vector2 {
 
 #[cfg(test)]
 mod tests {
+    use std::f32::consts::PI;
+
     use super::*;
     use assert_approx_eq::assert_approx_eq;
 
@@ -568,7 +583,7 @@ mod tests {
         let v1 = Vector2::new(1.0, 0.0);
         let v2 = Vector2::new(0.0, 1.0);
         let result = Vector2::angle(&v1, &v2);
-        assert_approx_eq!(result, 90.0, 1e-6);
+        assert_approx_eq!(result, PI/2.0, 1e-6);
     }
 
     #[test]
@@ -648,6 +663,6 @@ mod tests {
         let v1 = Vector2::new(1.0, 0.0);
         let v2 = Vector2::new(0.0, -1.0);
         let result = Vector2::signed_angle(&v1, &v2);
-        assert_approx_eq!(result, -90.0, 1e-6);
+        assert_approx_eq!(result, -PI/2.0, 1e-6);
     }
 }
