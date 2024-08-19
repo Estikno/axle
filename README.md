@@ -104,7 +104,7 @@ Now only excecute the following commands on a terminal inside the project to ins
 <!-- Crates library-->
 ### :triangular_flag_on_post: Crates
 
-Currently, there is no published library on crates.io for this project, as we are in the process of adding documentation. However, it will be available soon. In the meantime, you can try out Axle 2D locally. 
+Currently, there is no published library on crates.io for this project, as we are in the process of adding documentation. However, it will be available soon. In the meantime, you can try out Axle locally. 
 
 🙏I apologize for any inconvenience this may cause🙏
 
@@ -116,7 +116,7 @@ Currently, there is no published library on crates.io for this project, as we ar
 
 If you want the newest additions to the library, simply clone the repository and in your `cargo.toml` add the dependency by path instead of by name, which uses crates.io
 
-Example of a `cargo.toml` file with the Axle 2D dependency added by path
+Example of a `cargo.toml` file with the Axle dependency added by path
 ```
 [package]
 name = "example"
@@ -124,7 +124,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-axle2D = { path = "path/to/axle" }
+axle = { path = "path/to/axle" }
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
