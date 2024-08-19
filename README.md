@@ -143,7 +143,7 @@ Contributions are always welcome!-->
 <!-- License -->
 ## :warning: License
 
-Axle 2D is distributed under the [Apache License, Version 2.0][license-url].
+Axle is distributed under the [Apache License, Version 2.0][license-url].
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
