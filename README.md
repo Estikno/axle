@@ -124,7 +124,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-axle2D = { path = "path/to/axle2D" }
+axle2D = { path = "path/to/axle" }
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
