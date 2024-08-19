@@ -150,12 +150,12 @@ Axle 2D is distributed under the [Apache License, Version 2.0][license-url].
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[license-shield]: https://img.shields.io/github/license/Estikno/axle2d.svg?style=for-the-badge
-[license-url]: https://github.com/Estikno/axle2D/blob/main/LICENSE
-[last-commit-shield]: https://img.shields.io/github/last-commit/Estikno/axle2D.svg?style=for-the-badge
-[last-commit-url]: https://github.com/Estikno/axle2D/blob/main
-[total-commits-shield]: https://img.shields.io/github/commit-activity/t/Estikno/axle2D.svg?style=for-the-badge
-[total-commits-url]: https://github.com/Estikno/axle2D/commits/main/
+[license-shield]: https://img.shields.io/github/license/Estikno/axle.svg?style=for-the-badge
+[license-url]: https://github.com/Estikno/axle/blob/main/LICENSE
+[last-commit-shield]: https://img.shields.io/github/last-commit/Estikno/axle.svg?style=for-the-badge
+[last-commit-url]: https://github.com/Estikno/axle/blob/main
+[total-commits-shield]: https://img.shields.io/github/commit-activity/t/Estikno/axle.svg?style=for-the-badge
+[total-commits-url]: https://github.com/Estikno/axle/commits/main/
 [product-screenshot]: images/screenshot.png
 [blog-series]: https://estikno.github.io/tags/game-engine
 [Rust-shield]: https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white
