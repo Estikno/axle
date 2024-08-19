@@ -1,7 +1,17 @@
 [package]
-name = "axle2D"
-version = "0.1.0"
+name = "axle"
+version = "0.0.1"
 edition = "2021"
+categories = ["game-engines", "graphics", "gui", "rendering"]
+description = "A simple lightweight 2D game engine written in Rust"
+repository = "https://github.com/Estikno/axle2D"
+license = "Apache-2.0"
+rust-version = "1.79.0"
+
+[workspace]
+members = [
+    "crates/*"
+]
 
 [dependencies]
 anyhow = "1.0.86"
