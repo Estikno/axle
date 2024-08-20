@@ -24,6 +24,16 @@ fn get_resource_mutably() {
     assert_eq!(fps.0, 61);
 }
 
+#[test]
+fn delete_resource() {
+    let mut world = initialize_world();
+    world.delete_resource::<FpsResource>();
+
+    let deleted_resource = world.get_resource::<FpsResource>();
+
+    assert!(deleted_resource.is_none());
+}
+
 fn initialize_world() -> World {
     let mut world = World::new();
     world.add_resource(FpsResource(60));
