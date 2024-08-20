@@ -13,8 +13,13 @@ name = "axle"
 version = "0.0.1"
 dependencies = [
  "anyhow",
+ "axle_ecs",
  "sdl2",
 ]
+
+[[package]]
+name = "axle_ecs"
+version = "0.1.0"
 
 [[package]]
 name = "bitflags"

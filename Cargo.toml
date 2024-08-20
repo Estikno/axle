@@ -6,7 +6,7 @@ categories = ["game-engines", "graphics", "gui", "rendering"]
 description = "A simple lightweight 2D game engine written in Rust"
 repository = "https://github.com/Estikno/axle2D"
 license = "Apache-2.0"
-rust-version = "1.79.0"
+rust-version = "1.80.1"
 
 [workspace]
 members = [
@@ -18,6 +18,7 @@ exclude = [
 
 [dependencies]
 anyhow = "1.0.86"
+axle_ecs = { path = "crates/axle_ecs" }
 
 [dependencies.sdl2]
 features = ["image", "gfx"]
@@ -25,3 +26,7 @@ version = "0.37.0"
 
 [dev-dependencies]
 assert_approx_eq = "1.1.0"
+
+[[test]]
+name = "resources"
+path = "tests/ecs/resources.rs"
