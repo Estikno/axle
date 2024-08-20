@@ -435,7 +435,7 @@ impl Vector2 {
     /// # Returns
     ///
     /// The vector projection of `vector` onto `on_normal`.
-    pub fn project(vector: &Vector2, on_normal: &Vector2) -> Vector2 {
+    pub fn project(vector: &Vector2, on_normal: &Vector2) -> Self {
         // v' = (|v| * cos θ) * n
         // n has to be normalized
         // https://en.wikipedia.org/wiki/Vector_projection
@@ -558,10 +558,24 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
+    fn test_normalized_panic() {
+        let v = Vector2::new(0.0, 0.0);
+        let _ = v.normalized();
+    }
+
+    #[test]
     fn test_normalize() {
         let mut v = Vector2::new(3.0, 4.0);
         v.normalize();
         assert_approx_eq!(v.magnitude(), 1.0, 1e-6);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_normalize_panic() {
+        let mut v = Vector2::new(0.0, 0.0);
+        v.normalize();
     }
 
     #[test]
