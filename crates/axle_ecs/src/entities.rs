@@ -1,6 +1,7 @@
 use std::{any::{Any, TypeId}, cell::RefCell, collections::HashMap, rc::Rc};
-
 use eyre::{bail, Result};
+
+use crate::custom_errors::CustomErrors;
 
 #[derive(Debug, Default)]
 pub struct Entities {
@@ -25,12 +26,11 @@ impl Entities {
         if let Some(components) = self.components.get_mut(&type_id) {
             let last_component = components
                 .last_mut()
-                .ok_or_else(|| "Last component not loadable")
-                .unwrap();
+                .ok_or(CustomErrors::CreateComponentNeverCalled)?;
             *last_component = Some(Rc::new(RefCell::new(data)));
         }
         else {
-            bail!("Attempted to insert data for component that wasn't registered");
+            return Err(CustomErrors::ComponentNotRegistered.into());
         }
 
         Ok(self)
