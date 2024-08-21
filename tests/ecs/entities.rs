@@ -41,7 +41,8 @@ fn query_for_entities() -> Result<()> {
         .with_component(Location(44.0, 26.0))?
         .with_component(Size(12.0))?;
 
-    let query = world.query()
+    let query = world
+        .query()
         .with_component::<Location>()?
         .with_component::<Size>()?
         .run();
@@ -62,10 +63,12 @@ fn query_for_entities() -> Result<()> {
 
     let borrowed_second_location = locations[1].borrow();
     let second_location = borrowed_second_location.downcast_ref::<Location>().unwrap();
-    let borrowed_second_size = sizes[1].borrow();
-    let second_size = borrowed_second_size.downcast_ref::<Size>().unwrap();
+    let mut borrowed_second_size = sizes[1].borrow_mut();
+    let second_size = borrowed_second_size.downcast_mut::<Size>().unwrap();
+    
+    second_size.0 += 1.0;
 
-    assert_eq!(second_size.0, 12.0);
+    assert_eq!(second_size.0, 13.0);
     assert_eq!(second_location.0, 44.0);
 
     Ok(())
