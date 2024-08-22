@@ -47,8 +47,8 @@ fn query_for_entities() -> Result<()> {
         .with_component::<Size>()?
         .run();
 
-    let locations: &Vec<Rc<RefCell<dyn Any>>> = &query[0];
-    let sizes: &Vec<Rc<RefCell<dyn Any>>> = &query[1];
+    let locations: &Vec<Rc<RefCell<dyn Any>>> = &query.1[0];
+    let sizes: &Vec<Rc<RefCell<dyn Any>>> = &query.1[1];
 
     assert_eq!(locations.len(), sizes.len());
     assert_eq!(locations.len(), 2);
@@ -70,6 +70,52 @@ fn query_for_entities() -> Result<()> {
 
     assert_eq!(second_size.0, 13.0);
     assert_eq!(second_location.0, 44.0);
+
+    Ok(())
+}
+
+#[test]
+fn add_component_to_entity() -> Result<()> {
+    let mut world = World::new();
+
+    world.register_component::<Location>();
+    world.register_component::<Size>();
+
+    world.create_entity()
+        .with_component(Location(10.0, 11.0))?
+        .with_component(Size(10.0))?;
+
+    world.create_entity()
+        .with_component(Location(20.0, 21.0))?
+        .with_component(Size(20.0))?;
+
+    Ok(())
+}
+
+#[test]
+fn delete_component_from_entity() -> Result<()> {
+    let mut world = World::new();
+
+    world.register_component::<Location>();
+    world.register_component::<Size>();
+
+    world.create_entity()
+        .with_component(Location(10.0, 11.0))?
+        .with_component(Size(10.0))?;
+
+    world.create_entity()
+        .with_component(Location(20.0, 21.0))?
+        .with_component(Size(20.0))?;
+
+    world.delete_component_by_entity_id::<Location>(0)?;
+
+    let query = world.query()
+        .with_component::<Location>()?
+        .with_component::<Size>()?
+        .run();
+
+    assert_eq!(query.0.len(), 1);
+    assert_eq!(query.0[0], 1);
 
     Ok(())
 }
