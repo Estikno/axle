@@ -5,9 +5,12 @@ use crate::custom_errors::CustomErrors;
 
 pub mod query;
 
+pub type Component = Rc<RefCell<dyn Any + 'static>>;
+pub type Components = HashMap<TypeId, Vec<Option<Component>>>;
+
 #[derive(Debug, Default)]
 pub struct Entities {
-    components: HashMap<TypeId, Vec<Option<Rc<RefCell<dyn Any + 'static>>>>>,
+    components: Components,
     bit_masks: HashMap<TypeId, u32>,
     map: Vec<u32>,
     inserting_into_index: usize

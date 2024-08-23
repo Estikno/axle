@@ -1,9 +1,12 @@
-use std::{any::{Any, TypeId}, cell::RefCell, rc::Rc};
+use std::any::{Any, TypeId};
 use eyre::Result;
 
 use crate::custom_errors::CustomErrors;
-
+use crate::entities::Component;
 use super::Entities;
+
+pub type QueryIndexes = Vec<usize>;
+pub type QueryComponents = Vec<Vec<Component>>;
 
 #[derive(Debug)]
 pub struct Query<'a> {
@@ -30,7 +33,7 @@ impl<'a> Query<'a> {
         Ok(self)
     }
 
-    pub fn run(&self) -> (Vec<usize>, Vec<Vec<Rc<RefCell<dyn Any>>>>) {
+    pub fn run(&self) -> (QueryIndexes, QueryComponents) {
         let indexes: Vec<usize> = self.entities.map
             .iter()
             .enumerate()
@@ -63,8 +66,6 @@ impl<'a> Query<'a> {
 
 #[cfg(test)]
 mod tests {
-    use eyre::Context;
-
     use super::*;
 
     #[test]

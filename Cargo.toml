@@ -1,10 +1,11 @@
 [package]
-name = "axle"
-version = "0.0.1"
+name = "axle_engine"
+version = "0.1.0"
 edition = "2021"
 categories = ["game-engines", "graphics", "gui", "rendering"]
+keywords = ["game", "engine", "gamedev", "graphics", "axle_engine"]
 description = "A simple lightweight 2D game engine written in Rust"
-repository = "https://github.com/Estikno/axle2D"
+repository = "https://github.com/Estikno/axle"
 license = "Apache-2.0"
 rust-version = "1.80.1"
 
