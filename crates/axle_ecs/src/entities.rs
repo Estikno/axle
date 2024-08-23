@@ -4,6 +4,7 @@ use eyre::Result;
 use crate::custom_errors::CustomErrors;
 
 pub mod query;
+pub mod query_entity;
 
 pub type Component = Rc<RefCell<dyn Any + 'static>>;
 pub type Components = HashMap<TypeId, Vec<Option<Component>>>;

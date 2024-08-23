@@ -3,6 +3,7 @@ use eyre::Result;
 
 use crate::custom_errors::CustomErrors;
 use crate::entities::Component;
+use super::query_entity::QueryEntity;
 use super::Entities;
 
 pub type QueryIndexes = Vec<usize>;
@@ -62,10 +63,28 @@ impl<'a> Query<'a> {
 
         (indexes, result)
     }
+
+    pub fn run_entity(&self) -> Vec<QueryEntity> {
+        self.entities.map
+            .iter()
+            .enumerate()
+            .filter_map(|(index, entity_map)| {
+                if entity_map & self.map == self.map {
+                    Some(QueryEntity::new(index, self.entities))
+                }
+                else {
+                    None
+                }
+            })
+            .collect()
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::cell::{Ref, RefMut};
+
+    use crate::entities::query_entity::QueryEntity;
     use super::*;
 
     #[test]
@@ -141,6 +160,73 @@ mod tests {
 
         assert_eq!(indexes[0], 0);
         assert_eq!(indexes[1], 3);
+
+        Ok(())
+    }
+
+    #[test]
+    fn query_for_entity_ref() -> Result<()> {
+        let mut entitities = Entities::default();
+        entitities.register_component::<u32>();
+        entitities.register_component::<f32>();
+
+        entitities
+            .create_entity()
+            .with_component(100_u32)?;
+        entitities
+            .create_entity()
+            .with_component(10.0_f32)?;
+
+        let mut query = Query::new(&entitities);
+        let entitities: Vec<QueryEntity> = query
+            .with_component::<u32>()?
+            .run_entity();
+
+        assert_eq!(entitities.len(), 1);
+
+        for entity in entitities {
+            assert_eq!(entity.id, 0);
+            let health: Ref<u32> = entity.get_component::<u32>()?;
+            assert_eq!(*health, 100);
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn query_for_entity_mut() -> Result<()> {
+        let mut entitities = Entities::default();
+        entitities.register_component::<u32>();
+        entitities.register_component::<f32>();
+
+        entitities
+            .create_entity()
+            .with_component(100_u32)?;
+        entitities
+            .create_entity()
+            .with_component(10.0_f32)?;
+
+        let mut query = Query::new(&entitities);
+        let entitities: Vec<QueryEntity> = query
+            .with_component::<u32>()?
+            .run_entity();
+
+        assert_eq!(entitities.len(), 1);
+
+        for entity in entitities {
+            assert_eq!(entity.id, 0);
+            let mut health: RefMut<u32> = entity.get_component_mut::<u32>()?;
+            assert_eq!(*health, 100);
+            *health += 1;
+        }
+
+        let entitities: Vec<QueryEntity> = query
+            .with_component::<u32>()?
+            .run_entity();
+        for entity in entitities {
+            let health: Ref<u32> = entity.get_component::<u32>()?;
+            assert_eq!(*health, 101);
+        }
 
         Ok(())
     }

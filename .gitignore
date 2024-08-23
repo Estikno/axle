@@ -1,3 +1,5 @@
 /target
+crates/*/target
 /example/target
 Cargo.lock
+/.vscode
