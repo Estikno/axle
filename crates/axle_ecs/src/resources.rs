@@ -1,11 +1,11 @@
 use std::{any::{Any, TypeId}, collections::HashMap};
 
 #[derive(Default)]
-pub struct Resource {
+pub struct Resources {
     data: HashMap<TypeId, Box<dyn Any>>
 }
 
-impl Resource {
+impl Resources {
     pub fn add(&mut self, data: impl Any) {
         let type_id = data.type_id();
         self.data.insert(type_id, Box::new(data));
@@ -84,8 +84,8 @@ mod tests {
         assert!(!resources.data.contains_key(&world_width_type_id));
     }
 
-    fn initialize_resource() -> Resource {
-        let mut resources = Resource::default();
+    fn initialize_resource() -> Resources {
+        let mut resources = Resources::default();
         let world_width = WorldWidth(100.0);
 
         resources.add(world_width);

@@ -2,12 +2,14 @@ use std::any::Any;
 use eyre::Result;
 
 use crate::entities::{query::Query, Entities};
-use crate::resource::Resource;
+use crate::resources::Resources;
+use crate::systems::Systems;
 
 #[derive(Default)]
 pub struct World {
-    resources: Resource,
-    entities: Entities
+    resources: Resources,
+    entities: Entities,
+    systems: Systems,
 }
 
 impl World {
