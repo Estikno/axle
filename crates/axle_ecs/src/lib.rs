@@ -9,3 +9,4 @@ pub mod systems;
 
 //re-exports
 pub use world::World;
+pub use custom_errors::CustomErrors;

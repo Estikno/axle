@@ -14,7 +14,8 @@ pub struct Entities {
     components: Components,
     bit_masks: HashMap<TypeId, u32>,
     map: Vec<u32>,
-    inserting_into_index: usize
+    inserting_into_index: usize,
+    map_systems: Vec<u32>,
 }
 
 impl Entities {
@@ -36,6 +37,7 @@ impl Entities {
 
             self.map.push(0);
             self.inserting_into_index = self.map.len() - 1;
+            self.map_systems.push(0);
         }
 
         self
@@ -57,6 +59,17 @@ impl Entities {
         else {
             return Err(CustomErrors::ComponentNotRegistered.into());
         }
+
+        Ok(self)
+    }
+
+    pub fn with_system(&mut self, system_mask: u32) -> Result<&mut Self> {
+        let index = self.inserting_into_index;
+
+        let system_map = self.map_systems
+            .get_mut(index)
+            .ok_or(CustomErrors::CreateComponentNeverCalled)?;
+        *system_map |= system_mask;
 
         Ok(self)
     }

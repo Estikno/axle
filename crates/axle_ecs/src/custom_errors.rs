@@ -10,6 +10,12 @@ pub enum CustomErrors {
     EntityDoesNotExist,
     #[error("Attempting to get component's data that doesn't exist")]
     ComponentDataDoesNotExist,
+    
     #[error("Attempting to downcast to the wrong type")]
     DowncastToWrongType,
+
+    #[error("Attempting to add a component to a system without calling the syste creation function first")]
+    CreateSystemNeverCalled,
+    #[error("Attempting to reference a system that doesn't exist")]
+    SystemDoesNotExist,
 }
