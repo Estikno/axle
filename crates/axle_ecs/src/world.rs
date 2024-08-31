@@ -160,6 +160,7 @@ impl World {
     /// ```
     /// use std::{any::Any, cell::RefCell, rc::Rc};
     /// use axle_ecs::World;
+    /// use axle_ecs::entities::query::{QueryIndexes, QueryComponents};
     /// 
     /// let mut world = World::new();
     /// world.register_component::<u32>();

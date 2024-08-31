@@ -18,4 +18,6 @@ pub enum CustomErrors {
     CreateSystemNeverCalled,
     #[error("Attempting to reference a system that doesn't exist")]
     SystemDoesNotExist,
+    #[error("Attempting to reference a component in a system that doesn't exist")]
+    ComponentInSystemDoesNotExist,
 }

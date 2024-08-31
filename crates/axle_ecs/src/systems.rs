@@ -11,14 +11,12 @@ pub type SystemComponents = Vec<TypeId>;
 pub struct Systems {
     funtions: Vec<SystemFunction>,
     components: Vec<SystemComponents>,
-    bit_masks: Vec<u32>,
     inserting_into_index: usize
 }
 
 impl Systems {
     pub fn create_system(&mut self, system: &'static dyn Fn(&Vec<QueryEntity>) -> Result<()>) -> &mut Self {
         self.inserting_into_index = self.funtions.len();
-        self.bit_masks.push(1 << self.bit_masks.len());
         self.funtions.push(system);
         self.components.push(vec![]);
 
@@ -36,8 +34,16 @@ impl Systems {
         Ok(self)
     }
 
-    pub fn get_bitmask(&self, index: usize) -> Option<u32> {
-        self.bit_masks.get(index).copied()
+    pub fn delete_component_by_system_id<T: Any>(&mut self, system_id: usize) -> Result<()> {
+        let type_id = TypeId::of::<T>();
+        let index = self.components[system_id]
+            .iter()
+            .position(|id| *id == type_id)
+            .ok_or(CustomErrors::ComponentInSystemDoesNotExist)?;
+
+        self.components[system_id].remove(index);
+
+        Ok(())
     }
 
     pub fn run_all(&self, entities: &Entities) -> Result<()> {
@@ -69,26 +75,27 @@ mod tests {
 
         assert_eq!(systems.funtions.len(), 1);
         assert_eq!(systems.components.len(), 1);
-        assert_eq!(systems.bit_masks[0], 1);
     }
 
     #[test]
-    fn create_system_with_component() -> Result<()> {
+    fn create_system_with_components() -> Result<()> {
         let mut systems = Systems::default();
         systems
             .create_system(&damage_health)
-            .with_component::<Health>()?;
+            .with_component::<Health>()?
+            .with_component::<Speed>()?;
 
         assert_eq!(systems.funtions.len(), 1);
         assert_eq!(systems.components.len(), 1);
+        assert_eq!(systems.components[0].len(), 2);
         assert_eq!(systems.components[0][0], TypeId::of::<Health>());
-        assert_eq!(systems.bit_masks[0], 1);
+        assert_eq!(systems.components[0][1], TypeId::of::<Speed>());
 
         Ok(())
     }
 
     #[test]
-    fn add_system_to_entity() -> Result<()> {
+    fn excecute_system_on_entity() -> Result<()> {
         let mut entities = Entities::default();
 
         entities.register_component::<Health>();
@@ -102,43 +109,121 @@ mod tests {
         entities
             .create_entity()
             .with_component(Health(100))?
-            .with_component(Speed(100))?
-            .with_system(systems.get_bitmask(0).unwrap())?;
-
-        assert_eq!(systems.bit_masks.len(), 1);
-        assert_eq!(systems.bit_masks[0], 1);
-        assert_eq!(systems.components[0].len(), 1);
-        assert_eq!(systems.components[0][0], TypeId::of::<Health>());
-
-        Ok(())
-    }
-
-    #[test]
-    fn excecute_system() -> Result<()> {
-        let mut entities = Entities::default();
-
-        entities.register_component::<Health>();
-        entities.register_component::<Speed>();
-
-        let mut systems = Systems::default();
-        systems
-            .create_system(&damage_health)
-            .with_component::<Health>()?;
-
-        entities
-            .create_entity()
-            .with_component(Health(100))?
-            .with_component(Speed(100))?
-            .with_system(systems.get_bitmask(0).unwrap())?;
+            .with_component(Speed(100))?;
 
         systems.run_all(&entities)?;
 
         let mut query = Query::new(&entities);
-        let entities_query = query
+        let query_result = query
             .with_component::<Health>()?
-            .run_entity();
+            .run();
 
-        assert_eq!(entities_query[0].get_component::<Health>()?.0, 90_u32);
+        let healths = &query_result.1[0];
+        let wrapped_health = healths[0].borrow();
+        let health = wrapped_health.downcast_ref::<Health>().unwrap();
+        
+        assert_eq!(health.0, 90_u32);
+
+        Ok(())
+    }
+
+    #[test]
+    fn excecute_multiples_systems_on_entities() -> Result<()> {
+        let mut entities = Entities::default();
+
+        entities.register_component::<Health>();
+        entities.register_component::<Speed>();
+
+        let mut systems = Systems::default();
+        systems
+            .create_system(&damage_health)
+            .with_component::<Health>()?;
+
+        systems
+            .create_system(&increase_speed)
+            .with_component::<Speed>()?;
+
+        entities
+            .create_entity()
+            .with_component(Health(100))?
+            .with_component(Speed(0))?;
+
+        entities
+            .create_entity()
+            .with_component(Speed(10))?;
+
+        entities
+            .create_entity()
+            .with_component(Health(200))?;
+
+        entities
+            .create_entity()
+            .with_component(Health(300))?;
+
+        systems.run_all(&entities)?;
+
+        // See health stats
+        let mut query = Query::new(&entities);
+        let query_result = query
+            .with_component::<Health>()?
+            .run();
+
+        let healths = &query_result.1[0];
+
+        let wrapped_first_health = healths[0].borrow();
+        let first_health = wrapped_first_health.downcast_ref::<Health>().unwrap();
+        assert_eq!(first_health.0, 90_u32);
+
+        let wrapped_second_health = healths[1].borrow();
+        let second_health = wrapped_second_health.downcast_ref::<Health>().unwrap();
+        assert_eq!(second_health.0, 190_u32);
+
+        let wrapped_third_health = healths[2].borrow();
+        let third_health = wrapped_third_health.downcast_ref::<Health>().unwrap();
+        assert_eq!(third_health.0, 290_u32);
+
+        // See speed stats
+        let mut query = Query::new(&entities);
+        let query_result = query
+            .with_component::<Speed>()?
+            .run();
+
+        let speeds = &query_result.1[0];
+
+        let wrapped_first_speed = speeds[0].borrow();
+        let first_speed = wrapped_first_speed.downcast_ref::<Speed>().unwrap();
+        assert_eq!(first_speed.0, 10_u32);
+
+        let wrapped_second_speed = speeds[1].borrow();
+        let second_speed = wrapped_second_speed.downcast_ref::<Speed>().unwrap();
+        assert_eq!(second_speed.0, 20_u32);
+
+        Ok(())
+    }
+
+    #[test]
+    fn delete_component_by_system_id() -> Result<()> {
+        let mut entities = Entities::default();
+
+        entities.register_component::<Health>();
+        entities.register_component::<Speed>();
+
+        let mut systems = Systems::default();
+        systems
+            .create_system(&damage_health)
+            .with_component::<Health>()?
+            .with_component::<Speed>()?;
+
+        entities
+            .create_entity()
+            .with_component(Health(100))?
+            .with_component(Speed(100))?;
+
+        // delete components
+        systems.delete_component_by_system_id::<Speed>(0)?;
+
+        assert_eq!(systems.components[0].len(), 1);
+        assert_eq!(systems.components[0][0], TypeId::of::<Health>());
 
         Ok(())
     }
@@ -147,6 +232,27 @@ mod tests {
         for entity in entities {
             let mut health_mut = entity.get_component_mut::<Health>()?;
             health_mut.0 -= 10;
+        }
+
+        Ok(())
+    }
+
+    fn increase_speed(entities: &Vec<QueryEntity>) -> Result<()> {
+        for entity in entities {
+            let mut speed_mut = entity.get_component_mut::<Speed>()?;
+            speed_mut.0 += 10;
+        }
+
+        Ok(())
+    }
+
+    fn both(entities: &Vec<QueryEntity>) -> Result<()> {
+        for entity in entities {
+            let mut health_mut = entity.get_component_mut::<Health>()?;
+            let mut speed_mut = entity.get_component_mut::<Speed>()?;
+
+            health_mut.0 -= 10;
+            speed_mut.0 += 10;
         }
 
         Ok(())
