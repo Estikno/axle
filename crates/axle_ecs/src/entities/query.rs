@@ -34,6 +34,18 @@ impl<'a> Query<'a> {
         Ok(self)
     }
 
+    pub fn with_component_by_type_id(&mut self, type_id: TypeId) -> Result<&mut Self> {
+        if let Some(bit_mask) = self.entities.get_bitmask(&type_id) {
+            self.map |= bit_mask;
+            self.type_ids.push(type_id);
+        }
+        else {
+            return Err(CustomErrors::ComponentNotRegistered.into());
+        }
+
+        Ok(self)
+    }
+
     pub fn run(&self) -> (QueryIndexes, QueryComponents) {
         let indexes: Vec<usize> = self.entities.map
             .iter()

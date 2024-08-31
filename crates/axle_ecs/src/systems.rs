@@ -41,16 +41,51 @@ impl Systems {
     }
 
     pub fn run_all(&self, entities: &Entities) -> Result<()> {
+        for index in 0..self.funtions.len() {
+            let mut query = Query::new(entities);
+            
+            let components = &self.components[index];
+            components.iter().for_each(|type_id|{
+                query.with_component_by_type_id(*type_id).unwrap();
+            });
+
+            (self.funtions[index])(&query.run_entity())?;
+        }
+
         Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::any::Any;
-
     use crate::entities::{query_entity::QueryEntity, Entities};
     use super::*;
+
+    #[test]
+    fn create_system() {
+        let mut systems = Systems::default();
+        systems
+            .create_system(&damage_health);
+
+        assert_eq!(systems.funtions.len(), 1);
+        assert_eq!(systems.components.len(), 1);
+        assert_eq!(systems.bit_masks[0], 1);
+    }
+
+    #[test]
+    fn create_system_with_component() -> Result<()> {
+        let mut systems = Systems::default();
+        systems
+            .create_system(&damage_health)
+            .with_component::<Health>()?;
+
+        assert_eq!(systems.funtions.len(), 1);
+        assert_eq!(systems.components.len(), 1);
+        assert_eq!(systems.components[0][0], TypeId::of::<Health>());
+        assert_eq!(systems.bit_masks[0], 1);
+
+        Ok(())
+    }
 
     #[test]
     fn add_system_to_entity() -> Result<()> {
@@ -78,6 +113,7 @@ mod tests {
         Ok(())
     }
 
+    #[test]
     fn excecute_system() -> Result<()> {
         let mut entities = Entities::default();
 
@@ -95,7 +131,7 @@ mod tests {
             .with_component(Speed(100))?
             .with_system(systems.get_bitmask(0).unwrap())?;
 
-        //systems.run_all(&entities)?;
+        systems.run_all(&entities)?;
 
         let mut query = Query::new(&entities);
         let entities_query = query

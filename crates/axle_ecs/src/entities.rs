@@ -78,6 +78,10 @@ impl Entities {
         self.bit_masks.get(type_id).copied()
     }
 
+    pub fn get_map(&self, entity_id: usize) -> Option<u32> {
+        self.map.get(entity_id).copied()
+    }
+
     pub fn delete_component_by_entity_id<T: Any>(&mut self, index: usize) -> Result<()> {
         let type_id = TypeId::of::<T>();
         let mask = if let Some(mask) = self.bit_masks.get(&type_id) {
