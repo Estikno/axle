@@ -46,6 +46,20 @@ impl Systems {
         Ok(())
     }
 
+    pub fn add_component_by_entity_id<T: Any>(&mut self, system_id: usize) -> Result<()> {
+        let type_id = TypeId::of::<T>();
+        self.components[system_id].push(type_id);
+
+        Ok(())
+    }
+
+    pub fn delete_system_by_id(&mut self, system_id: usize) -> Result<()> {
+        self.funtions.remove(system_id);
+        self.components.remove(system_id);
+
+        Ok(())
+    }
+
     pub fn run_all(&self, entities: &Entities) -> Result<()> {
         for index in 0..self.funtions.len() {
             let mut query = Query::new(entities);
@@ -203,27 +217,48 @@ mod tests {
 
     #[test]
     fn delete_component_by_system_id() -> Result<()> {
-        let mut entities = Entities::default();
-
-        entities.register_component::<Health>();
-        entities.register_component::<Speed>();
-
         let mut systems = Systems::default();
         systems
             .create_system(&damage_health)
             .with_component::<Health>()?
             .with_component::<Speed>()?;
 
-        entities
-            .create_entity()
-            .with_component(Health(100))?
-            .with_component(Speed(100))?;
-
         // delete components
         systems.delete_component_by_system_id::<Speed>(0)?;
 
         assert_eq!(systems.components[0].len(), 1);
         assert_eq!(systems.components[0][0], TypeId::of::<Health>());
+
+        Ok(())
+    }
+
+    #[test]
+    fn add_component_by_entity_id() -> Result<()> {
+        let mut systems = Systems::default();
+        systems
+            .create_system(&damage_health)
+            .with_component::<Health>()?;
+
+        systems.add_component_by_entity_id::<Speed>(0)?;
+
+        assert_eq!(systems.components[0].len(), 2);
+        assert_eq!(systems.components[0][0], TypeId::of::<Health>());
+        assert_eq!(systems.components[0][1], TypeId::of::<Speed>());
+
+        Ok(())
+    }
+
+    #[test]
+    fn delete_system_by_id() -> Result<()> {
+        let mut systems = Systems::default();
+        systems
+            .create_system(&damage_health)
+            .with_component::<Health>()?;
+
+        systems.delete_system_by_id(0)?;
+
+        assert_eq!(systems.components.len(), 0);
+        assert_eq!(systems.funtions.len(), 0);
 
         Ok(())
     }
