@@ -3,7 +3,7 @@ use eyre::Result;
 
 use crate::entities::{query::Query, Entities};
 use crate::resources::Resources;
-use crate::systems::Systems;
+use crate::systems::{SystemFunction, Systems};
 
 #[derive(Default)]
 pub struct World {
@@ -253,5 +253,25 @@ impl World {
     /// A result that contains nothing if succeeds or an error if it fails.
     pub fn delete_entity_by_id(&mut self, index: usize) -> Result<()> {
         self.entities.delete_entity_by_id(index)
+    }
+
+    pub fn create_system(&mut self, system: SystemFunction) -> &mut Systems {
+        self.systems.create_system(system)
+    }
+
+    pub fn delete_component_by_system_id<T: Any>(&mut self, index: usize) -> Result<()> {
+        self.systems.delete_component_by_system_id::<T>(index)
+    }
+
+    pub fn add_component_to_system_by_id<T: Any>(&mut self, index: usize) -> Result<()> {
+        self.systems.add_component_by_system_id::<T>(index)
+    }
+
+    pub fn delete_system_by_id(&mut self, index: usize) -> Result<()> {
+        self.systems.delete_system_by_id(index)
+    }
+
+    pub fn run_all_systems(&mut self) -> Result<()> {
+        self.systems.run_all(&self.entities)
     }
 }

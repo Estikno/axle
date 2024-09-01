@@ -15,7 +15,7 @@ pub struct Systems {
 }
 
 impl Systems {
-    pub fn create_system(&mut self, system: &'static dyn Fn(&Vec<QueryEntity>) -> Result<()>) -> &mut Self {
+    pub fn create_system(&mut self, system: SystemFunction) -> &mut Self {
         if let Some(index) = self.funtions.iter().position(|x| x.is_none()) {
             self.inserting_into_index = index;
             self.funtions[index] = Some(system);
@@ -53,7 +53,7 @@ impl Systems {
         Ok(())
     }
 
-    pub fn add_component_by_entity_id<T: Any>(&mut self, system_id: usize) -> Result<()> {
+    pub fn add_component_by_system_id<T: Any>(&mut self, system_id: usize) -> Result<()> {
         let type_id = TypeId::of::<T>();
         self.components[system_id].push(type_id);
 
@@ -233,8 +233,8 @@ mod tests {
         let mut systems = Systems::default();
         systems
             .create_system(&damage_health)
-            .with_component::<Health>()?
-            .with_component::<Speed>()?;
+            .with_component::<Speed>()?
+            .with_component::<Health>()?;
 
         // delete components
         systems.delete_component_by_system_id::<Speed>(0)?;
@@ -252,7 +252,7 @@ mod tests {
             .create_system(&damage_health)
             .with_component::<Health>()?;
 
-        systems.add_component_by_entity_id::<Speed>(0)?;
+        systems.add_component_by_system_id::<Speed>(0)?;
 
         assert_eq!(systems.components[0].len(), 2);
         assert_eq!(systems.components[0][0], TypeId::of::<Health>());

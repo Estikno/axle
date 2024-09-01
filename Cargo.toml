@@ -36,3 +36,7 @@ path = "tests/ecs/resources.rs"
 [[test]]
 name = "entities"
 path = "tests/ecs/entities.rs"
+
+[[test]]
+name = "systems"
+path = "tests/ecs/systems.rs"
