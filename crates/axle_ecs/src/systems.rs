@@ -9,16 +9,23 @@ pub type SystemComponents = Vec<TypeId>;
 
 #[derive(Default)]
 pub struct Systems {
-    funtions: Vec<SystemFunction>,
+    funtions: Vec<Option<SystemFunction>>,
     components: Vec<SystemComponents>,
     inserting_into_index: usize
 }
 
 impl Systems {
     pub fn create_system(&mut self, system: &'static dyn Fn(&Vec<QueryEntity>) -> Result<()>) -> &mut Self {
-        self.inserting_into_index = self.funtions.len();
-        self.funtions.push(system);
-        self.components.push(vec![]);
+        if let Some(index) = self.funtions.iter().position(|x| x.is_none()) {
+            self.inserting_into_index = index;
+            self.funtions[index] = Some(system);
+        }
+        else {
+            self.funtions.push(Some(system));
+            self.components.push(vec![]);
+            self.inserting_into_index = self.funtions.len() - 1;
+        }
+
 
         self
     }
@@ -54,22 +61,28 @@ impl Systems {
     }
 
     pub fn delete_system_by_id(&mut self, system_id: usize) -> Result<()> {
-        self.funtions.remove(system_id);
-        self.components.remove(system_id);
+        let function = self.funtions.get_mut(system_id).ok_or(CustomErrors::SystemDoesNotExist)?;
+        *function = None;
+
+        // clears the inside components vector
+        let components = self.components.get_mut(system_id).ok_or(CustomErrors::SystemDoesNotExist)?;
+        components.clear();
 
         Ok(())
     }
 
     pub fn run_all(&self, entities: &Entities) -> Result<()> {
         for index in 0..self.funtions.len() {
-            let mut query = Query::new(entities);
-            
-            let components = &self.components[index];
-            components.iter().for_each(|type_id|{
-                query.with_component_by_type_id(*type_id).unwrap();
-            });
-
-            (self.funtions[index])(&query.run_entity())?;
+            if let Some(function) = self.funtions[index] {
+                let mut query = Query::new(entities);
+                
+                let components = &self.components[index];
+                components.iter().for_each(|type_id|{
+                    query.with_component_by_type_id(*type_id).unwrap();
+                });
+    
+                (function)(&query.run_entity())?;
+            }
         }
 
         Ok(())
@@ -257,8 +270,83 @@ mod tests {
 
         systems.delete_system_by_id(0)?;
 
-        assert_eq!(systems.components.len(), 0);
-        assert_eq!(systems.funtions.len(), 0);
+        assert_eq!(systems.components.len(), 1);
+        assert_eq!(systems.funtions.len(), 1);
+        assert!(systems.funtions[0].is_none());
+
+        Ok(())
+    }
+
+    #[test]
+    fn created_systems_are_inserted_into_deleted_systems_columns() -> Result<()> {
+        let mut systems = Systems::default();
+        systems
+            .create_system(&damage_health)
+            .with_component::<Health>()?;
+
+        systems
+            .create_system(&increase_speed)
+            .with_component::<Speed>()?;
+
+        systems.delete_system_by_id(0)?;
+
+        systems
+            .create_system(&both)
+            .with_component::<Health>()?
+            .with_component::<Speed>()?;
+        
+        systems
+            .create_system(&damage_health)
+            .with_component::<Health>()?;
+
+        assert_eq!(systems.funtions.len(), 3);
+        assert_eq!(systems.components.len(), 3);
+
+        assert!(systems.funtions[0].is_some());
+        assert!(systems.funtions[1].is_some());
+        assert!(systems.funtions[2].is_some());
+
+        assert_eq!(systems.components[0].len(), 2);
+        assert_eq!(systems.components[0][0], TypeId::of::<Health>());
+        assert_eq!(systems.components[0][1], TypeId::of::<Speed>());
+
+        Ok(())
+    }
+
+    #[test]
+    fn should_happen_nothing_after_deleting_multiple_times_the_same_id() -> Result<()> {
+        let mut systems = Systems::default();
+        systems
+            .create_system(&damage_health)
+            .with_component::<Health>()?;
+
+        systems
+            .create_system(&increase_speed)
+            .with_component::<Speed>()?;
+
+        systems.delete_system_by_id(0)?;
+        systems.delete_system_by_id(0)?;
+        systems.delete_system_by_id(0)?;
+
+        systems
+            .create_system(&both)
+            .with_component::<Health>()?
+            .with_component::<Speed>()?;
+        
+        systems
+            .create_system(&damage_health)
+            .with_component::<Health>()?;
+
+        assert_eq!(systems.funtions.len(), 3);
+        assert_eq!(systems.components.len(), 3);
+
+        assert!(systems.funtions[0].is_some());
+        assert!(systems.funtions[1].is_some());
+        assert!(systems.funtions[2].is_some());
+
+        assert_eq!(systems.components[0].len(), 2);
+        assert_eq!(systems.components[0][0], TypeId::of::<Health>());
+        assert_eq!(systems.components[0][1], TypeId::of::<Speed>());
 
         Ok(())
     }
