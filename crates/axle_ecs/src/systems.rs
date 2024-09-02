@@ -15,6 +15,25 @@ pub struct Systems {
 }
 
 impl Systems {
+    /// Creates a new system and adds it to the data.
+    ///
+    /// # Arguments
+    ///
+    /// * `system` - The system function to add.
+    ///
+    /// # Returns
+    ///
+    /// A mutable reference to this struct.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use axle_ecs::entities::{query_entity::QueryEntity, Entities};
+    /// use axle_ecs::systems::Systems;
+    /// 
+    /// let mut systems = Systems::default();
+    /// systems.create_system(&|_: &Vec<QueryEntity>| Ok(()));
+    /// ```
     pub fn create_system(&mut self, system: SystemFunction) -> &mut Self {
         if let Some(index) = self.funtions.iter().position(|x| x.is_none()) {
             self.inserting_into_index = index;
@@ -30,6 +49,29 @@ impl Systems {
         self
     }
 
+    /// Add a component to a creating system.
+    /// The component will be added to the current system.
+    ///
+    /// # Arguments
+    ///
+    /// * `T` - The type of the component to add.
+    ///
+    /// # Returns
+    ///
+    /// A result containing a mutable reference to this struct.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use axle_ecs::entities::{query_entity::QueryEntity, Entities};
+    /// use axle_ecs::systems::Systems;
+    /// 
+    /// let mut systems = Systems::default();
+    /// systems
+    ///     .create_system(&|_: &Vec<QueryEntity>| Ok(()))
+    ///     .with_component::<u32>().unwrap()
+    ///     .with_component::<i32>().unwrap();
+    /// ```
     pub fn with_component<T: Any>(&mut self) -> Result<&mut Self> {
         let type_id = TypeId::of::<T>();
 
@@ -41,6 +83,31 @@ impl Systems {
         Ok(self)
     }
 
+    /// Deletes a component from a system by the given system id and component type.
+    ///
+    /// # Arguments
+    ///
+    /// * `system_id` - The id of the system to delete the component from.
+    /// * `T` - The type of the component to delete.
+    ///
+    /// # Returns
+    ///
+    /// A result that contains nothing if succeeds or an error if it fails.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use axle_ecs::entities::{query_entity::QueryEntity, Entities};
+    /// use axle_ecs::systems::Systems;
+    /// 
+    /// let mut systems = Systems::default();
+    /// systems
+    ///     .create_system(&|_: &Vec<QueryEntity>| Ok(()))
+    ///     .with_component::<i32>().unwrap()
+    ///     .with_component::<u32>().unwrap();
+    /// 
+    /// systems.delete_component_by_system_id::<i32>(0).unwrap();
+    /// ```
     pub fn delete_component_by_system_id<T: Any>(&mut self, system_id: usize) -> Result<()> {
         let type_id = TypeId::of::<T>();
         let index = self.components[system_id]
@@ -53,6 +120,30 @@ impl Systems {
         Ok(())
     }
 
+    /// Adds a component to a system by the given system id and component type.
+    ///
+    /// # Arguments
+    ///
+    /// * `system_id` - The id of the system to add the component to.
+    /// * `T` - The type of the component to add.
+    ///
+    /// # Returns
+    ///
+    /// A result that contains nothing if succeeds or an error if it fails.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use axle_ecs::entities::{query_entity::QueryEntity, Entities};
+    /// use axle_ecs::systems::Systems;
+    /// 
+    /// let mut systems = Systems::default();
+    /// systems
+    ///     .create_system(&|_: &Vec<QueryEntity>| Ok(()))
+    ///     .with_component::<i32>().unwrap();
+    /// 
+    /// systems.add_component_by_system_id::<u32>(0).unwrap();
+    /// ```
     pub fn add_component_by_system_id<T: Any>(&mut self, system_id: usize) -> Result<()> {
         let type_id = TypeId::of::<T>();
         self.components[system_id].push(type_id);
@@ -60,6 +151,29 @@ impl Systems {
         Ok(())
     }
 
+    /// Deletes a system by its id.
+    ///
+    /// # Arguments
+    ///
+    /// * `system_id` - The id of the system to delete.
+    ///
+    /// # Returns
+    ///
+    /// A result that contains nothing if succeeds or an error if it fails.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use axle_ecs::entities::{query_entity::QueryEntity, Entities};
+    /// use axle_ecs::systems::Systems;
+    /// 
+    /// let mut systems = Systems::default();
+    /// systems
+    ///     .create_system(&|_: &Vec<QueryEntity>| Ok(()))
+    ///     .with_component::<i32>().unwrap();
+    /// 
+    /// systems.delete_system_by_id(0).unwrap();
+    /// ```
     pub fn delete_system_by_id(&mut self, system_id: usize) -> Result<()> {
         let function = self.funtions.get_mut(system_id).ok_or(CustomErrors::SystemDoesNotExist)?;
         *function = None;
@@ -71,6 +185,39 @@ impl Systems {
         Ok(())
     }
 
+    /// Runs all the systems created.
+    ///
+    /// # Arguments
+    ///
+    /// * `entities` - A refence to the entities.
+    ///
+    /// # Returns
+    ///
+    /// A result that contains nothing if succeeds or an error if it fails.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use axle_ecs::entities::{query_entity::QueryEntity, Entities};
+    /// use axle_ecs::systems::Systems;
+    /// 
+    /// let mut entities = Entities::default();
+    /// 
+    /// entities.register_component::<u32>();
+    /// entities.register_component::<i32>();
+    /// 
+    /// let mut systems = Systems::default();
+    /// systems
+    ///     .create_system(&|_: &Vec<QueryEntity>| Ok(()))
+    ///     .with_component::<i32>().unwrap();
+    /// 
+    /// entities
+    ///     .create_entity()
+    ///     .with_component(100_i32).unwrap()
+    ///     .with_component(100_u32).unwrap();
+    /// 
+    /// systems.run_all(&entities).unwrap();
+    /// ```
     pub fn run_all(&self, entities: &Entities) -> Result<()> {
         for index in 0..self.funtions.len() {
             if let Some(function) = self.funtions[index] {
