@@ -13,6 +13,8 @@ pub struct World {
 }
 
 impl World {
+    /// Create a new, empty `World`.
+    /// This funtion is the equivalent of calling `World::default()`
     pub fn new() -> Self {
         Self::default()
     }
@@ -238,6 +240,31 @@ impl World {
     /// # Returns
     ///
     /// A result that contains nothing if succeeds or an error if it fails.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use axle_ecs::World;
+    /// 
+    /// let mut world = World::new();
+    /// world.register_component::<u32>();
+    /// world.register_component::<i32>();
+    /// 
+    /// world
+    ///     .create_entity()
+    ///     .with_component(10_u32).unwrap();
+    /// 
+    /// world.add_component_to_entity_by_id(10_i32, 0).unwrap();
+    /// 
+    /// let query = world
+    ///     .query()
+    ///     .with_component::<u32>().unwrap()
+    ///     .with_component::<i32>().unwrap()
+    ///     .run();
+    /// 
+    /// assert_eq!(query.0.len(), 1);
+    /// assert_eq!(query.1.len(), 2);
+    /// ```
     pub fn add_component_to_entity_by_id(&mut self, data: impl Any, index: usize) -> Result<()> {
         self.entities.add_component_by_entity_id(data, index)
     }
@@ -251,26 +278,137 @@ impl World {
     /// # Returns
     ///
     /// A result that contains nothing if succeeds or an error if it fails.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use axle_ecs::World;
+    /// 
+    /// let mut world = World::new();
+    /// world.register_component::<u32>();
+    /// 
+    /// world
+    ///     .create_entity()
+    ///     .with_component(100_u32).unwrap();
+    /// world
+    ///     .create_entity()
+    ///     .with_component(10_u32).unwrap();
+    /// 
+    /// world.delete_entity_by_id(0).unwrap();
+    /// 
+    /// let query = world
+    ///     .query()
+    ///     .with_component::<u32>().unwrap()
+    ///     .run();
+    /// 
+    /// assert_eq!(query.0.len(), 1);
+    /// ```
     pub fn delete_entity_by_id(&mut self, index: usize) -> Result<()> {
         self.entities.delete_entity_by_id(index)
     }
 
+    /// Creates a new system and adds it to the world.
+    ///
+    /// # Arguments
+    ///
+    /// * `system` - The system function to add.
+    ///
+    /// # Returns
+    ///
+    /// A mutable reference to the Systems struct.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use axle_ecs::{entities::query_entity::QueryEntity, World};
+    /// 
+    /// let mut world = World::new();
+    /// 
+    /// world.register_component::<u32>();
+    /// 
+    /// world.create_system(&|_: &Vec<QueryEntity>| Ok(()));
+    /// ```
     pub fn create_system(&mut self, system: SystemFunction) -> &mut Systems {
         self.systems.create_system(system)
     }
 
+    /// Deletes a component from a system by its id.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The id of the system to delete the component from.
+    ///
+    /// # Returns
+    ///
+    /// A result that contains nothing if succeeds or an error if it fails.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use axle_ecs::{entities::query_entity::QueryEntity, World};
+    /// 
+    /// let mut world = World::new();
+    /// world
+    ///     .create_system(&|_: &Vec<QueryEntity>| Ok(()))
+    ///     .with_component::<u32>().unwrap()
+    ///     .with_component::<i32>().unwrap();
+    /// 
+    /// world.delete_component_by_system_id::<u32>(0).unwrap();
+    /// ```
     pub fn delete_component_by_system_id<T: Any>(&mut self, index: usize) -> Result<()> {
         self.systems.delete_component_by_system_id::<T>(index)
     }
 
+    /// Adds a component to a system by its id.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The id of the system to add the component to.
+    ///
+    /// # Returns
+    ///
+    /// A result that contains nothing if succeeds or an error if it fails.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use axle_ecs::{entities::query_entity::QueryEntity, World};
+    /// 
+    /// let mut world = World::new();
+    /// 
+    /// world.create_system(&|_: &Vec<QueryEntity>| Ok(()));
+    /// 
+    /// world.add_component_to_system_by_id::<u32>(0).unwrap();
+    /// world.add_component_to_system_by_id::<i32>(0).unwrap();
+    /// ```
     pub fn add_component_to_system_by_id<T: Any>(&mut self, index: usize) -> Result<()> {
         self.systems.add_component_by_system_id::<T>(index)
     }
 
+    /// Deletes a system by its id.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The id of the system to delete.
+    ///
+    /// # Returns
+    ///
+    /// A result that contains nothing if succeeds or an error if it fails.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// 
+    /// ```
     pub fn delete_system_by_id(&mut self, index: usize) -> Result<()> {
         self.systems.delete_system_by_id(index)
     }
 
+    /// Runs all systems and updates the entities.
+    ///
+    /// # Returns
+    ///
+    /// A result that contains nothing if succeeds or an error if it fails.
     pub fn run_all_systems(&mut self) -> Result<()> {
         self.systems.run_all(&self.entities)
     }

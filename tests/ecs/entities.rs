@@ -121,6 +121,7 @@ fn add_component_to_entity() -> Result<()> {
         .run();
 
     assert_eq!(query.0.len(), 1);
+    assert_eq!(query.1.len(), 2);
 
     Ok(())
 }
