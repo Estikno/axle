@@ -398,7 +398,16 @@ impl World {
     /// # Example
     /// 
     /// ```
+    /// use axle_ecs::{entities::query_entity::QueryEntity, World};
     /// 
+    /// let mut world = World::new();
+    /// 
+    /// world
+    ///     .create_system(&|_: &Vec<QueryEntity>| Ok(()))
+    ///     .with_component::<u32>().unwrap()
+    ///     .with_component::<i32>().unwrap();
+    /// 
+    /// world.delete_system_by_id(0).unwrap();
     /// ```
     pub fn delete_system_by_id(&mut self, index: usize) -> Result<()> {
         self.systems.delete_system_by_id(index)
@@ -409,6 +418,25 @@ impl World {
     /// # Returns
     ///
     /// A result that contains nothing if succeeds or an error if it fails.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use axle_ecs::{entities::query_entity::QueryEntity, World};
+    /// 
+    /// let mut world = World::new();
+    /// 
+    /// world.register_component::<u32>();
+    /// world.register_component::<i32>();
+    /// 
+    /// world
+    ///     .create_system(&|_: &Vec<QueryEntity>| Ok(()))
+    ///     .with_component::<u32>().unwrap()
+    ///     .with_component::<i32>().unwrap();
+    /// 
+    /// world.run_all_systems().unwrap();
+    ///
+    /// ```
     pub fn run_all_systems(&mut self) -> Result<()> {
         self.systems.run_all(&self.entities)
     }
