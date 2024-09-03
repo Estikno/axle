@@ -1,17 +1,21 @@
 use std::any::{Any, TypeId};
 use eyre::Result;
 
-use crate::entities::{query::Query, query_entity::QueryEntity, Entities};
-use crate::CustomErrors;
+use crate::prelude::*;
+use crate::entities::{query::Query, Entities};
 
 pub type SystemFunction = &'static dyn Fn(&Vec<QueryEntity>) -> Result<()>;
 pub type SystemComponents = Vec<TypeId>;
 
+/// Stores all the systems in the ECS.
 #[derive(Default)]
 pub struct Systems {
-    funtions: Vec<Option<SystemFunction>>,
-    components: Vec<SystemComponents>,
-    inserting_into_index: usize
+    /// The system functions stored as a vector of options.
+    pub funtions: Vec<Option<SystemFunction>>,
+    /// The components each system has stored as a vector of vectors of type ids.
+    pub components: Vec<SystemComponents>,
+    /// The index of the system to add a component to.
+    pub inserting_into_index: usize,
 }
 
 impl Systems {

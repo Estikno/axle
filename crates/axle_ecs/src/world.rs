@@ -1,15 +1,20 @@
 use std::any::Any;
 use eyre::Result;
 
+use crate::prelude::*;
 use crate::entities::{query::Query, Entities};
 use crate::resources::Resources;
-use crate::systems::{SystemFunction, Systems};
+use crate::systems::Systems;
 
+/// The central hub of the ECS that stores all entities, systems, and resources.
 #[derive(Default)]
 pub struct World {
-    resources: Resources,
-    entities: Entities,
-    systems: Systems,
+    /// The resources of the world. Resources are shared data that can be accessed by all systems.
+    pub resources: Resources,
+    /// The entities of the world. Entities are objects that can have components attached to them.
+    pub entities: Entities,
+    /// The systems of the world. Systems are functions that can access the entities and resources.
+    pub systems: Systems,
 }
 
 impl World {

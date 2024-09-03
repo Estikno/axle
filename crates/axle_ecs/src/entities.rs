@@ -1,7 +1,7 @@
 use std::{any::{Any, TypeId}, cell::RefCell, collections::HashMap, rc::Rc};
 use eyre::Result;
 
-use crate::custom_errors::CustomErrors;
+use crate::prelude::*;
 
 pub mod query;
 pub mod query_entity;
@@ -9,11 +9,38 @@ pub mod query_entity;
 pub type Component = Rc<RefCell<dyn Any + 'static>>;
 pub type Components = HashMap<TypeId, Vec<Option<Component>>>;
 
+/// The main struct for storing and managing entities and their components.
 #[derive(Debug, Default)]
 pub struct Entities {
+    /// A hasmap containing the components for every entity.
+    ///
+    /// The type id is used to identify the type of the component, and the vector
+    /// contains the actual components.
+    /// 
+    /// For example, to get the the component `Health` of the second entity, it will be like this: `components.get(&TypeId::of::<Health>())[1]`
     components: Components,
+
+    /// The bitmasks of every component's registered type id
+    ///
+    /// The type id is used to identify the type of the component, and the bit
+    /// mask is used to identify which components are enabled for a given entity.
+    /// 
+    /// The bitmsk of every component is a bit shifted an adition than the previous component.
+    /// For example, the first component is `0001` and the second component is `0010`.
     bit_masks: HashMap<TypeId, u32>,
+
+    /// A vector of bit masks for every entity.
+    ///
+    /// The bit mask is used to store which components are enabled for a given
+    /// entity.
+    /// 
+    /// For example, if the entity has the first and third registered component, its map will be `101`.
     map: Vec<u32>,
+
+    /// The index of the entity that is being inserted into.
+    ///
+    /// This is used to keep track of which entity is being inserted into when
+    /// creating and inserting components in it.
     inserting_into_index: usize,
 }
 

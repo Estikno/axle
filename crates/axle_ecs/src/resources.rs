@@ -1,8 +1,11 @@
 use std::{any::{Any, TypeId}, collections::HashMap};
 
+/// A structure to store resources in the game world.
 #[derive(Default)]
 pub struct Resources {
-    data: HashMap<TypeId, Box<dyn Any>>
+    /// The hashmap of resources, where the key is the type id of the resource
+    /// and the value is the actual resource.
+    data: HashMap<TypeId, Box<dyn Any>>,
 }
 
 impl Resources {
