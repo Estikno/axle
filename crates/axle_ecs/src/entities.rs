@@ -18,6 +18,11 @@ pub struct Entities {
 }
 
 impl Entities {
+    /// Registers a component for later use in entities.
+    ///
+    /// # Arguments
+    /// 
+    /// * `T` - The type of the component to register.
     pub fn register_component<T: Any>(&mut self) {
         let type_id = TypeId::of::<T>();
 
@@ -25,6 +30,12 @@ impl Entities {
         self.bit_masks.insert(type_id, 1 << self.bit_masks.len());
     }
 
+    /// Creates a new entity and returns a mutable reference to the `Entities` struct
+    /// so that you can add components to it.
+    ///
+    /// # Returns
+    ///
+    /// A mutable reference to the Entities struct.
     pub fn create_entity(&mut self) -> &mut Self {
         if let Some((index, _)) = self.map.iter().enumerate().find(|(_index, mask)| **mask == 0) {
             self.inserting_into_index = index;
@@ -41,16 +52,32 @@ impl Entities {
         self
     }
 
+    /// Adds a component to the current entity.
+    ///
+    /// # Arguments
+    ///
+    /// * `data` - The component's data.
+    ///
+    /// # Returns
+    ///
+    /// A result that contains a mutable reference to the `Entities` struct if succeeds or an error if it fails.
+    ///
+    /// # Errors
+    ///
+    /// If the component was not registered, or if the `create_entity` function was not called before,
+    /// an error is returned.
     pub fn with_component(&mut self, data: impl Any) -> Result<&mut Self> {
         let type_id = data.type_id();
         let index = self.inserting_into_index;
         
+        // Check if the component was registered and if the create entity function was called before
         if let Some(components) = self.components.get_mut(&type_id) {
             let component = components
                 .get_mut(index)
-                .ok_or(CustomErrors::CreateComponentNeverCalled)?;
+                .ok_or(CustomErrors::CreateEntityNeverCalled)?;
             *component = Some(Rc::new(RefCell::new(data)));
 
+            // Add the component's bitmask to the entity's bitmask
             let bit_mask = self.bit_masks.get(&type_id).unwrap();
             self.map[index] |= *bit_mask;
         }
@@ -61,55 +88,127 @@ impl Entities {
         Ok(self)
     }
 
+    /// Gets the bitmask of a component type.
+    ///
+    /// # Arguments
+    ///
+    /// * `type_id` - The type id of the component type.
+    ///
+    /// # Returns
+    ///
+    /// The bitmask of the component type if it exists, otherwise `None`.
     pub fn get_bitmask(&self, type_id: &TypeId) -> Option<u32> {
         self.bit_masks.get(type_id).copied()
     }
 
+    /// Gets the bitmask of an entity.
+    ///
+    /// # Arguments
+    ///
+    /// * `entity_id` - The id of the entity.
+    ///
+    /// # Returns
+    ///
+    /// The bitmask of the entity if it exists, otherwise `None`.
     pub fn get_map(&self, entity_id: usize) -> Option<u32> {
         self.map.get(entity_id).copied()
     }
 
+    /// Deletes a component from an entity.
+    ///
+    /// # Arguments
+    ///
+    /// * `T` - The type of the component to delete.
+    /// * `index` - The id of the entity to delete the component from.
+    ///
+    /// # Returns
+    ///
+    /// A result that contains nothing if succeeds or an error if it fails.
     pub fn delete_component_by_entity_id<T: Any>(&mut self, index: usize) -> Result<()> {
         let type_id = TypeId::of::<T>();
-        let mask = if let Some(mask) = self.bit_masks.get(&type_id) {
-            mask
-        } else {
-            return Err(CustomErrors::ComponentNotRegistered.into());
+        let mask = match self.bit_masks.get(&type_id) {
+            Some(mask) => mask,
+            None => return Err(CustomErrors::ComponentNotRegistered.into()),
         };
 
+        // Check if the entity has the component
         if self.has_component(index, *mask) {
+            // Remove the component's bitmask from the entity's bitmask
             self.map[index] ^= *mask;
         }
 
         Ok(())
     }
 
+    /// Adds a component to an entity by the given id.
+    ///
+    /// # Arguments
+    ///
+    /// * `data` - The component's data.
+    /// * `index` - The id of the entity to add the component to.
+    ///
+    /// # Returns
+    ///
+    /// A result that contains nothing if succeeds or an error if it fails.
+    ///
+    /// # Errors
+    ///
+    /// If the component was not registered, or if the `create_entity` function was not called before,
+    /// an error is returned.
     pub fn add_component_by_entity_id(&mut self, data: impl Any, index: usize) -> Result<()> {
         let type_id = data.type_id();
-        let mask = if let Some(mask) = self.bit_masks.get(&type_id) {
-            mask
-        } else {
-            return Err(CustomErrors::ComponentNotRegistered.into());
+        let mask = match self.bit_masks.get(&type_id) {
+            Some(mask) => mask,
+            None => return Err(CustomErrors::ComponentNotRegistered.into()),
         };
+
+        // Add the component's bitmask to the entity's bitmask
         self.map[index] |= *mask;
 
         let components = self.components.get_mut(&type_id).unwrap();
+        // Add the component's data to the entity
         components[index] = Some(Rc::new(RefCell::new(data)));
 
         Ok(())
     }
 
+    /// Deletes an entity by its id.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The id of the entity to delete.
+    ///
+    /// # Returns
+    ///
+    /// A result that contains nothing if succeeds or an error if it fails.
+    ///
+    /// # Errors
+    ///
+    /// If the entity doesn't exist, an error is returned.
     pub fn delete_entity_by_id(&mut self, index: usize) -> Result<()> {
+        // Check if the entity exists
         if let Some(map) = self.map.get_mut(index) {
+            // Reset the entity's bitmask, effectively deleting it
             *map = 0;
         }
         else {
+            // If the entity doesn't exist, return an error
             return Err(CustomErrors::EntityDoesNotExist.into());
         }
 
         Ok(())
     }
 
+    /// Checks if an entity has a component.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The id of the entity to check.
+    /// * `mask` - The bitmask of the component to check for.
+    ///
+    /// # Returns
+    ///
+    /// `true` if the entity has the component, `false` otherwise.
     fn has_component(&self, index: usize, mask: u32) -> bool {
         self.map[index] & mask == mask
     }
