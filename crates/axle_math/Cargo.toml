@@ -1,0 +1,9 @@
+[package]
+name = "axle_math"
+version = "0.1.0"
+edition = "2021"
+repository = "https://github.com/Estikno/axle"
+license = "Apache-2.0"
+rust-version = "1.80.1"
+
+[dependencies]

@@ -1,7 +1,6 @@
 
 
 //mods
-pub mod ecs;
 pub mod engine;
 pub mod application;
 pub mod view;

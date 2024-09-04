@@ -7,14 +7,12 @@ use crate::config::GlobalConfig;
 use crate::engine::Vector2;
 use crate::view::renderer::Renderer;
 use crate::engine::input::Input;
-use crate::ecs::game_object::GameObject;
 use crate::physics::collisions;
 
 pub struct App {
     pub config: Rc<GlobalConfig>,
     renderer: Renderer,
     pub input: Input,
-    pub objects: Vec<Box<dyn GameObject>>
 }
 
 impl App {
@@ -25,7 +23,6 @@ impl App {
             input: Input::new(&renderer.sdl_context),
             config,
             renderer,
-            objects: Vec::new()
         }
     }
 
@@ -41,7 +38,7 @@ impl App {
         let input_process = self.input.process_event();
 
         //collisions
-        let objects_len = self.objects.len();
+        /*let objects_len = self.objects.len();
         let mut object_cols: Vec<((usize, usize), (Vector2, f32))> = Vec::new();
 
         //reset color
@@ -70,7 +67,7 @@ impl App {
                     object_cols.push(((i, j), (normal, depth)));
                 }*/
             }
-        }
+        }*/
 
         //go through the collisions vector and apply the collision to each pair of objects
         /*for info in object_cols.into_iter() {
@@ -82,12 +79,12 @@ impl App {
         }*/
 
         //update
-        for object in &mut self.objects {
+        /*for object in &mut self.objects {
             object.update(1.0 / self.config.fps as f32, &self.input);
-        }
+        }*/
 
         //render
-        self.renderer.render(&mut self.objects);
+        //self.renderer.render(&mut self.objects);
         
         //return results
         (input_process, frame_start)
@@ -99,9 +96,5 @@ impl App {
         if frame_time < self.config.frame_delay {
             std::thread::sleep(self.config.frame_delay - frame_time);
         }
-    }
-
-    pub fn add_object(&mut self, object: Box<dyn GameObject>) {
-        self.objects.push(object);
     }
 }

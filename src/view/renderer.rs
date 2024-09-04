@@ -1,7 +1,6 @@
 use std::rc::Rc;
 
 use crate::config::GlobalConfig;
-use crate::ecs::game_object::GameObject;
 use crate::engine::Vector2;
 use crate::physics::shape::Shape;
 use crate::utils::coordinate::convert_vector_y;
@@ -74,7 +73,7 @@ impl Renderer {
     /// # Arguments
     ///
     /// * `objects` - The vector of game objects to render.
-    pub fn render(&mut self, objects: &mut Vec<Box<dyn GameObject>>) {
+    /*pub fn render(&mut self, objects: &mut Vec<Box<dyn GameObject>>) {
         // Background
         self.canvas.set_draw_color(self.background_color);
         self.canvas.clear();
@@ -139,7 +138,7 @@ impl Renderer {
 
         // Present the render
         self.canvas.present();
-    }
+    }*/
 
     fn draw_triangle(&mut self, pos_1: &Vector2, pos_2: &Vector2, pos_3: &Vector2, color: Color) {
         self.canvas.filled_trigon(
