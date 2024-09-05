@@ -21,6 +21,7 @@ exclude = [
 anyhow = "1.0.86"
 eyre = "0.6.12"
 axle_ecs = { path = "crates/axle_ecs" }
+axle_math = { path = "crates/axle_math" }
 
 [dependencies.sdl2]
 features = ["image", "gfx"]

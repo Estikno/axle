@@ -7,3 +7,6 @@ license = "Apache-2.0"
 rust-version = "1.80.1"
 
 [dependencies]
+
+[dev-dependencies]
+assert_approx_eq = "1.1.0"

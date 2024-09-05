@@ -1,4 +1,4 @@
-use crate::engine::Vector2;
+use axle_math::vector::Vector2;
 
 pub fn convert_point_y(y: f32) -> f32 {
     // !Arbitrary window height just to make sure the coordinate system is correct

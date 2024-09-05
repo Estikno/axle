@@ -1,6 +1,5 @@
 use core::f32;
-
-use crate::engine::Vector2;
+use axle_math::vector::Vector2;
 
 /// Calculates the intersection point between two circles if they intersect.
 ///

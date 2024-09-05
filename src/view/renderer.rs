@@ -1,7 +1,7 @@
 use std::rc::Rc;
+use axle_math::vector::Vector2;
 
 use crate::config::GlobalConfig;
-use crate::engine::Vector2;
 use crate::physics::shape::Shape;
 use crate::utils::coordinate::convert_vector_y;
 

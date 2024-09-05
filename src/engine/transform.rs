@@ -1,4 +1,4 @@
-use crate::engine::Vector2;
+use axle_math::vector::Vector2;
 
 /// Struct representing a 2D transformation
 ///

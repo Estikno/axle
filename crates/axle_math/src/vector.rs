@@ -55,6 +55,28 @@ impl Div<f32> for Vector2 {
     }
 }
 
+impl Mul<Vector2> for f32 {
+    type Output = Vector2;
+
+    fn mul(self, vector: Vector2) -> Self::Output {
+        Vector2 {
+            x: self * vector.x,
+            y: self * vector.y
+        }
+    }
+}
+
+impl Div<Vector2> for f32 {
+    type Output = Vector2;
+
+    fn div(self, vector: Vector2) -> Self::Output {
+        Vector2 {
+            x: self / vector.x,
+            y: self / vector.y
+        }
+    }
+}
+
 //basic implemetations
 impl Vector2 {
     /// Create a new `Vector2` with the given x and y coordinates.
@@ -291,7 +313,7 @@ impl Vector2 {
     /// The euclidean distance between the two vectors.
     pub fn distance(a: &Vector2, b: &Vector2) -> f32 {
         // Calculate the difference between the two vectors and then take its magnitude.
-        (a.clone()-b.clone()).magnitude()
+        (*a - *b).magnitude()
     }
 
     /// Performs a linear interpolation between two vectors.
@@ -324,7 +346,7 @@ impl Vector2 {
     /// The interpolated vector.
     pub fn lerp_unclamped(a: &Vector2, b: &Vector2, t: f32) -> Self {
         // Perform a linear interpolation between the two vectors using the interpolation factor.
-        a.clone() * (1_f32 - t) + b.clone() * t
+        (1_f32 - t) * (*a) + t * (*b)
     }
 
     /// Returns a new vector with the maximum values of the components of two vectors.
@@ -372,7 +394,7 @@ impl Vector2 {
     ///
     /// The reflected vector.
     pub fn reflect(in_direction: &Vector2, in_normal: &Vector2) -> Self {
-        in_direction.clone() - in_normal.clone() * 2_f32 * Vector2::dot(in_direction, in_normal)
+        *in_direction - *in_normal * 2_f32 * Vector2::dot(in_direction, in_normal)
     }
 
     /// Scales a vector by another vector component-wise.
@@ -492,6 +514,20 @@ mod tests {
         let v = Vector2::new(8.0, 4.0);
         let result = v / 2.0;
         assert_eq!(result, Vector2::new(4.0, 2.0));
+    }
+
+    #[test]
+    fn test_mul_inverted() {
+        let v = Vector2::new(2.0, 3.0);
+        let result = 2.0 * v;
+        assert_eq!(result, Vector2::new(4.0, 6.0));
+    }
+
+    #[test]
+    fn test_div_inverted() {
+        let v = Vector2::new(8.0, 4.0);
+        let result = 2.0 / v;
+        assert_eq!(result, Vector2::new(0.25, 0.5));
     }
 
     #[test]

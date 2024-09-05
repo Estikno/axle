@@ -4,7 +4,6 @@ use std::time::Instant;
 use sdl2::pixels::Color;
 
 use crate::config::GlobalConfig;
-use crate::engine::Vector2;
 use crate::view::renderer::Renderer;
 use crate::engine::input::Input;
 use crate::physics::collisions;

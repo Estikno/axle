@@ -1,8 +1,8 @@
-/// A rigid body is an object that does not deform when it moves.
-/// It is the simplest type of physics object in the engine.
-use crate::engine::Vector2;
+use axle_math::vector::Vector2;
 use crate::physics::shape::Shape;
 
+/// A rigid body is an object that does not deform when it moves.
+/// It is the simplest type of physics object in the engine.
 pub struct RigidBody {
     /// The linear velocity of the rigid body.
     pub linear_velocity: Vector2,

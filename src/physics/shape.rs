@@ -1,6 +1,7 @@
 use sdl2::pixels::Color;
+use axle_math::vector::Vector2;
 
-use crate::engine::{Transform, Vector2};
+use crate::engine::Transform;
 
 /// Represents a shape in 2D space.
 #[derive(Debug)]
