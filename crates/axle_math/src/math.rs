@@ -56,6 +56,10 @@ pub fn lerp(a: f32, b: f32, t: f32) -> f32 {
 
 /// Performs a linear interpolation between two floats in the range of 0 to 360.
 ///
+/// This method returns the shortest path between the specified angles. 
+/// This method wraps around values that are outside the range [-180, 180]. For example, LerpAngle(1.0f, 190.0f, 1.0f) returns -170.0f. 
+/// To find the longest path use Lerp.
+/// 
 /// # Arguments
 ///
 /// * `a` - The starting float

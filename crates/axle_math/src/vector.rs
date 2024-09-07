@@ -1,4 +1,7 @@
+use eyre::Result;
 use std::ops::{Add, Div, Mul, Sub};
+
+use crate::custom_errors::CustomErrors;
 
 /// A 2-dimensional vector.
 ///
@@ -8,7 +11,7 @@ pub struct Vector2 {
     /// The x-coordinate of the vector.
     pub x: f32,
     /// The y-coordinate of the vector.
-    pub y: f32
+    pub y: f32,
 }
 
 impl Add for Vector2 {
@@ -17,7 +20,7 @@ impl Add for Vector2 {
     fn add(self, rhs: Self) -> Self::Output {
         Self {
             x: self.x + rhs.x,
-            y: self.y + rhs.y
+            y: self.y + rhs.y,
         }
     }
 }
@@ -28,7 +31,7 @@ impl Sub for Vector2 {
     fn sub(self, rhs: Self) -> Self::Output {
         Self {
             x: self.x - rhs.x,
-            y: self.y - rhs.y
+            y: self.y - rhs.y,
         }
     }
 }
@@ -39,7 +42,7 @@ impl Mul<f32> for Vector2 {
     fn mul(self, scalar: f32) -> Self::Output {
         Self {
             x: self.x * scalar,
-            y: self.y * scalar
+            y: self.y * scalar,
         }
     }
 }
@@ -50,7 +53,7 @@ impl Div<f32> for Vector2 {
     fn div(self, scalar: f32) -> Self::Output {
         Self {
             x: self.x / scalar,
-            y: self.y / scalar
+            y: self.y / scalar,
         }
     }
 }
@@ -61,7 +64,7 @@ impl Mul<Vector2> for f32 {
     fn mul(self, vector: Vector2) -> Self::Output {
         Vector2 {
             x: self * vector.x,
-            y: self * vector.y
+            y: self * vector.y,
         }
     }
 }
@@ -72,7 +75,7 @@ impl Div<Vector2> for f32 {
     fn div(self, vector: Vector2) -> Self::Output {
         Vector2 {
             x: self / vector.x,
-            y: self / vector.y
+            y: self / vector.y,
         }
     }
 }
@@ -99,10 +102,7 @@ impl Vector2 {
     ///
     /// A `Vector2` with coordinates `(0.0, -1.0)`.
     pub fn down() -> Self {
-        Self {
-            x: 0.0,
-            y: -1.0
-        }
+        Self { x: 0.0, y: -1.0 }
     }
 
     /// Create a `Vector2` pointing leftwards.
@@ -111,10 +111,7 @@ impl Vector2 {
     ///
     /// A `Vector2` with coordinates `(-1.0, 0.0)`.
     pub fn left() -> Self {
-        Self {
-            x: -1.0,
-            y: 0.0
-        }
+        Self { x: -1.0, y: 0.0 }
     }
 
     /// Create a `Vector2` pointing rightwards.
@@ -123,10 +120,7 @@ impl Vector2 {
     ///
     /// A `Vector2` with coordinates `(1.0, 0.0)`.
     pub fn right() -> Self {
-        Self {
-            x: 1.0,
-            y: 0.0
-        }
+        Self { x: 1.0, y: 0.0 }
     }
 
     /// Create a `Vector2` pointing upwards.
@@ -135,10 +129,7 @@ impl Vector2 {
     ///
     /// A `Vector2` with coordinates `(0.0, 1.0)`.
     pub fn up() -> Self {
-        Self {
-            x: 0.0,
-            y: 1.0
-        }
+        Self { x: 0.0, y: 1.0 }
     }
 
     /// Create a `Vector2` with all coordinates set to zero.
@@ -147,10 +138,7 @@ impl Vector2 {
     ///
     /// A `Vector2` with coordinates `(0.0, 0.0)`.
     pub fn zero() -> Self {
-        Self {
-            x: 0.0,
-            y: 0.0
-        }
+        Self { x: 0.0, y: 0.0 }
     }
 
     /// Create a `Vector2` with all coordinates set to one.
@@ -159,10 +147,7 @@ impl Vector2 {
     ///
     /// A `Vector2` with coordinates `(1.0, 1.0)`.
     pub fn one() -> Self {
-        Self {
-            x: 1.0,
-            y: 1.0
-        }
+        Self { x: 1.0, y: 1.0 }
     }
 }
 
@@ -189,46 +174,63 @@ impl Vector2 {
         self.sqr_magnitude().sqrt()
     }
 
+    /// Returns the reciprocal of the magnitude of the vector.
+    ///
+    /// # Returns
+    ///
+    /// The reciprocal of the magnitude of the vector.
+    ///
+    /// # Panics
+    ///
+    /// This function panics if the current vector has a magnitude of 0.
+    pub fn magnitude_recip(&self) -> f32 {
+        1.0 / self.magnitude()
+    }
+
     /// Returns a new vector with the same direction as the current vector, but with a magnitude of 1.
     ///
     /// # Returns
     ///
     /// A new vector with a magnitude of 1.
-    /// 
+    ///
     /// # Panics
     ///
     /// This function panics if the current vector has a magnitude of 0.
     pub fn normalized(&self) -> Self {
-        // Calculate the magnitude of the vector.
-        let magnitude = self.magnitude();
-
-        if magnitude == 0.0 {
-            panic!("Cannot normalize a vector with a magnitude of 0.");
-        }
-
-        // Create a new vector with the same direction as the current vector, but with a magnitude of 1.
-        Self {
-            x: self.x / magnitude,
-            y: self.y / magnitude
-        }
+        let mut result = *self;
+        result.normalize();
+        result
     }
 
     /// Modifies the current vector to have a magnitude of 1.
     ///
     /// # Panics
     ///
-    /// This function panics if the current vector has a magnitude of 0.
+    /// This function panics if the current vector has a magnitude of 0 or one of its components it's either infinite or NaN.
     pub fn normalize(&mut self) {
-        // Calculate the magnitude of the vector.
-        let magnitude = self.magnitude();
-        
-        if magnitude == 0.0 {
-            panic!("Cannot normalize a vector with a magnitude of 0.");
+        self.try_normalize().unwrap();
+    }
+
+    /// Same as `normalize` but returns a result with a `CustomErrors::CouldNotNormalize` error if it fails instead of panicking.
+    ///
+    /// # Errors
+    ///
+    /// If the current vector has a magnitude of 0 or one of its components it's either infinite or NaN, an error is returned.
+    ///
+    /// # Returns
+    ///
+    /// A result that contains nothing if succeeds or an error if it fails.
+    pub fn try_normalize(&mut self) -> Result<()> {
+        let recip = self.magnitude_recip();
+
+        // If the magnitude is 0, infinite or NaN, return an error
+        if recip.is_nan() || recip.is_infinite() || recip == 0.0 {
+            return Err(CustomErrors::CouldNotNormalize("x or y").into());
         }
 
-        // Divide the x and y coordinates of the current vector by the magnitude.
-        self.x /= magnitude;
-        self.y /= magnitude;
+        self.x *= recip;
+        self.y *= recip;
+        Ok(())
     }
 
     /// Modifies the current vector to have a maximum magnitude.
@@ -259,12 +261,12 @@ impl Vector2 {
     ///
     /// # Returns
     ///
-    /// A new vector that is perpendicular to the current vector. The 
+    /// A new vector that is perpendicular to the current vector. The
     /// result is always rotated 90-degrees in a counter-clockwise direction for a 2D coordinate system where the positive Y axis goes up.
     pub fn perpendicular(&self) -> Self {
         Self {
             x: -self.y,
-            y: self.x
+            y: self.x,
         }
     }
 }
@@ -284,7 +286,7 @@ impl Vector2 {
     pub fn angle(from: &Vector2, to: &Vector2) -> f32 {
         // Calculate the dot product of the two vectors divided by the product of their magnitudes.
         // Then take the arccosine of the result.
-        (Vector2::dot(from, to)/(from.magnitude() * to.magnitude())).acos()
+        (Vector2::dot(from, to) / (from.magnitude() * to.magnitude())).acos()
     }
 
     /// Calculates the dot product of two vectors.
@@ -362,7 +364,7 @@ impl Vector2 {
     pub fn max(lhs: &Vector2, rhs: &Vector2) -> Self {
         Self {
             x: lhs.x.max(rhs.x),
-            y: lhs.y.max(rhs.y)
+            y: lhs.y.max(rhs.y),
         }
     }
 
@@ -379,7 +381,7 @@ impl Vector2 {
     pub fn min(lhs: &Vector2, rhs: &Vector2) -> Self {
         Self {
             x: lhs.x.min(rhs.x),
-            y: lhs.y.min(rhs.y)
+            y: lhs.y.min(rhs.y),
         }
     }
 
@@ -410,7 +412,7 @@ impl Vector2 {
     pub fn scale(a: &Vector2, b: &Vector2) -> Self {
         Self {
             x: a.x * b.x,
-            y: a.y * b.y
+            y: a.y * b.y,
         }
     }
 
@@ -609,9 +611,23 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn test_normalize_panic() {
-        let mut v = Vector2::new(0.0, 0.0);
-        v.normalize();
+    fn normalize_zero_magnitude() {
+        let mut vector = Vector2::new(0.0, 0.0);
+        vector.normalize();
+    }
+
+    #[test]
+    #[should_panic]
+    fn normalize_infinity_magnitude() {
+        let mut vector = Vector2::new(f32::INFINITY, 0.0);
+        vector.normalize();
+    }
+
+    #[test]
+    #[should_panic]
+    fn normalize_nan_magnitude() {
+        let mut vector = Vector2::new(f32::NAN, 0.0);
+        vector.normalize();
     }
 
     #[test]
@@ -633,7 +649,7 @@ mod tests {
         let v1 = Vector2::new(1.0, 0.0);
         let v2 = Vector2::new(0.0, 1.0);
         let result = Vector2::angle(&v1, &v2);
-        assert_approx_eq!(result, PI/2.0, 1e-6);
+        assert_approx_eq!(result, PI / 2.0, 1e-6);
     }
 
     #[test]
@@ -713,6 +729,42 @@ mod tests {
         let v1 = Vector2::new(1.0, 0.0);
         let v2 = Vector2::new(0.0, -1.0);
         let result = Vector2::signed_angle(&v1, &v2);
-        assert_approx_eq!(result, -PI/2.0, 1e-6);
+        assert_approx_eq!(result, -PI / 2.0, 1e-6);
+    }
+
+    #[test]
+    fn test_magnitude_recip() {
+        let v = Vector2::new(3.0, 4.0);
+        let result = v.magnitude_recip();
+        assert_approx_eq!(result, 1.0 / 5.0, 1e-6);
+    }
+
+    #[test]
+    fn try_normalize_works() {
+        let mut v = Vector2::new(3.0, 4.0);
+        v.try_normalize().unwrap();
+        assert!(v.x == 0.6);
+        assert!(v.y == 0.8);
+    }
+
+    #[test]
+    fn try_normalize_zero_magnitude() {
+        let mut v = Vector2::new(0.0, 0.0);
+        let result = v.try_normalize();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn try_normalize_nan_magnitude() {
+        let mut v = Vector2::new(0.0, f32::NAN);
+        let result = v.try_normalize();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn try_normalize_infinite_magnitude() {
+        let mut v = Vector2::new(0.0, f32::INFINITY);
+        let result = v.try_normalize();
+        assert!(result.is_err());
     }
 }
