@@ -2,6 +2,7 @@ use eyre::Result;
 use std::ops::Mul;
 
 use crate::custom_errors::CustomErrors;
+use crate::math::lerp;
 use crate::vector::Vector2;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -248,6 +249,55 @@ impl Rot2 {
             sin: -self.sin,
         }
     }
+
+    /// Performs a linear interpolation between `self` and `rhs` based on
+    /// the value `s`, and normalizes the rotation afterwards.
+    ///
+    /// When `s == 0.0`, the result will be equal to `self`.
+    /// When `s == 1.0`, the result will be equal to `rhs`.
+    ///
+    /// This is slightly more efficient than [`slerp`](Self::slerp), and produces a similar result
+    /// when the difference between the two rotations is small. At larger differences,
+    /// the result resembles a kind of ease-in-out effect.
+    ///
+    /// If you would like the angular velocity to remain constant, consider using [`slerp`](Self::slerp) instead.
+    ///
+    /// # Details
+    ///
+    /// `nlerp` corresponds to computing an angle for a point at position `s` on a line drawn
+    /// between the endpoints of the arc formed by `self` and `rhs` on a unit circle,
+    /// and normalizing the result afterwards.
+    ///
+    /// Note that if the angles are opposite like 0 and π, the line will pass through the origin,
+    /// and the resulting angle will always be either `self` or `rhs` depending on `s`.
+    /// If `s` happens to be `0.5` in this case, a valid rotation cannot be computed, and `self`
+    /// will be returned as a fallback.
+    ///
+    pub fn nlerp(self, end: Self, s: f32) -> Self {
+        let mut result = Self {
+            sin: lerp(self.sin, end.sin, s),
+            cos: lerp(self.cos, end.cos, s),
+        };
+
+        match result.try_normalize() {
+            Ok(_) => result,
+            Err(_) => self,
+        }
+    }
+
+    /// Performs a spherical linear interpolation between `self` and `end`
+    /// based on the value `s`.
+    ///
+    /// This corresponds to interpolating between the two angles at a constant angular velocity.
+    ///
+    /// When `s == 0.0`, the result will be equal to `self`.
+    /// When `s == 1.0`, the result will be equal to `rhs`.
+    ///
+    /// If you would like the rotation to have a kind of ease-in-out effect, consider
+    /// using the slightly more efficient [`nlerp`](Self::nlerp) instead.
+    pub fn slerp(self, end: Self, s: f32) -> Self {
+        self * Self::radians(self.angle_between(end) * s)
+    }
 }
 
 #[cfg(test)]
@@ -329,5 +379,59 @@ mod tests {
         let mut rot = Rot2 { cos: 2.0, sin: 2.0 };
         rot.normalize();
         assert_approx_eq!(rot.magnitude(), 1.0, 1e-5);
+    }
+
+    #[test]
+    fn test_nlerp_zero_s() {
+        let rot1 = Rot2::FRAC_PI_4;
+        let rot2 = Rot2::FRAC_PI_2;
+        let result = rot1.nlerp(rot2, 0.0);
+        assert_approx_eq!(result.sin, rot1.sin, 1e-5);
+        assert_approx_eq!(result.cos, rot1.cos, 1e-5);
+    }
+
+    #[test]
+    fn test_nlerp_one_s() {
+        let rot1 = Rot2::FRAC_PI_4;
+        let rot2 = Rot2::FRAC_PI_2;
+        let result = rot1.nlerp(rot2, 1.0);
+        assert_approx_eq!(result.sin, rot2.sin, 1e-5);
+        assert_approx_eq!(result.cos, rot2.cos, 1e-5);
+    }
+
+    #[test]
+    fn test_nlerp_half_s() {
+        let rot1 = Rot2::FRAC_PI_4;
+        let rot2 = Rot2::FRAC_PI_2;
+        let result = rot1.nlerp(rot2, 0.5);
+        assert_approx_eq!(result.cos, 0.38268343, 1e-5);
+        assert_approx_eq!(result.sin, 0.9238795, 1e-5);
+    }
+
+    #[test]
+    fn test_slerp_zero_s() {
+        let rot1 = Rot2::FRAC_PI_4;
+        let rot2 = Rot2::FRAC_PI_2;
+        let result = rot1.slerp(rot2, 0.0);
+        assert_approx_eq!(result.sin, rot1.sin, 1e-5);
+        assert_approx_eq!(result.cos, rot1.cos, 1e-5);
+    }
+
+    #[test]
+    fn test_slerp_one_s() {
+        let rot1 = Rot2::FRAC_PI_4;
+        let rot2 = Rot2::FRAC_PI_2;
+        let result = rot1.slerp(rot2, 1.0);
+        assert_approx_eq!(result.sin, rot2.sin, 1e-5);
+        assert_approx_eq!(result.cos, rot2.cos, 1e-5);
+    }
+
+    #[test]
+    fn test_slerp_half_s() {
+        let rot1 = Rot2::FRAC_PI_4;
+        let rot2 = Rot2::FRAC_PI_2;
+        let result = rot1.slerp(rot2, 0.5);
+        assert_approx_eq!(result.cos, 0.38268342, 1e-5);
+        assert_approx_eq!(result.sin, 0.9238795, 1e-5);
     }
 }
