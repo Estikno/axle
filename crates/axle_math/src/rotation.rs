@@ -1,15 +1,14 @@
 use eyre::Result;
 use std::ops::Mul;
 
-use crate::vector::Vector2;
 use crate::custom_errors::CustomErrors;
+use crate::vector::Vector2;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Rot2 {
     pub cos: f32,
-    pub sin: f32
+    pub sin: f32,
 }
-
 
 impl Mul for Rot2 {
     type Output = Self;
@@ -28,7 +27,7 @@ impl Mul<Vector2> for Rot2 {
     fn mul(self, rhs: Vector2) -> Self::Output {
         Vector2::new(
             rhs.x * self.cos - rhs.y * self.sin,
-            rhs.x * self.sin + rhs.y * self.cos
+            rhs.x * self.sin + rhs.y * self.cos,
         )
     }
 }
@@ -37,7 +36,10 @@ impl Rot2 {
     /// No rotation.
     pub const IDENTITY: Self = Self { cos: 1.0, sin: 0.0 };
     /// A rotation of π radians.
-    pub const PI: Self = Self { cos: -1.0, sin: 0.0 };
+    pub const PI: Self = Self {
+        cos: -1.0,
+        sin: 0.0,
+    };
     /// A counterclockwise rotation of π/2 radians.
     pub const FRAC_PI_2: Self = Self { cos: 0.0, sin: 1.0 };
     /// A counterclockwise rotation of π/3 radians.
@@ -60,7 +62,7 @@ impl Rot2 {
         cos: 0.923_879_5,
         sin: 0.382_683_43,
     };
-    
+
     /// Create a new `Rot2` representing a counterclockwise rotation of `radians` radians.
     ///
     /// # Panics
@@ -86,8 +88,14 @@ impl Rot2 {
     ///
     /// If the given sine and cosine do not represent a valid rotation (i.e., they are not normalized).
     pub fn from_sin_cos(sine: f32, cosine: f32) -> Self {
-        let rot = Self { sin: sine, cos: cosine };
-        assert!(!rot.is_normalized(), "The given sine and cosine do not represent a valid rotation");
+        let rot = Self {
+            sin: sine,
+            cos: cosine,
+        };
+        assert!(
+            rot.is_normalized(),
+            "The given sine and cosine do not represent a valid rotation"
+        );
         rot
     }
 
@@ -239,5 +247,87 @@ impl Rot2 {
             cos: self.cos,
             sin: -self.sin,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use assert_approx_eq::assert_approx_eq;
+
+    #[test]
+    fn test_mul_rot2() {
+        let rot1 = Rot2::FRAC_PI_4;
+        let rot2 = Rot2::FRAC_PI_4;
+        let result = rot1 * rot2;
+        assert_approx_eq!(result.cos, 0.0, 1e-5);
+        assert_approx_eq!(result.sin, 1.0, 1e-5);
+    }
+
+    #[test]
+    fn test_mul_vector2() {
+        let rot = Rot2::FRAC_PI_4;
+        let vec = Vector2::new(1.0, 0.0);
+        let result = rot * vec;
+        assert_approx_eq!(result.x, 0.70710677, 1e-5);
+        assert_approx_eq!(result.y, 0.70710677, 1e-5);
+    }
+
+    #[test]
+    fn test_identity_rotation() {
+        let identity = Rot2::IDENTITY;
+        let vec = Vector2::new(1.0, 1.0);
+        let result = identity * vec;
+        assert_eq!(result, vec);
+    }
+
+    #[test]
+    fn test_inverse_rotation() {
+        let rot = Rot2::FRAC_PI_4;
+        let inverse = rot.inverse();
+        let result = rot * inverse;
+        assert_approx_eq!(result.cos, 1.0, 1e-5);
+        assert_approx_eq!(result.sin, 0.0, 1e-5);
+    }
+
+    #[test]
+    fn test_rotation_magnitude() {
+        let rot = Rot2::FRAC_PI_4;
+        assert_approx_eq!(rot.magnitude(), 1.0, 1e-5);
+    }
+
+    #[test]
+    #[should_panic(expected = "The given sine and cosine do not represent a valid rotation")]
+    fn test_invalid_from_sin_cos() {
+        Rot2::from_sin_cos(1.0, 1.0);
+    }
+
+    #[test]
+    fn test_angle_between() {
+        let rot1 = Rot2::FRAC_PI_4;
+        let rot2 = Rot2::FRAC_PI_2;
+        let angle = rot1.angle_between(rot2);
+        assert_approx_eq!(angle, std::f32::consts::FRAC_PI_4, 1e-5);
+    }
+
+    #[test]
+    fn test_radians_to_degrees() {
+        let rot = Rot2::FRAC_PI_4;
+        let degrees = rot.as_degrees();
+        assert_approx_eq!(degrees, 45.0, 1e-5);
+    }
+
+    #[test]
+    fn test_degrees_to_radians() {
+        let rot = Rot2::degrees(45.0);
+        let radians = rot.as_radians();
+        assert_approx_eq!(radians, std::f32::consts::FRAC_PI_4, 1e-5);
+    }
+
+    #[test]
+    fn test_normalize_rotation() {
+        let mut rot = Rot2 { cos: 2.0, sin: 2.0 };
+        rot.normalize();
+        assert_approx_eq!(rot.magnitude(), 1.0, 1e-5);
     }
 }
