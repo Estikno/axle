@@ -1,5 +1,5 @@
-use core::f32;
 use axle_math::vector::Vector2;
+use core::f32;
 
 /// Calculates the intersection point between two circles if they intersect.
 ///
@@ -13,7 +13,12 @@ use axle_math::vector::Vector2;
 /// # Returns
 ///
 /// If the circles intersect, returns the collision normal and depth as a tuple. Otherwise, returns None.
-pub fn intersect_circles(pos_a: Vector2, radius_a: f32, pos_b: Vector2, radius_b: f32) -> Option<(Vector2, f32)> {
+pub fn intersect_circles(
+    pos_a: Vector2,
+    radius_a: f32,
+    pos_b: Vector2,
+    radius_b: f32,
+) -> Option<(Vector2, f32)> {
     // Calculate the distance between the centers of the circles
     let distance = Vector2::distance(&pos_a, &pos_b);
 
@@ -92,3 +97,4 @@ pub fn intersect_polygons(vertices_a: &[Vector2], vertices_b: &[Vector2]) -> boo
 
     true
 }
+
