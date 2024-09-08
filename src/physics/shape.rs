@@ -1,21 +1,20 @@
-use sdl2::pixels::Color;
+use axle_math::transform::Transform;
 use axle_math::vector::Vector2;
-
-use crate::engine::Transform;
+use sdl2::pixels::Color;
 
 /// Represents a shape in 2D space.
 #[derive(Debug)]
 pub enum Shape {
     /// A rectangle with the specified width and height.
-    Rectangle { 
+    Rectangle {
         /// Width of the rectangle
-        width: f32, 
+        width: f32,
         /// Height of the rectangle
         height: f32,
         /// An array of vector2 representing the coordinates of the vertices. Rotation not aplied, for that get transformed_vertices variable.
         /// The order is: top-left, top-right, bottom-right, bottom-left.
         /// The coordinates are local with the central point of the system located at the center of the rectangle.
-        vertices: [Vector2; 4], 
+        vertices: [Vector2; 4],
         /// An array of vector2 representing the coordinates of the vertices in which rotation is applied
         /// The order is: top-left, top-right, bottom-right, bottom-left.
         /// The coordinates are global
@@ -24,10 +23,10 @@ pub enum Shape {
         transform_update_required: bool,
         /// The order of coordinates of the triangles that have to be drawn in order to display the rectangle
         triangles: [u8; 6],
-        color: Color
+        color: Color,
     },
     /// A circle with the specified radius.
-    Circle { radius: f32 }
+    Circle { radius: f32 },
 }
 
 impl Shape {
@@ -46,31 +45,46 @@ impl Shape {
 
         let triangles = [0, 1, 2, 0, 2, 3];
 
-        Shape::Rectangle { width, height, vertices, tranformed_vertices: vertices, transform_update_required: true, triangles, color: Color::GREEN }
+        Shape::Rectangle {
+            width,
+            height,
+            vertices,
+            tranformed_vertices: vertices,
+            transform_update_required: true,
+            triangles,
+            color: Color::GREEN,
+        }
     }
 
     pub fn update_transform_vertices(&mut self, transform: &Transform) -> Option<[Vector2; 4]> {
         match self {
-            Shape::Rectangle { tranformed_vertices, transform_update_required, vertices, .. } => {
+            Shape::Rectangle {
+                tranformed_vertices,
+                transform_update_required,
+                vertices,
+                ..
+            } => {
                 if *transform_update_required {
                     for i in 0..4 {
                         let v = vertices[i];
-                        tranformed_vertices[i] = transform.transform_point(&transform.transform_vector(&v));
+                        tranformed_vertices[i] =
+                            transform.transform_point(&transform.transform_vector(&v));
                     }
                 }
 
                 *transform_update_required = false;
                 Some(tranformed_vertices.clone())
-            },
+            }
             _ => None,
         }
     }
 
     pub fn get_transform_vertices(&self) -> Option<[Vector2; 4]> {
         match self {
-            Shape::Rectangle { tranformed_vertices, .. } => {
-                Some(tranformed_vertices.clone())
-            },
+            Shape::Rectangle {
+                tranformed_vertices,
+                ..
+            } => Some(tranformed_vertices.clone()),
             _ => None,
         }
     }
@@ -82,7 +96,7 @@ impl Shape {
     pub fn get_area(&self) -> f32 {
         match self {
             Shape::Rectangle { width, height, .. } => width * height,
-            Shape::Circle { radius } => std::f32::consts::PI * radius * radius
+            Shape::Circle { radius } => std::f32::consts::PI * radius * radius,
         }
     }
 
@@ -100,7 +114,7 @@ impl Shape {
     /// Returns the dimensions of the shape, if it is a rectangle.
     ///
     /// # Returns
-    /// 
+    ///
     /// The dimensions of the shape (width and height), or `None` if it is not a rectangle.
     pub fn get_dimensions(&self) -> Option<Vector2> {
         match self {
@@ -111,19 +125,23 @@ impl Shape {
 
     pub fn need_to_update_transformed_vertices(&mut self) {
         match self {
-            Shape::Rectangle { transform_update_required, .. } => {
+            Shape::Rectangle {
+                transform_update_required,
+                ..
+            } => {
                 *transform_update_required = true;
-            },
+            }
             _ => {}
         }
     }
 
     pub fn set_color(&mut self, new_color: Color) {
         match self {
-            Shape::Rectangle { color, ..} => {
+            Shape::Rectangle { color, .. } => {
                 *color = new_color;
-            },
+            }
             _ => {}
         }
     }
 }
+

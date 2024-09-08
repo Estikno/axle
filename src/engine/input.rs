@@ -16,7 +16,7 @@ pub enum ButtonState {
     /// The button is currently being held.
     Held,
     /// The button is not being pressed or held.
-    None
+    None,
 }
 
 /// Structure to handle input from the user.
@@ -26,7 +26,7 @@ pub struct Input {
     /// The state of all the keyboard keys.
     key_state: HashMap<Keycode, ButtonState>,
     /// The SDL event pump to get events from.
-    event_pump: EventPump
+    event_pump: EventPump,
 }
 
 impl Input {
@@ -35,7 +35,7 @@ impl Input {
         Input {
             mouse_button_state: HashMap::new(),
             key_state: HashMap::new(),
-            event_pump: sdl_context.event_pump().unwrap()
+            event_pump: sdl_context.event_pump().unwrap(),
         }
     }
 
@@ -46,7 +46,7 @@ impl Input {
             match *state {
                 ButtonState::Pressed => *state = ButtonState::Held,
                 ButtonState::Released => *state = ButtonState::None,
-                _ => {},
+                _ => {}
             }
         }
 
@@ -54,7 +54,7 @@ impl Input {
             match *state {
                 ButtonState::Pressed => *state = ButtonState::Held,
                 ButtonState::Released => *state = ButtonState::None,
-                _ => {},
+                _ => {}
             }
         }
     }
@@ -65,23 +65,32 @@ impl Input {
     pub fn process_event(&mut self) -> bool {
         for event in self.event_pump.poll_iter() {
             match event {
-                Event::Quit { .. } | 
-                Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
+                Event::Quit { .. }
+                | Event::KeyDown {
+                    keycode: Some(Keycode::Escape),
+                    ..
+                } => {
                     return true;
                 }
                 Event::MouseButtonDown { mouse_btn, .. } => {
-                    self.mouse_button_state.insert(mouse_btn, ButtonState::Pressed);
+                    self.mouse_button_state
+                        .insert(mouse_btn, ButtonState::Pressed);
                 }
                 Event::MouseButtonUp { mouse_btn, .. } => {
-                    self.mouse_button_state.insert(mouse_btn, ButtonState::Released);
+                    self.mouse_button_state
+                        .insert(mouse_btn, ButtonState::Released);
                 }
-                Event::KeyDown { keycode, repeat, .. } => {
+                Event::KeyDown {
+                    keycode, repeat, ..
+                } => {
                     if !repeat {
-                        self.key_state.insert(keycode.unwrap(), ButtonState::Pressed);
+                        self.key_state
+                            .insert(keycode.unwrap(), ButtonState::Pressed);
                     }
                 }
                 Event::KeyUp { keycode, .. } => {
-                    self.key_state.insert(keycode.unwrap(), ButtonState::Released);
+                    self.key_state
+                        .insert(keycode.unwrap(), ButtonState::Released);
                 }
                 _ => {}
             }

@@ -97,58 +97,22 @@ impl Vector2 {
     }
 
     /// Create a `Vector2` pointing downwards.
-    ///
-    /// # Returns
-    ///
-    /// A `Vector2` with coordinates `(0.0, -1.0)`.
-    pub fn down() -> Self {
-        Self { x: 0.0, y: -1.0 }
-    }
+    pub const DOWN: Self = Self { x: 0.0, y: -1.0 };
 
     /// Create a `Vector2` pointing leftwards.
-    ///
-    /// # Returns
-    ///
-    /// A `Vector2` with coordinates `(-1.0, 0.0)`.
-    pub fn left() -> Self {
-        Self { x: -1.0, y: 0.0 }
-    }
+    pub const LEFT: Self = Self { x: -1.0, y: 0.0 };
 
     /// Create a `Vector2` pointing rightwards.
-    ///
-    /// # Returns
-    ///
-    /// A `Vector2` with coordinates `(1.0, 0.0)`.
-    pub fn right() -> Self {
-        Self { x: 1.0, y: 0.0 }
-    }
+    pub const RIGHT: Self = Self { x: 1.0, y: 0.0 };
 
     /// Create a `Vector2` pointing upwards.
-    ///
-    /// # Returns
-    ///
-    /// A `Vector2` with coordinates `(0.0, 1.0)`.
-    pub fn up() -> Self {
-        Self { x: 0.0, y: 1.0 }
-    }
+    pub const UP: Self = Self { x: 0.0, y: 1.0 };
 
     /// Create a `Vector2` with all coordinates set to zero.
-    ///
-    /// # Returns
-    ///
-    /// A `Vector2` with coordinates `(0.0, 0.0)`.
-    pub fn zero() -> Self {
-        Self { x: 0.0, y: 0.0 }
-    }
+    pub const ZERO: Self = Self { x: 0.0, y: 0.0 };
 
     /// Create a `Vector2` with all coordinates set to one.
-    ///
-    /// # Returns
-    ///
-    /// A `Vector2` with coordinates `(1.0, 1.0)`.
-    pub fn one() -> Self {
-        Self { x: 1.0, y: 1.0 }
-    }
+    pub const ONE: Self = Self { x: 1.0, y: 1.0 };
 }
 
 //other more complex implementations
@@ -540,37 +504,37 @@ mod tests {
 
     #[test]
     fn test_down() {
-        let v = Vector2::down();
+        let v = Vector2::DOWN;
         assert_eq!(v, Vector2::new(0.0, -1.0));
     }
 
     #[test]
     fn test_left() {
-        let v = Vector2::left();
+        let v = Vector2::LEFT;
         assert_eq!(v, Vector2::new(-1.0, 0.0));
     }
 
     #[test]
     fn test_right() {
-        let v = Vector2::right();
+        let v = Vector2::RIGHT;
         assert_eq!(v, Vector2::new(1.0, 0.0));
     }
 
     #[test]
     fn test_up() {
-        let v = Vector2::up();
+        let v = Vector2::UP;
         assert_eq!(v, Vector2::new(0.0, 1.0));
     }
 
     #[test]
     fn test_zero() {
-        let v = Vector2::zero();
+        let v = Vector2::ZERO;
         assert_eq!(v, Vector2::new(0.0, 0.0));
     }
 
     #[test]
     fn test_one() {
-        let v = Vector2::one();
+        let v = Vector2::ONE;
         assert_eq!(v, Vector2::new(1.0, 1.0));
     }
 
