@@ -10,3 +10,7 @@ axle_ecs = { path = "../axle_ecs" }
 
 [dev-dependencies]
 assert_approx_eq = "1.1.0"
+
+[dependencies.sdl2]
+features = ["image", "gfx"]
+version = "0.37.0"
