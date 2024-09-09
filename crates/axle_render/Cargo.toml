@@ -1,0 +1,12 @@
+[package]
+name = "axle_render"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+eyre = "0.6.12"
+thiserror = "1.0.63"
+axle_ecs = { path = "../axle_ecs" }
+
+[dev-dependencies]
+assert_approx_eq = "1.1.0"
