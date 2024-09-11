@@ -10,18 +10,15 @@ license = "Apache-2.0"
 rust-version = "1.80.1"
 
 [workspace]
-members = [
-    "crates/*"
-]
-exclude = [
-    "example"
-]
+members = ["crates/*"]
+exclude = ["example"]
 
 [dependencies]
 anyhow = "1.0.86"
 eyre = "0.6.12"
 axle_ecs = { path = "crates/axle_ecs" }
 axle_math = { path = "crates/axle_math" }
+axle_render = { path = "crates/axle_render" }
 
 [dependencies.sdl2]
 features = ["image", "gfx"]
@@ -41,3 +38,4 @@ path = "tests/ecs/entities.rs"
 [[test]]
 name = "systems"
 path = "tests/ecs/systems.rs"
+

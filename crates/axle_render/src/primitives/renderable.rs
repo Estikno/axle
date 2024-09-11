@@ -19,17 +19,17 @@ pub trait Renderable {
     /// Gets the vertices of the renderable in local space not accounting the
     /// rotation of the renderable.
     ///
-    /// If the renderable does not have vertices, like an ellipse,
+    /// If the renderable does not have vertices, like an circle,
     /// circle, etc., returns `None`.
     fn get_vertices(&self) -> Option<Vec<Vector2>>;
 
-    /// Same as `get_vertices` but it accounts for rotation
+    /// Same as `get_vertices` but it accounts for rotation and global position
     fn get_transformed_vertices(&self) -> Option<Vec<Vector2>>;
 
     /// Positions the vertices of the renderable accounting the rotation
-    /// of the transform given.
+    /// and position of the transform given.
     ///
-    /// If the renderable does not have vertices, like an ellipse,
+    /// If the renderable does not have vertices, like a circle,
     /// this function does nothing.
     fn transform_vertices(&mut self, transform: &Transform);
 }
