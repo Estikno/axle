@@ -1,9 +1,13 @@
 use axle_ecs::World;
 use axle_math::{transform::Transform, vector::Vector2};
 
+// sdl2
+use sdl2::render::Canvas;
+use sdl2::video::Window;
+
 pub trait Renderable {
     /// Main render function to render
-    fn render(&self);
+    fn render(&self, canvas: &mut Canvas<Window>);
 
     /// Get the position of the renderable, specifically, its center
     fn get_position(&self) -> Vector2;
