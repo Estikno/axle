@@ -9,8 +9,8 @@ use crate::vector::Vector2;
 ///
 /// # Returns
 /// Converted y coordinate
-pub fn convert_point_y(y: f32, window_height: f32) -> f32 {
-    -y + window_height
+pub fn convert_point_y(y: f32, window_height: u32) -> f32 {
+    -y + (window_height as f32)
 }
 
 /// Same as `convert_point_y` but for `Vector2`
@@ -21,6 +21,6 @@ pub fn convert_point_y(y: f32, window_height: f32) -> f32 {
 ///
 /// # Returns
 /// Converted Vector2
-pub fn convert_vector_y(v: &Vector2, window_height: f32) -> Vector2 {
+pub fn convert_vector_y(v: &Vector2, window_height: u32) -> Vector2 {
     Vector2::new(v.x, convert_point_y(v.y, window_height))
 }
