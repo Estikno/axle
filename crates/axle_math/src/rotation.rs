@@ -93,7 +93,7 @@ impl Rot2 {
             sin: sine,
             cos: cosine,
         };
-        assert!(
+        debug_assert!(
             rot.is_normalized(),
             "The given sine and cosine do not represent a valid rotation"
         );

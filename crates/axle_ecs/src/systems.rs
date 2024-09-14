@@ -1,8 +1,9 @@
-use std::any::{Any, TypeId};
 use eyre::Result;
+use std::any::{Any, TypeId};
 
-use crate::prelude::*;
 use crate::entities::{query::Query, Entities};
+use crate::prelude::*;
+use crate::resources::Resources;
 
 pub type SystemFunction = &'static dyn Fn(&Vec<QueryEntity>) -> Result<()>;
 pub type SystemComponents = Vec<TypeId>;
@@ -11,11 +12,13 @@ pub type SystemComponents = Vec<TypeId>;
 #[derive(Default)]
 pub struct Systems {
     /// The system functions stored as a vector of options.
-    pub funtions: Vec<Option<SystemFunction>>,
+    funtions: Vec<Option<SystemFunction>>,
     /// The components each system has stored as a vector of vectors of type ids.
-    pub components: Vec<SystemComponents>,
+    components: Vec<SystemComponents>,
+    /// The resources each system has, stored as a vector of vectors of type ids.
+    resources: Vec<Vec<TypeId>>,
     /// The index of the system to add a component to.
-    pub inserting_into_index: usize,
+    inserting_into_index: usize,
 }
 
 impl Systems {
@@ -34,7 +37,7 @@ impl Systems {
     /// ```
     /// use axle_ecs::entities::{query_entity::QueryEntity, Entities};
     /// use axle_ecs::systems::Systems;
-    /// 
+    ///
     /// let mut systems = Systems::default();
     /// systems.create_system(&|_: &Vec<QueryEntity>| Ok(()));
     /// ```
@@ -42,13 +45,12 @@ impl Systems {
         if let Some(index) = self.funtions.iter().position(|x| x.is_none()) {
             self.inserting_into_index = index;
             self.funtions[index] = Some(system);
-        }
-        else {
+        } else {
             self.funtions.push(Some(system));
             self.components.push(vec![]);
+            self.resources.push(vec![]);
             self.inserting_into_index = self.funtions.len() - 1;
         }
-
 
         self
     }
@@ -69,7 +71,7 @@ impl Systems {
     /// ```
     /// use axle_ecs::entities::{query_entity::QueryEntity, Entities};
     /// use axle_ecs::systems::Systems;
-    /// 
+    ///
     /// let mut systems = Systems::default();
     /// systems
     ///     .create_system(&|_: &Vec<QueryEntity>| Ok(()))
@@ -79,10 +81,23 @@ impl Systems {
     pub fn with_component<T: Any>(&mut self) -> Result<&mut Self> {
         let type_id = TypeId::of::<T>();
 
-        let components = self.components
+        let components = self
+            .components
             .get_mut(self.inserting_into_index)
             .ok_or(CustomErrors::CreateSystemNeverCalled)?;
         components.push(type_id);
+
+        Ok(self)
+    }
+
+    pub fn with_resource<T: Any>(&mut self) -> Result<&mut Self> {
+        let type_id = TypeId::of::<T>();
+
+        let resources = self
+            .resources
+            .get_mut(self.inserting_into_index)
+            .ok_or(CustomErrors::CreateSystemNeverCalled)?;
+        resources.push(type_id);
 
         Ok(self)
     }
@@ -103,13 +118,13 @@ impl Systems {
     /// ```
     /// use axle_ecs::entities::{query_entity::QueryEntity, Entities};
     /// use axle_ecs::systems::Systems;
-    /// 
+    ///
     /// let mut systems = Systems::default();
     /// systems
     ///     .create_system(&|_: &Vec<QueryEntity>| Ok(()))
     ///     .with_component::<i32>().unwrap()
     ///     .with_component::<u32>().unwrap();
-    /// 
+    ///
     /// systems.delete_component_by_system_id::<i32>(0).unwrap();
     /// ```
     pub fn delete_component_by_system_id<T: Any>(&mut self, system_id: usize) -> Result<()> {
@@ -120,6 +135,18 @@ impl Systems {
             .ok_or(CustomErrors::ComponentInSystemDoesNotExist)?;
 
         self.components[system_id].remove(index);
+
+        Ok(())
+    }
+
+    pub fn delete_resource_by_system_id<T: Any>(&mut self, system_id: usize) -> Result<()> {
+        let type_id = TypeId::of::<T>();
+        let index = self.resources[system_id]
+            .iter()
+            .position(|id| *id == type_id)
+            .ok_or(CustomErrors::ResourceInSystemDoesNotExist)?;
+
+        self.resources[system_id].remove(index);
 
         Ok(())
     }
@@ -140,17 +167,34 @@ impl Systems {
     /// ```
     /// use axle_ecs::entities::{query_entity::QueryEntity, Entities};
     /// use axle_ecs::systems::Systems;
-    /// 
+    ///
     /// let mut systems = Systems::default();
     /// systems
     ///     .create_system(&|_: &Vec<QueryEntity>| Ok(()))
     ///     .with_component::<i32>().unwrap();
-    /// 
+    ///
     /// systems.add_component_by_system_id::<u32>(0).unwrap();
     /// ```
     pub fn add_component_by_system_id<T: Any>(&mut self, system_id: usize) -> Result<()> {
         let type_id = TypeId::of::<T>();
-        self.components[system_id].push(type_id);
+        let components = self
+            .components
+            .get_mut(system_id)
+            .ok_or(CustomErrors::SystemDoesNotExist)?;
+
+        components.push(type_id);
+
+        Ok(())
+    }
+
+    pub fn add_resource_by_system_id<T: Any>(&mut self, system_id: usize) -> Result<()> {
+        let type_id = TypeId::of::<T>();
+        let resources = self
+            .resources
+            .get_mut(system_id)
+            .ok_or(CustomErrors::SystemDoesNotExist)?;
+
+        resources.push(type_id);
 
         Ok(())
     }
@@ -170,21 +214,34 @@ impl Systems {
     /// ```
     /// use axle_ecs::entities::{query_entity::QueryEntity, Entities};
     /// use axle_ecs::systems::Systems;
-    /// 
+    ///
     /// let mut systems = Systems::default();
     /// systems
     ///     .create_system(&|_: &Vec<QueryEntity>| Ok(()))
     ///     .with_component::<i32>().unwrap();
-    /// 
+    ///
     /// systems.delete_system_by_id(0).unwrap();
     /// ```
     pub fn delete_system_by_id(&mut self, system_id: usize) -> Result<()> {
-        let function = self.funtions.get_mut(system_id).ok_or(CustomErrors::SystemDoesNotExist)?;
+        let function = self
+            .funtions
+            .get_mut(system_id)
+            .ok_or(CustomErrors::SystemDoesNotExist)?;
         *function = None;
 
         // clears the inside components vector
-        let components = self.components.get_mut(system_id).ok_or(CustomErrors::SystemDoesNotExist)?;
+        let components = self
+            .components
+            .get_mut(system_id)
+            .ok_or(CustomErrors::SystemDoesNotExist)?;
         components.clear();
+
+        // clears the inside resources vector
+        let resources = self
+            .resources
+            .get_mut(system_id)
+            .ok_or(CustomErrors::SystemDoesNotExist)?;
+        resources.clear();
 
         Ok(())
     }
@@ -204,34 +261,36 @@ impl Systems {
     /// ```
     /// use axle_ecs::entities::{query_entity::QueryEntity, Entities};
     /// use axle_ecs::systems::Systems;
-    /// 
+    /// use axle_ecs::resources::Resources;
+    ///
     /// let mut entities = Entities::default();
-    /// 
+    /// let mut resources = Resources::default();
+    ///
     /// entities.register_component::<u32>();
     /// entities.register_component::<i32>();
-    /// 
+    ///
     /// let mut systems = Systems::default();
     /// systems
     ///     .create_system(&|_: &Vec<QueryEntity>| Ok(()))
     ///     .with_component::<i32>().unwrap();
-    /// 
+    ///
     /// entities
     ///     .create_entity()
     ///     .with_component(100_i32).unwrap()
     ///     .with_component(100_u32).unwrap();
-    /// 
-    /// systems.run_all(&entities).unwrap();
+    ///
+    /// systems.run_all(&entities, &resources).unwrap();
     /// ```
-    pub fn run_all(&self, entities: &Entities) -> Result<()> {
+    pub fn run_all(&self, entities: &Entities, resources: &Resources) -> Result<()> {
         for index in 0..self.funtions.len() {
             if let Some(function) = self.funtions[index] {
                 let mut query = Query::new(entities);
-                
+
                 let components = &self.components[index];
-                components.iter().for_each(|type_id|{
+                components.iter().for_each(|type_id| {
                     query.with_component_by_type_id(*type_id).unwrap();
                 });
-    
+
                 (function)(&query.run_entity())?;
             }
         }
@@ -242,14 +301,14 @@ impl Systems {
 
 #[cfg(test)]
 mod tests {
-    use crate::entities::{query_entity::QueryEntity, Entities};
     use super::*;
+    use crate::entities::{query_entity::QueryEntity, Entities};
+    use crate::resources::Resources;
 
     #[test]
     fn create_system() {
         let mut systems = Systems::default();
-        systems
-            .create_system(&damage_health);
+        systems.create_system(&damage_health);
 
         assert_eq!(systems.funtions.len(), 1);
         assert_eq!(systems.components.len(), 1);
@@ -273,8 +332,26 @@ mod tests {
     }
 
     #[test]
+    fn create_system_with_resources() -> Result<()> {
+        let mut systems = Systems::default();
+
+        systems
+            .create_system(&damage_health)
+            .with_component::<Health>()?
+            .with_component::<Speed>()?
+            .with_resource::<Score>()?;
+
+        assert_eq!(systems.resources.len(), 1);
+        assert_eq!(systems.resources[0].len(), 1);
+        assert_eq!(systems.resources[0][0], TypeId::of::<Score>());
+
+        Ok(())
+    }
+
+    #[test]
     fn excecute_system_on_entity() -> Result<()> {
         let mut entities = Entities::default();
+        let resources = Resources::default();
 
         entities.register_component::<Health>();
         entities.register_component::<Speed>();
@@ -289,17 +366,15 @@ mod tests {
             .with_component(Health(100))?
             .with_component(Speed(100))?;
 
-        systems.run_all(&entities)?;
+        systems.run_all(&entities, &resources)?;
 
         let mut query = Query::new(&entities);
-        let query_result = query
-            .with_component::<Health>()?
-            .run();
+        let query_result = query.with_component::<Health>()?.run();
 
         let healths = &query_result.1[0];
         let wrapped_health = healths[0].borrow();
         let health = wrapped_health.downcast_ref::<Health>().unwrap();
-        
+
         assert_eq!(health.0, 90_u32);
 
         Ok(())
@@ -308,6 +383,7 @@ mod tests {
     #[test]
     fn excecute_multiples_systems_on_entities() -> Result<()> {
         let mut entities = Entities::default();
+        let resources = Resources::default();
 
         entities.register_component::<Health>();
         entities.register_component::<Speed>();
@@ -326,25 +402,17 @@ mod tests {
             .with_component(Health(100))?
             .with_component(Speed(0))?;
 
-        entities
-            .create_entity()
-            .with_component(Speed(10))?;
+        entities.create_entity().with_component(Speed(10))?;
 
-        entities
-            .create_entity()
-            .with_component(Health(200))?;
+        entities.create_entity().with_component(Health(200))?;
 
-        entities
-            .create_entity()
-            .with_component(Health(300))?;
+        entities.create_entity().with_component(Health(300))?;
 
-        systems.run_all(&entities)?;
+        systems.run_all(&entities, &resources)?;
 
         // See health stats
         let mut query = Query::new(&entities);
-        let query_result = query
-            .with_component::<Health>()?
-            .run();
+        let query_result = query.with_component::<Health>()?.run();
 
         let healths = &query_result.1[0];
 
@@ -362,9 +430,7 @@ mod tests {
 
         // See speed stats
         let mut query = Query::new(&entities);
-        let query_result = query
-            .with_component::<Speed>()?
-            .run();
+        let query_result = query.with_component::<Speed>()?.run();
 
         let speeds = &query_result.1[0];
 
@@ -397,6 +463,23 @@ mod tests {
     }
 
     #[test]
+    fn delete_resource_by_system_id() -> Result<()> {
+        let mut systems = Systems::default();
+        systems
+            .create_system(&damage_health)
+            .with_component::<Health>()?
+            .with_resource::<Score>()?
+            .with_resource::<Speed>()?;
+
+        systems.delete_resource_by_system_id::<Score>(0)?;
+
+        assert_eq!(systems.resources[0].len(), 1);
+        assert_eq!(systems.resources[0][0], TypeId::of::<Speed>());
+
+        Ok(())
+    }
+
+    #[test]
     fn add_component_by_entity_id() -> Result<()> {
         let mut systems = Systems::default();
         systems
@@ -408,6 +491,23 @@ mod tests {
         assert_eq!(systems.components[0].len(), 2);
         assert_eq!(systems.components[0][0], TypeId::of::<Health>());
         assert_eq!(systems.components[0][1], TypeId::of::<Speed>());
+
+        Ok(())
+    }
+
+    #[test]
+    fn add_resource_by_entity_id() -> Result<()> {
+        let mut systems = Systems::default();
+        systems
+            .create_system(&damage_health)
+            .with_component::<Health>()?
+            .with_resource::<Score>()?;
+
+        systems.add_resource_by_system_id::<Speed>(0)?;
+
+        assert_eq!(systems.resources[0].len(), 2);
+        assert_eq!(systems.resources[0][0], TypeId::of::<Score>());
+        assert_eq!(systems.resources[0][1], TypeId::of::<Speed>());
 
         Ok(())
     }
@@ -445,7 +545,7 @@ mod tests {
             .create_system(&both)
             .with_component::<Health>()?
             .with_component::<Speed>()?;
-        
+
         systems
             .create_system(&damage_health)
             .with_component::<Health>()?;
@@ -483,7 +583,7 @@ mod tests {
             .create_system(&both)
             .with_component::<Health>()?
             .with_component::<Speed>()?;
-        
+
         systems
             .create_system(&damage_health)
             .with_component::<Health>()?;
@@ -534,4 +634,5 @@ mod tests {
 
     struct Health(pub u32);
     struct Speed(pub u32);
+    struct Score(pub u32);
 }

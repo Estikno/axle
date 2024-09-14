@@ -1,15 +1,11 @@
 use std::rc::Rc;
 
 use axle::application::App;
-use axle::config::{GlobalConfig, Resolution};
 
 use axle::engine::Vector2;
 
 use axle::engine::Keycode;
 use axle::engine::MouseButton;
-
-//mods
-mod object_example;
 
 fn main() {
     let global_config = GlobalConfig::new(

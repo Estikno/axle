@@ -4,30 +4,26 @@ use std::time::Instant;
 use sdl2::pixels::Color;
 
 use crate::config::GlobalConfig;
-use crate::view::renderer::Renderer;
 use crate::engine::input::Input;
 use crate::physics::collisions;
+use crate::view::renderer::Renderer;
 
 pub struct App {
-    pub config: Rc<GlobalConfig>,
     renderer: Renderer,
     pub input: Input,
 }
 
 impl App {
-    pub fn new(config: Rc<GlobalConfig>) -> Self {
-        let renderer = Renderer::new(Rc::clone(&config));
+    pub fn new() -> Self {
+        let renderer = Renderer::new();
 
         Self {
             input: Input::new(&renderer.sdl_context),
-            config,
             renderer,
         }
     }
 
-    pub fn start(&self) {
-
-    }
+    pub fn start(&self) {}
 
     pub fn update(&mut self) -> (bool, Instant) {
         let frame_start = Instant::now();
@@ -44,7 +40,7 @@ impl App {
         for object in &mut self.objects {
             object.get_shape_mut().set_color(Color::GREEN);
         }
-        
+
         for i in 0..(objects_len - 1) {
             if let None = self.objects[i].get_rigidbody() {
                 continue;
@@ -61,7 +57,7 @@ impl App {
                 }
 
                 //circle collision
-                /*if let Some((normal, depth)) = 
+                /*if let Some((normal, depth)) =
                     collisions::intersect_circles(self.objects[i].get_position(), 20.0, self.objects[j].get_position(), 20.0) {
                     object_cols.push(((i, j), (normal, depth)));
                 }*/
@@ -84,7 +80,7 @@ impl App {
 
         //render
         //self.renderer.render(&mut self.objects);
-        
+
         //return results
         (input_process, frame_start)
     }

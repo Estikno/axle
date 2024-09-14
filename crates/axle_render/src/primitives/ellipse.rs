@@ -1,13 +1,12 @@
-use axle_ecs::World;
 use axle_math::coordinate_system::convert_vector_y;
 use axle_math::{transform::Transform, vector::Vector2};
 use std::f32::consts::PI;
 
-use crate::config::RenderConfig;
-use crate::custom_errors::CustomErrors;
+use super::triangle::Triangle;
 use crate::primitives::renderable::Renderable;
 
 // sdl2
+use sdl2::pixels::Color;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
 
@@ -25,16 +24,8 @@ impl Renderable for Ellipse {
         self.position
     }
 
-    fn get_converted_position(&self, world: &World) -> Vector2 {
-        convert_vector_y(
-            &self.position,
-            world
-                .get_resource::<RenderConfig>()
-                .ok_or(CustomErrors::RenderConfigNotRegistered)
-                .unwrap()
-                .resolution
-                .1,
-        )
+    fn get_converted_position(&self, window_height: u32) -> Vector2 {
+        convert_vector_y(&self.position, window_height)
     }
 
     fn get_vertices(&self) -> Option<Vec<Vector2>> {
@@ -51,9 +42,22 @@ impl Renderable for Ellipse {
         }
     }
 
-    fn render(&self, canvas: &mut Canvas<Window>) {
-        todo!()
+    fn render(&self, canvas: &mut Canvas<Window>, window_height: u32) {
+        let triangles = (0..self.vertices.len())
+            .map(|i| {
+                let mut triangle = Triangle::new(self.position, [Vector2::ZERO; 3], Color::RED);
+                // TODO: Set the vertices depending on the iterator
+                triangle.set_transform_vertices(self.get_transformed_vertices().unwrap());
+                triangle
+            })
+            .collect::<Vec<Triangle>>();
+
+        for tri in triangles {
+            tri.render(canvas, window_height);
+        }
     }
+
+    fn set_transform_vertices(&mut self, vertices: Vec<Vector2>) {}
 }
 
 impl Ellipse {
