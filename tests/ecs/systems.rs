@@ -1,6 +1,6 @@
 use eyre::Result;
 
-use axle_ecs::{entities::query_entity::QueryEntity, World};
+use axle_ecs::{entities::query_entity::QueryEntity, resources::Resources, World};
 
 #[test]
 fn create_system() -> Result<()> {
@@ -36,10 +36,8 @@ fn running_system() -> Result<()> {
 
     world.run_all_systems()?;
 
-    let query = world.query()
-        .with_component::<Location>()?
-        .run();
-    
+    let query = world.query().with_component::<Location>()?.run();
+
     let locations = &query.1[0];
     let wrapped_location = locations[0].borrow();
     let location = wrapped_location.downcast_ref::<Location>().unwrap();
@@ -62,9 +60,7 @@ fn delete_component_from_system() -> Result<()> {
         .with_component(Location(0.0, 10.0))?
         .with_component(Speed(10.0))?;
 
-    world
-        .create_entity()
-        .with_component(Speed(20.0))?;
+    world.create_entity().with_component(Speed(20.0))?;
 
     world
         .create_system(&update_speed)
@@ -75,10 +71,8 @@ fn delete_component_from_system() -> Result<()> {
 
     world.run_all_systems()?;
 
-    let query = world.query()
-        .with_component::<Speed>()?
-        .run();
-    
+    let query = world.query().with_component::<Speed>()?.run();
+
     let speeds = &query.1[0];
 
     let wrapped_first_speed = speeds[0].borrow();
@@ -104,24 +98,19 @@ fn add_component_to_system() -> Result<()> {
         .with_component(Location(0.0, 10.0))?
         .with_component(Speed(10.0))?;
 
-    world
-        .create_entity()
-        .with_component(Location(10.0, 10.0))?;
+    world.create_entity().with_component(Location(10.0, 10.0))?;
 
-    world
-        .create_system(&update_location);
+    world.create_system(&update_location);
 
     world.add_component_to_system_by_id::<Location>(0)?;
     world.add_component_to_system_by_id::<Speed>(0)?;
 
     world.run_all_systems()?;
 
-    let query = world.query()
-        .with_component::<Location>()?
-        .run();
-    
+    let query = world.query().with_component::<Location>()?.run();
+
     let locations = &query.1[0];
-    
+
     let wrapped_first_location = locations[0].borrow();
     let first_location = wrapped_first_location.downcast_ref::<Location>().unwrap();
     assert_eq!(first_location.0, 10.0);
@@ -147,9 +136,7 @@ fn delete_a_system() -> Result<()> {
         .with_component(Location(0.0, 10.0))?
         .with_component(Speed(10.0))?;
 
-    world
-        .create_entity()
-        .with_component(Speed(20.0))?;
+    world.create_entity().with_component(Speed(20.0))?;
 
     world
         .create_system(&update_speed)
@@ -158,10 +145,8 @@ fn delete_a_system() -> Result<()> {
     world.delete_system_by_id(0)?;
     world.run_all_systems()?;
 
-    let query = world.query()
-        .with_component::<Speed>()?
-        .run();
-    
+    let query = world.query().with_component::<Speed>()?.run();
+
     let speeds = &query.1[0];
 
     let wrapped_first_speed = speeds[0].borrow();
@@ -187,13 +172,9 @@ fn more_systems_at_the_same_time() -> Result<()> {
         .with_component(Location(0.0, 0.0))?
         .with_component(Speed(10.0))?;
 
-    world
-        .create_entity()
-        .with_component(Speed(20.0))?;
+    world.create_entity().with_component(Speed(20.0))?;
 
-    world
-        .create_entity()
-        .with_component(Location(20.0, 20.0))?;
+    world.create_entity().with_component(Location(20.0, 20.0))?;
 
     world
         .create_entity()
@@ -211,9 +192,7 @@ fn more_systems_at_the_same_time() -> Result<()> {
 
     world.run_all_systems()?;
 
-    let query = world.query()
-        .with_component::<Speed>()?
-        .run();
+    let query = world.query().with_component::<Speed>()?.run();
 
     let speeds = &query.1[0];
 
@@ -229,9 +208,7 @@ fn more_systems_at_the_same_time() -> Result<()> {
     let third_speed = wrapped_third_speed.downcast_ref::<Speed>().unwrap();
     assert_eq!(third_speed.0, 15.0);
 
-    let query = world.query()
-        .with_component::<Location>()?
-        .run();
+    let query = world.query().with_component::<Location>()?.run();
 
     let locations = &query.1[0];
 
@@ -253,7 +230,7 @@ fn more_systems_at_the_same_time() -> Result<()> {
     Ok(())
 }
 
-fn update_location(entities: &Vec<QueryEntity>) -> Result<()> {
+fn update_location(entities: &Vec<QueryEntity>, resources: &mut Resources) -> Result<()> {
     for entity in entities {
         let mut location = entity.get_component_mut::<Location>()?;
         let speed = entity.get_component::<Speed>()?;
@@ -265,7 +242,7 @@ fn update_location(entities: &Vec<QueryEntity>) -> Result<()> {
     Ok(())
 }
 
-fn update_speed(entities: &Vec<QueryEntity>) -> Result<()> {
+fn update_speed(entities: &Vec<QueryEntity>, resources: &mut Resources) -> Result<()> {
     for entity in entities {
         let mut speed = entity.get_component_mut::<Speed>()?;
         speed.0 += 10.0;
@@ -276,3 +253,4 @@ fn update_speed(entities: &Vec<QueryEntity>) -> Result<()> {
 
 struct Location(pub f32, pub f32);
 struct Speed(pub f32);
+

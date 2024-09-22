@@ -326,12 +326,13 @@ impl World {
     ///
     /// ```
     /// use axle_ecs::{entities::query_entity::QueryEntity, World};
+    /// use axle_ecs::resources::Resources;
     ///
     /// let mut world = World::new();
     ///
     /// world.register_component::<u32>();
     ///
-    /// world.create_system(&|_: &Vec<QueryEntity>| Ok(()));
+    /// world.create_system(&|_: &Vec<QueryEntity>, _: &mut Resources| Ok(()));
     /// ```
     pub fn create_system(&mut self, system: SystemFunction) -> &mut Systems {
         self.systems.create_system(system)
@@ -351,10 +352,11 @@ impl World {
     ///
     /// ```
     /// use axle_ecs::{entities::query_entity::QueryEntity, World};
+    /// use axle_ecs::resources::Resources;
     ///
     /// let mut world = World::new();
     /// world
-    ///     .create_system(&|_: &Vec<QueryEntity>| Ok(()))
+    ///     .create_system(&|_: &Vec<QueryEntity>, _: &mut Resources| Ok(()))
     ///     .with_component::<u32>().unwrap()
     ///     .with_component::<i32>().unwrap();
     ///
@@ -378,10 +380,11 @@ impl World {
     ///
     /// ```
     /// use axle_ecs::{entities::query_entity::QueryEntity, World};
+    /// use axle_ecs::resources::Resources;
     ///
     /// let mut world = World::new();
     ///
-    /// world.create_system(&|_: &Vec<QueryEntity>| Ok(()));
+    /// world.create_system(&|_: &Vec<QueryEntity>, _: &mut Resources| Ok(()));
     ///
     /// world.add_component_to_system_by_id::<u32>(0).unwrap();
     /// world.add_component_to_system_by_id::<i32>(0).unwrap();
@@ -404,11 +407,12 @@ impl World {
     ///
     /// ```
     /// use axle_ecs::{entities::query_entity::QueryEntity, World};
+    /// use axle_ecs::resources::Resources;
     ///
     /// let mut world = World::new();
     ///
     /// world
-    ///     .create_system(&|_: &Vec<QueryEntity>| Ok(()))
+    ///     .create_system(&|_: &Vec<QueryEntity>, _: &mut Resources| Ok(()))
     ///     .with_component::<u32>().unwrap()
     ///     .with_component::<i32>().unwrap();
     ///
@@ -428,6 +432,7 @@ impl World {
     ///
     /// ```
     /// use axle_ecs::{entities::query_entity::QueryEntity, World};
+    /// use axle_ecs::resources::Resources;
     ///
     /// let mut world = World::new();
     ///
@@ -435,7 +440,7 @@ impl World {
     /// world.register_component::<i32>();
     ///
     /// world
-    ///     .create_system(&|_: &Vec<QueryEntity>| Ok(()))
+    ///     .create_system(&|_: &Vec<QueryEntity>, _: &mut Resources| Ok(()))
     ///     .with_component::<u32>().unwrap()
     ///     .with_component::<i32>().unwrap();
     ///
@@ -443,7 +448,6 @@ impl World {
     ///
     /// ```
     pub fn run_all_systems(&mut self) -> Result<()> {
-        self.systems.run_all(&self.entities, &self.resources)
+        self.systems.run_all(&self.entities, &mut self.resources)
     }
 }
-

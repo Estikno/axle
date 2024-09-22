@@ -1,4 +1,7 @@
-use std::{any::{Any, TypeId}, collections::HashMap};
+use std::{
+    any::{Any, TypeId},
+    collections::HashMap,
+};
 
 /// A structure to store resources in the game world.
 #[derive(Default)]
@@ -10,21 +13,21 @@ pub struct Resources {
 
 impl Resources {
     /// Add a resource to the world so that anyone with access to the world can query it.
-    /// 
+    ///
     /// Resources are stored based on their type id.
-    /// 
+    ///
     /// # Arguments
     ///
     /// * `resource_data` - The data you want to save as a resource.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// use axle_ecs::resources::Resources;
-    /// 
+    ///
     /// let mut resources = Resources::default();
     /// let world_width = 100.0_f32;
-    /// 
+    ///
     /// resources.add(world_width);
     /// ```
     pub fn add(&mut self, data: impl Any) {
@@ -46,12 +49,12 @@ impl Resources {
     ///
     /// ```
     /// use axle_ecs::resources::Resources;
-    /// 
+    ///
     /// let mut resources = Resources::default();
     /// let world_width = 100_f32;
-    /// 
+    ///
     /// resources.add(world_width);
-    /// 
+    ///
     /// let extracted_width: &f32 = resources.get_ref::<f32>().unwrap();
     /// ```
     pub fn get_ref<T: Any>(&self) -> Option<&T> {
@@ -59,8 +62,7 @@ impl Resources {
 
         if let Some(data) = self.data.get(&type_id) {
             data.downcast_ref()
-        }
-        else {
+        } else {
             None
         }
     }
@@ -79,12 +81,12 @@ impl Resources {
     ///
     /// ```
     /// use axle_ecs::resources::Resources;
-    /// 
+    ///
     /// let mut resources = Resources::default();
     /// let world_width = 100.0_f32;
-    /// 
+    ///
     /// resources.add(world_width);
-    /// 
+    ///
     /// let world_width: &mut f32 = resources.get_mut::<f32>().unwrap();
     /// *world_width += 1.0;
     /// ```
@@ -93,8 +95,7 @@ impl Resources {
 
         if let Some(data) = self.data.get_mut(&type_id) {
             data.downcast_mut()
-        }
-        else {
+        } else {
             None
         }
     }
@@ -104,17 +105,17 @@ impl Resources {
     /// # Arguments
     ///
     /// * `T` - The type of the resource you want to get a mutable reference to.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// use axle_ecs::resources::Resources;
-    /// 
+    ///
     /// let mut resources = Resources::default();
     /// let world_width = 100.0_f32;
-    /// 
+    ///
     /// resources.add(world_width);
-    /// 
+    ///
     /// resources.remove::<f32>();
     /// ```
     pub fn remove<T: Any>(&mut self) {
@@ -145,7 +146,7 @@ mod tests {
             assert_eq!(extracted_world_width.0, 100.0);
         }
     }
-    
+
     #[test]
     fn get_resource_mut() {
         let mut resources = initialize_resource();
@@ -164,7 +165,7 @@ mod tests {
         let mut resources = initialize_resource();
         resources.remove::<WorldWidth>();
         let world_width_type_id = TypeId::of::<WorldWidth>();
-        
+
         assert!(!resources.data.contains_key(&world_width_type_id));
     }
 

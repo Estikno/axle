@@ -1,4 +1,5 @@
 use axle_ecs::entities::query_entity::QueryEntity;
+use axle_ecs::resources::Resources;
 use axle_ecs::World;
 use axle_math::transform::Transform;
 use eyre::Result;
@@ -51,7 +52,7 @@ impl Renderer {
         })
     }
 
-    pub fn render(entities: &Vec<QueryEntity>) -> Result<()> {
+    pub fn render(entities: &Vec<QueryEntity>, resource: &mut Resources) -> Result<()> {
         for entities in entities {
             let transform = entities.get_component::<Transform>()?;
         }
