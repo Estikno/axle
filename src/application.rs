@@ -19,6 +19,7 @@ impl App {
         }
     }
 
+    /// A function for starting the app the basic features
     pub fn start(&mut self) -> Result<()> {
         let config = RenderConfig {
             resolution: (1280, 720),
@@ -29,6 +30,7 @@ impl App {
         renderer::new(&mut self.world)
     }
 
+    /// A function for updating the systems and mantaining the game loop
     pub fn update(&mut self) -> Result<()> {
         let frame_start = Instant::now();
 
