@@ -1,7 +1,7 @@
 use axle_ecs::entities::query_entity::QueryEntity;
 use axle_ecs::resources::Resources;
 use axle_ecs::World;
-use axle_math::transform::Transform;
+
 use eyre::Result;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
@@ -33,22 +33,27 @@ pub fn new(world: &mut World) -> Result<()> {
     world.add_resource(canvas);
 
     // Register render function in the ECS
-    world
-        .create_system(&render)
-        .with_component::<Transform>()?
-        .with_component::<Box<dyn Renderable>>()?;
+    world.create_system(&render);
+    // .with_component::<Transform>()?
+    // .with_component::<Box<dyn Renderable>>()?;
 
     Ok(())
 }
 
 // TODO:: Finish the render function
 fn render(entities: &Vec<QueryEntity>, resources: &mut Resources) -> Result<()> {
-    for entities in entities {
-        let transform = entities.get_component::<Transform>()?;
-        let renderable = entities.get_component::<Box<dyn Renderable>>()?;
+    let canvas = resources.get_mut::<Canvas<Window>>().unwrap();
 
-        renderable.render(resources.get_mut::<Canvas<Window>>().unwrap(), 600);
-    }
+    canvas.clear();
+
+    // for entities in entities {
+    //     let transform = entities.get_component::<Transform>()?;
+    //     let renderable = entities.get_component::<Box<dyn Renderable>>()?;
+    //
+    //     renderable.render(canvas, 600);
+    // }
+
+    canvas.present();
 
     Ok(())
 }
