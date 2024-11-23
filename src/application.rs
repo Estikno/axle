@@ -1,11 +1,14 @@
 use axle_ecs::World;
 use std::time::{Duration, Instant};
 
+#[derive(Default)]
 pub struct App {
     pub world: World,
 }
 
 impl App {
+    /// Creates a new app.
+    /// Does the same as Default
     pub fn new() -> Self {
         Self {
             world: World::new(),

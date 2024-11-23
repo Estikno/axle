@@ -3,6 +3,8 @@ use axle_ecs::resources::Resources;
 use axle_ecs::World;
 use axle_math::transform::Transform;
 use eyre::Result;
+use sdl2::render::Canvas;
+use sdl2::video::Window;
 
 use crate::config::RenderConfig;
 use crate::custom_errors::CustomErrors;
@@ -43,6 +45,9 @@ pub fn new(world: &mut World) -> Result<()> {
 fn render(entities: &Vec<QueryEntity>, resources: &mut Resources) -> Result<()> {
     for entities in entities {
         let transform = entities.get_component::<Transform>()?;
+        let renderable = entities.get_component::<Box<dyn Renderable>>()?;
+
+        renderable.render(resources.get_mut::<Canvas<Window>>().unwrap(), 600);
     }
 
     Ok(())
