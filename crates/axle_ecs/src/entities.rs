@@ -1,5 +1,10 @@
-use std::{any::{Any, TypeId}, cell::RefCell, collections::HashMap, rc::Rc};
 use eyre::Result;
+use std::{
+    any::{Any, TypeId},
+    cell::RefCell,
+    collections::HashMap,
+    rc::Rc,
+};
 
 use crate::prelude::*;
 
@@ -16,7 +21,7 @@ pub struct Entities {
     ///
     /// The type id is used to identify the type of the component, and the vector
     /// contains the actual components.
-    /// 
+    ///
     /// For example, to get the the component `Health` of the second entity, it will be like this: `components.get(&TypeId::of::<Health>())[1]`
     components: Components,
 
@@ -24,7 +29,7 @@ pub struct Entities {
     ///
     /// The type id is used to identify the type of the component, and the bit
     /// mask is used to identify which components are enabled for a given entity.
-    /// 
+    ///
     /// The bitmsk of every component is a bit shifted an adition than the previous component.
     /// For example, the first component is `0001` and the second component is `0010`.
     bit_masks: HashMap<TypeId, u32>,
@@ -33,7 +38,7 @@ pub struct Entities {
     ///
     /// The bit mask is used to store which components are enabled for a given
     /// entity.
-    /// 
+    ///
     /// For example, if the entity has the first and third registered component, its map will be `101`.
     map: Vec<u32>,
 
@@ -48,7 +53,7 @@ impl Entities {
     /// Registers a component for later use in entities.
     ///
     /// # Arguments
-    /// 
+    ///
     /// * `T` - The type of the component to register.
     pub fn register_component<T: Any>(&mut self) {
         let type_id = TypeId::of::<T>();
@@ -64,10 +69,14 @@ impl Entities {
     ///
     /// A mutable reference to the Entities struct.
     pub fn create_entity(&mut self) -> &mut Self {
-        if let Some((index, _)) = self.map.iter().enumerate().find(|(_index, mask)| **mask == 0) {
+        if let Some((index, _)) = self
+            .map
+            .iter()
+            .enumerate()
+            .find(|(_index, mask)| **mask == 0)
+        {
             self.inserting_into_index = index;
-        }
-        else {
+        } else {
             self.components
                 .iter_mut()
                 .for_each(|(_key, components)| components.push(None));
@@ -96,7 +105,7 @@ impl Entities {
     pub fn with_component(&mut self, data: impl Any) -> Result<&mut Self> {
         let type_id = data.type_id();
         let index = self.inserting_into_index;
-        
+
         // Check if the component was registered and if the create entity function was called before
         if let Some(components) = self.components.get_mut(&type_id) {
             let component = components
@@ -107,8 +116,7 @@ impl Entities {
             // Add the component's bitmask to the entity's bitmask
             let bit_mask = self.bit_masks.get(&type_id).unwrap();
             self.map[index] |= *bit_mask;
-        }
-        else {
+        } else {
             return Err(CustomErrors::ComponentNotRegistered.into());
         }
 
@@ -217,8 +225,7 @@ impl Entities {
         if let Some(map) = self.map.get_mut(index) {
             // Reset the entity's bitmask, effectively deleting it
             *map = 0;
-        }
-        else {
+        } else {
             // If the entity doesn't exist, return an error
             return Err(CustomErrors::EntityDoesNotExist.into());
         }
@@ -282,7 +289,7 @@ mod tests {
 
         let health = entities.components.get(&TypeId::of::<Health>()).unwrap();
         let speed = entities.components.get(&TypeId::of::<Speed>()).unwrap();
-        
+
         assert!(health.len() == speed.len() && health.len() == 1);
         assert!(health[0].is_none() && speed[0].is_none());
     }
@@ -318,10 +325,8 @@ mod tests {
 
         let entity_map = entities.map[0];
         assert_eq!(entity_map, 3);
-        
-        entities
-            .create_entity()
-            .with_component(Speed(15))?;
+
+        entities.create_entity().with_component(Speed(15))?;
 
         let entity_map = entities.map[1];
         assert_eq!(entity_map, 2);
@@ -353,9 +358,7 @@ mod tests {
         entities.register_component::<Health>();
         entities.register_component::<Speed>();
 
-        entities
-            .create_entity()
-            .with_component(Health(100))?;
+        entities.create_entity().with_component(Health(100))?;
 
         entities.add_component_by_entity_id(Speed(50), 0)?;
 
@@ -376,10 +379,8 @@ mod tests {
     fn delete_entity_by_id() -> Result<()> {
         let mut entities = Entities::default();
         entities.register_component::<Health>();
-        
-        entities
-            .create_entity()
-            .with_component(Health(100))?;
+
+        entities.create_entity().with_component(Health(100))?;
 
         entities.delete_entity_by_id(0)?;
 
@@ -393,22 +394,14 @@ mod tests {
         let mut entities = Entities::default();
         entities.register_component::<Health>();
 
-        entities
-            .create_entity()
-            .with_component(Health(100))?;
-        entities
-            .create_entity()
-            .with_component(Health(50))?;
+        entities.create_entity().with_component(Health(100))?;
+        entities.create_entity().with_component(Health(50))?;
 
         entities.delete_entity_by_id(0)?;
 
-        entities
-            .create_entity()
-            .with_component(Health(25))?;
+        entities.create_entity().with_component(Health(25))?;
 
-        entities
-            .create_entity()
-            .with_component(Health(75))?;
+        entities.create_entity().with_component(Health(75))?;
 
         assert_eq!(entities.map[0], 1);
 
@@ -427,7 +420,7 @@ mod tests {
         let health = borrowed_health.downcast_ref::<Health>().unwrap();
 
         assert_eq!(health.0, 75);
-        
+
         Ok(())
     }
 
@@ -453,3 +446,4 @@ mod tests {
     struct Health(pub u32);
     struct Speed(pub u32);
 }
+

@@ -5,7 +5,7 @@ use sdl2::render::Canvas;
 use sdl2::video::Window;
 
 pub trait Renderable {
-    /// Renders the renderable
+    /// Renders this to the screen
     ///
     /// # Arguments
     ///

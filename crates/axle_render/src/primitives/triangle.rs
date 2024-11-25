@@ -72,7 +72,7 @@ impl Triangle {
     ///
     /// # Returns
     ///
-    /// A new triangle
+    /// A new triangle struct
     pub fn new(position: Vector2, vertices: [Vector2; 3], color: Color) -> Self {
         Self {
             position,
