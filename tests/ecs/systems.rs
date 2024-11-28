@@ -230,7 +230,7 @@ fn more_systems_at_the_same_time() -> Result<()> {
     Ok(())
 }
 
-fn update_location(entities: &Vec<QueryEntity>, resources: &mut Resources) -> Result<()> {
+fn update_location(entities: &[QueryEntity], resources: &mut Resources) -> Result<()> {
     for entity in entities {
         let mut location = entity.get_component_mut::<Location>()?;
         let speed = entity.get_component::<Speed>()?;
@@ -242,7 +242,7 @@ fn update_location(entities: &Vec<QueryEntity>, resources: &mut Resources) -> Re
     Ok(())
 }
 
-fn update_speed(entities: &Vec<QueryEntity>, resources: &mut Resources) -> Result<()> {
+fn update_speed(entities: &[QueryEntity], resources: &mut Resources) -> Result<()> {
     for entity in entities {
         let mut speed = entity.get_component_mut::<Speed>()?;
         speed.0 += 10.0;
@@ -253,4 +253,3 @@ fn update_speed(entities: &Vec<QueryEntity>, resources: &mut Resources) -> Resul
 
 struct Location(pub f32, pub f32);
 struct Speed(pub f32);
-

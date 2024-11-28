@@ -12,8 +12,8 @@ use crate::primitives::renderable::Renderable;
 
 /// Initializes SDL and add to the ECS its resources (context, video subsystem, and canvas).
 ///
-/// Atention!: This function should only be called once and it doesn't return the SDL2 elements,
-/// rather it registers them in the ECS as resources.
+/// **Atention!**: This function should only be called once and it doesn't return the SDL2 elements,
+/// it rather registers them in the ECS as resources.
 pub fn new(world: &mut World) -> Result<()> {
     // Get config form the ECS's resources. If there is nothing return an error as the config must be
     // there.
@@ -50,7 +50,7 @@ pub fn new(world: &mut World) -> Result<()> {
 }
 
 // TODO:: Finish the render function
-fn render(entities: &Vec<QueryEntity>, resources: &mut Resources) -> Result<()> {
+fn render(entities: &[QueryEntity], resources: &mut Resources) -> Result<()> {
     let canvas = resources.get_mut::<Canvas<Window>>().unwrap();
 
     canvas.clear();

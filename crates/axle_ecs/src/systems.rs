@@ -5,7 +5,7 @@ use crate::entities::{query::Query, Entities};
 use crate::prelude::*;
 use crate::resources::Resources;
 
-pub type SystemFunction = &'static dyn Fn(&Vec<QueryEntity>, &mut Resources) -> Result<()>;
+pub type SystemFunction = &'static dyn Fn(&[QueryEntity], &mut Resources) -> Result<()>;
 pub type SystemComponents = Vec<TypeId>;
 pub type SystemResources = Vec<TypeId>;
 
@@ -511,7 +511,7 @@ mod tests {
         Ok(())
     }
 
-    fn damage_health(entities: &Vec<QueryEntity>, resources: &mut Resources) -> Result<()> {
+    fn damage_health(entities: &[QueryEntity], resources: &mut Resources) -> Result<()> {
         for entity in entities {
             let mut health_mut = entity.get_component_mut::<Health>()?;
             health_mut.0 -= 10;
@@ -520,7 +520,7 @@ mod tests {
         Ok(())
     }
 
-    fn increase_speed(entities: &Vec<QueryEntity>, resources: &mut Resources) -> Result<()> {
+    fn increase_speed(entities: &[QueryEntity], resources: &mut Resources) -> Result<()> {
         for entity in entities {
             let mut speed_mut = entity.get_component_mut::<Speed>()?;
             speed_mut.0 += 10;
@@ -529,7 +529,7 @@ mod tests {
         Ok(())
     }
 
-    fn both(entities: &Vec<QueryEntity>, resources: &mut Resources) -> Result<()> {
+    fn both(entities: &[QueryEntity], resources: &mut Resources) -> Result<()> {
         for entity in entities {
             let mut health_mut = entity.get_component_mut::<Health>()?;
             let mut speed_mut = entity.get_component_mut::<Speed>()?;
