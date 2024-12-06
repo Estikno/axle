@@ -2,28 +2,7 @@
 
 <!-- PROJECT LOGO -->
 <!--<br />-->
-<div align="center">
-  <!--<a href="https://github.com/github_username/repo_name">
-    <img src="images/logo.png" alt="Logo" width="80" height="80">
-  </a>-->
-
-  <h1 align="center">Axle</h1>
-
-  <p align="center">
-    A simple lightweight 2D game engine written in Rust
-    <!--<br />
-    <a href="https://github.com/github_username/repo_name"><strong>Explore the docs »</strong></a>
-    <br />
-    <br />
-    <a href="https://github.com/github_username/repo_name">View Demo</a>
-    ·
-    <a href="https://github.com/github_username/repo_name/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
-    ·
-    <a href="https://github.com/github_username/repo_name/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>-->
-  </p>
-</div>
-  
-  
+<img src="assets/branding/axle_logo_light_dark_and_dimmed.svg" alt="Logo" height="250">
 
 <!-- PROJECT SHIELDS -->
 <!--
