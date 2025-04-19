@@ -1,5 +1,6 @@
 #pragma once
 
+// Simplifies imports and exports to dll with a macro
 #ifdef AX_PLATFORM_WINDOWS
 	#ifdef AX_BUILD_DLL
 		#define AXLE_API __declspec(dllexport)
