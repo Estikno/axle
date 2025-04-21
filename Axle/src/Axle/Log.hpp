@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "Core.h"
+#include "Core.hpp"
 #include "spdlog/spdlog.h"
 
 namespace Axle {

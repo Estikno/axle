@@ -1,4 +1,4 @@
-#include <Axle.h>
+#include <Axle.hpp>
 
 class Sandbox : public Axle::Application {
 public:

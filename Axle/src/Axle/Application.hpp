@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core.h"
+#include "Core.hpp"
 
 namespace Axle {
 	class AXLE_API Application
