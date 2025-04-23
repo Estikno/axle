@@ -1,3 +1,5 @@
+require "vendor/premake_scripts/ecc"
+
 workspace "Axle"
     architecture "x64"
     configurations { "Debug", "Release", "Dist" }
@@ -29,6 +31,7 @@ project "Axle"
         defines { "AX_PLATFORM_WINDOWS", "AX_BUILD_DLL" }
 
         postbuildcommands {
+			("{MKDIR} ../bin/" .. outputdir .. "/Sandbox"),
             ("{COPYFILE} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/Sandbox")
         }
 

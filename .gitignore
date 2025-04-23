@@ -3,6 +3,13 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+# Makefiles
+Makefile
+*.make
+
+# Clang related (can be generated back with "Premake ecc")
+compile_commands.json
+
 # Visual Studio (can be generated with Premake)
 *.sln
 *.vcxproj
