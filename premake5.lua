@@ -1,4 +1,4 @@
-require "vendor/premake_scripts/ecc"
+require "vendor/premake/premake_scripts/ecc"
 
 workspace "Axle"
     architecture "x64"
