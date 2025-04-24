@@ -2,9 +2,9 @@
 
 // For use by Axle applications
 
-#include "Axle/Application.hpp"
-#include "Axle/Log.hpp"
+#include "Core/Application.hpp"
+#include "Core/Logger/Log.hpp"
 
 // ---Entry Point---
-#include "Axle/EntryPoint.hpp"
+#include "Core/EntryPoint.hpp"
 // -----------------

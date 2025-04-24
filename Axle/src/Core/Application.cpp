@@ -1,8 +1,9 @@
 #include "Application.hpp"
+#include "Logger/Log.hpp"
 
 namespace Axle {
-	Application::Application() {
-
+    Application::Application(){
+        AX_CORE_TRACE("Starting the engine...");
 	}
 
 	Application::~Application() {
