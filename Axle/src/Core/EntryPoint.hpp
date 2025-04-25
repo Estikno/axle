@@ -2,6 +2,7 @@
 
 #include "Application.hpp"
 #include "Logger/Log.hpp"
+#include "Events/EventHandler.hpp"
 
 #ifdef AX_PLATFORM_WINDOWS
 
@@ -16,6 +17,12 @@ of focusing on making the main loop.
 */
 int main(int argc, char **argv) {
     Axle::Log::Init();
+    Axle::EventHandler::Init();
+
+    // Test purposes (delete)
+    Axle::Event* newEvent = new Axle::Event(Axle::EventType::WindowClose, Axle::EventCategory::Window);
+    Axle::EventHandler::GetInstance()->AddEvent(newEvent);
+    delete newEvent;
 
     // Main application loop
     Axle::Application* app = Axle::CreateApplication();

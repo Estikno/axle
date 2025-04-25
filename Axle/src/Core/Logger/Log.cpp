@@ -8,6 +8,11 @@ namespace Axle {
     std::shared_ptr<spdlog::logger> Log::s_ClientLogger;
 
     void Log::Init() {
+        if (s_CoreLogger != nullptr) {
+            AX_CORE_WARN("Init method of the logger has been called a second time");
+            return;
+        }
+
         spdlog::set_pattern("%^[%T] %n: %v%$");
 
         s_CoreLogger = spdlog::stdout_color_mt("AXLE");
@@ -16,4 +21,4 @@ namespace Axle {
         s_ClientLogger = spdlog::stdout_color_mt("APP");
         s_ClientLogger->set_level(spdlog::level::trace);
     }
-} // namespace Axle
+} 

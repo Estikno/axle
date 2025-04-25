@@ -4,6 +4,7 @@
 
 #include "Core/Application.hpp"
 #include "Core/Logger/Log.hpp"
+#include "Core/Events/EventHandler.hpp"
 
 // ---Entry Point---
 #include "Core/EntryPoint.hpp"
