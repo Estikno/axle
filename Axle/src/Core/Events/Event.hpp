@@ -26,6 +26,7 @@ namespace Axle {
         bool IsHadled() {
             return m_isHandled;
         }
+
         virtual void Handle() {
             m_isHandled = true;
         }
@@ -47,4 +48,14 @@ namespace Axle {
         EventType m_eventType = EventType::None;
         EventCategory m_eventCategory = EventCategory::None;
     };
+}
+
+namespace std {
+	template <>
+	struct hash<Axle::EventType> {
+		size_t operator()(const Axle::EventType& eventType) const {
+			// We cast EventType to int, since enums are just integer values
+			return std::hash<int>()(static_cast<int>(eventType));
+		}
+	};
 }
