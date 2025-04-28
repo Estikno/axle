@@ -10,11 +10,13 @@ namespace Axle {
 
 	void EventHandler::Init() {
 		if (m_eventHandler != nullptr) {
-            AX_CORE_WARN("Init method of the event handler has been called a second time");
+            AX_CORE_WARN("Init method of the event handler has been called a second time. IGNORING");
 			return;
 		}
 
 		m_eventHandler = std::make_shared<EventHandler>();
+
+		AX_CORE_TRACE("Event handler initialized...");
 	}
 	
 	void EventHandler::AddEvent(Event* event) {
@@ -44,9 +46,5 @@ namespace Axle {
 				handler(type, event);
 			}
 		}
-	}
-
-	void test_method(EventType type, Event* event) {
-        AX_CORE_INFO("Notified of an event being added of type: {}", (int)type);
 	}
 }

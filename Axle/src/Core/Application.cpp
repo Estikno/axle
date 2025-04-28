@@ -7,7 +7,7 @@ namespace Axle {
 	}
 
 	Application::~Application() {
-
+        AX_CORE_TRACE("Stopping the engine...");
 	}
 
 	void Application::Run() {

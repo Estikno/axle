@@ -6,55 +6,87 @@
 #include "../Core.hpp"
 
 namespace Axle {
-    enum class EventType {
-        None = 0,
-        WindowClose, WindowResize, WindowFocus, WindowLostFocus, WindowMoved,
-        AppTick, AppUpdate, AppRender,
-        KeyPressed, KeyReleased,
-        MouseButtonPressed, MouseButtonReleased, MouseMoved, MouseScrolled
-    };
+	/// Enum that defines the event type
+	enum class EventType {
+		None = 0,
+		WindowClose, WindowResize, WindowFocus, WindowLostFocus, WindowMoved,
+		AppTick, AppUpdate, AppRender,
+		KeyPressed, KeyReleased,
+		MouseButtonPressed, MouseButtonReleased, MouseMoved, MouseScrolled
+	};
 
-    enum EventCategory {
-        None = 0,
-        Window,
-        Input,
-        Render
-    };
+	/// Enum that defines the event category
+	enum EventCategory {
+		None = 0,
+		Window,
+		Input,
+		Render
+	};
 
-    class AXLE_API Event {
-      public:
-        bool IsHadled() {
-            return m_isHandled;
-        }
+	/**
+	* Base class for all events.
+	*
+	* This class is recommended to be inherited and to add the necessary functionality of each event type.
+	*/
+	class AXLE_API Event {
+	public:
+		/**
+		* Returns if the event has already been handled.
+		* 
+		* @returns If the event has already been handled.
+		*/
+		bool IsHadled() {
+			return m_isHandled;
+		}
 
-        virtual void Handle() {
-            m_isHandled = true;
-        }
+		/**
+		* Marks the event as handled
+		*/
+		virtual void Handle() {
+			m_isHandled = true;
+		}
 
-        EventType GetEventType() {
-            return m_eventType;
-        }
+		/**
+		* Gets the type of event
+		* 
+		* @returns The type of event
+		*/
+		EventType GetEventType() {
+			return m_eventType;
+		}
 
-        EventCategory GetEventGategory() {
-            return m_eventCategory;
-        }
+		/**
+		* Gets the category of the event
+		* 
+		* @returns The cateory of the event
+		*/
+		EventCategory GetEventGategory() {
+			return m_eventCategory;
+		}
 
-        Event(const EventType eventType, const EventCategory eventCategory);
-        virtual ~Event();
+		/**
+		* Constructor
+		* 
+		* @param eventType The type of the event
+		* @param eventCategory The category of the event
+		*/
+		Event(const EventType eventType, const EventCategory eventCategory);
+		virtual ~Event();
 
-      protected:
-        bool m_isHandled = false;
+	protected:
+		bool m_isHandled = false;
 
-        EventType m_eventType = EventType::None;
-        EventCategory m_eventCategory = EventCategory::None;
-    };
+		EventType m_eventType = EventType::None;
+		EventCategory m_eventCategory = EventCategory::None;
+	};
 }
 
+// Hashes the EventType enum so that it can be used with maps
 namespace std {
 	template <>
 	struct hash<Axle::EventType> {
 		size_t operator()(const Axle::EventType& eventType) const {
-			// We cast EventType to int, since enums are just integer values
+			// EventType is casted to int, since enums are just integer values
 			return std::hash<int>()(static_cast<int>(eventType));
 		}
 	};
