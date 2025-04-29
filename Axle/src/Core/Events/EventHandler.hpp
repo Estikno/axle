@@ -1,9 +1,6 @@
 #pragma once
 
-#include <memory>
-#include <unordered_map>
-#include <vector>
-#include <functional>
+#include "axpch.hpp"
 
 #include "../Core.hpp"
 #include "Event.hpp"

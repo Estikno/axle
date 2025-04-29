@@ -1,3 +1,5 @@
+#include "axpch.hpp"
+
 #include "Event.hpp"
 #include "../Logger/Log.hpp"
 

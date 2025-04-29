@@ -1,5 +1,7 @@
 #pragma once
 
+#include "axpch.hpp"
+
 #include "Application.hpp"
 #include "Logger/Log.hpp"
 #include "Events/EventHandler.hpp"

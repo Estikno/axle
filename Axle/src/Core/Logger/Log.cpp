@@ -1,3 +1,5 @@
+#include "axpch.hpp"
+
 #include "Log.hpp"
 #include "../Core.hpp"
 

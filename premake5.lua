@@ -16,9 +16,15 @@ project "Axle"
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
 
+    pchheader "axpch.hpp"
+    pchsource "Axle/src/axpch.cpp"
+
     files { "%{prj.name}/src/**.hpp", "%{prj.name}/src/**.cpp", "%{prj.name}/src/**.h" }
 
-    includedirs { "%{prj.name}/vendor/spdlog/include" }
+    includedirs { 
+        "%{prj.name}/src",
+        "%{prj.name}/vendor/spdlog/include" 
+    }
 
     -- buildoptions { "/utf-8" }
 

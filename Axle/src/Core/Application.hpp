@@ -1,5 +1,7 @@
 #pragma once
 
+#include "axpch.hpp"
+
 #include "Core.hpp"
 
 namespace Axle {
