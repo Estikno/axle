@@ -91,3 +91,44 @@ project "Sandbox"
         defines "AX_DIST"
         optimize "On"
 
+project "Tests"
+    location "AxleTests"
+    kind "ConsoleApp"
+    language "C++"
+    cppdialect "C++20"
+    staticruntime "On"
+
+    targetdir ("bin/" .. outputdir .. "/%{prj.name}")
+    objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+
+    files {
+        "Axle/tests/**.cpp",
+        "Axle/vendor/catch2/catch_amalgamated.cpp"
+    }
+
+    includedirs {
+        "Axle/vendor/catch2",
+        "Axle/src",
+        "Axle/vendor/spdlog/include"
+    }
+
+    links { "Axle" }
+
+    filter "action:vs*"
+        buildoptions { "/utf-8" }
+
+    filter "system:Windows"
+        systemversion "latest"
+        defines { "AX_PLATFORM_WINDOWS" }
+
+    filter "configurations:Debug"
+        defines { "AX_DEBUG" }
+        symbols "On"
+
+    filter "configurations:Release"
+        defines { "AX_RELEASE" }
+        optimize "On"
+
+    filter "configurations:Dist"
+        defines { "AX_DIST" }
+        optimize "On"
