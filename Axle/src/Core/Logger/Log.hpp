@@ -12,6 +12,8 @@ namespace Axle {
 		* Initializes the logger and its singletons
 		*
 		* Important: This has to be called before using the macros
+		* 
+		* It is safe to call multiple times, it simply displays a warning after the first call.
 		*/
 		static void Init();
 

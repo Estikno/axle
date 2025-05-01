@@ -38,7 +38,9 @@ project "Axle"
 
         postbuildcommands {
 			("{MKDIR} ../bin/" .. outputdir .. "/Sandbox"),
-            ("{COPYFILE} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/Sandbox")
+            ("{COPYFILE} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/Sandbox"),
+			("{MKDIR} ../bin/" .. outputdir .. "/Tests"),
+            ("{COPYFILE} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/Tests")
         }
 
     filter "configurations:Debug"
@@ -92,7 +94,7 @@ project "Sandbox"
         optimize "On"
 
 project "Tests"
-    location "AxleTests"
+    location "Axle/tests"
     kind "ConsoleApp"
     language "C++"
     cppdialect "C++20"
@@ -103,11 +105,11 @@ project "Tests"
 
     files {
         "Axle/tests/**.cpp",
-        "Axle/vendor/catch2/catch_amalgamated.cpp"
+        "Axle/vendor/doctest/doctest/doctest.h",
     }
 
     includedirs {
-        "Axle/vendor/catch2",
+        "Axle/vendor/doctest/doctest",
         "Axle/src",
         "Axle/vendor/spdlog/include"
     }

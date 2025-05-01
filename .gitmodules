@@ -1,3 +1,6 @@
 [submodule "Axle/vendor/spdlog"]
 	path = Axle/vendor/spdlog
 	url = https://github.com/gabime/spdlog
+[submodule "Axle/vendor/doctest"]
+	path = Axle/vendor/doctest
+	url = https://github.com/doctest/doctest
