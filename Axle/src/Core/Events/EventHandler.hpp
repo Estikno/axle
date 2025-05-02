@@ -22,16 +22,18 @@ namespace Axle {
 		* Initializes the event handler and its singleton
 		*
 		* Important: This has to be called before using the macros and any other functionality
+		*
+		* It is safe to call multiple times, it simply displays a warning after the first call.
 		*/
 		static void Init();
 
 		/**
 		* Gets the event handler singleton
 		*
-		* @returns Returns a reference to the Core logger
+		* @returns Returns a reference to the Event Handler
 		*/
-		static std::shared_ptr<EventHandler>& GetInstance() {
-			return m_eventHandler;
+		static EventHandler& GetInstance() {
+			return *m_eventHandler;
 		}
 
 		/**
@@ -77,7 +79,7 @@ namespace Axle {
 
 	private:
 		/// The singleton of the event handler class
-		static std::shared_ptr<EventHandler> m_eventHandler;
+		static std::unique_ptr<EventHandler> m_eventHandler;
 		/// A map that stores the type and category of event each handler wants (by the id)
 		std::unordered_map<int, std::pair<EventCategory, EventType>> m_handlersType;
 

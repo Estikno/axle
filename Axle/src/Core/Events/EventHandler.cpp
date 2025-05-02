@@ -6,7 +6,7 @@
 #include "../../Other/ObserverPattern/Observer.hpp"
 
 namespace Axle {
-	std::shared_ptr<EventHandler> EventHandler::m_eventHandler;
+	std::unique_ptr<EventHandler> EventHandler::m_eventHandler;
 
 	void EventHandler::Init() {
 		if (m_eventHandler != nullptr) {
@@ -14,7 +14,7 @@ namespace Axle {
 			return;
 		}
 
-		m_eventHandler = std::make_shared<EventHandler>();
+		m_eventHandler = std::make_unique<EventHandler>();
 
 		AX_CORE_TRACE("Event handler initialized...");
 	}
