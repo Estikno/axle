@@ -39,13 +39,12 @@ void TestFunction_AllInput(Event* event) {
 TEST_CASE("EventHandler") {
 	Log::Init();
 	EventHandler::Init();
-	auto instance = EventHandler::GetInstance();
 
-	CHECK(instance != nullptr);
+	EventHandler& instance = EventHandler::GetInstance();
 
 	SUBCASE("EventHandler AddEvent") {
-		Subscription sub_1 = instance->Subscribe(TestFunction_Render, EventType::AppRender, EventCategory::Render);
-		Subscription sub_2 = instance->Subscribe(TestFunction_Tick, EventType::AppTick, EventCategory::Window);
+		Subscription sub_1 = instance.Subscribe(TestFunction_Render, EventType::AppRender, EventCategory::Render);
+		Subscription sub_2 = instance.Subscribe(TestFunction_Tick, EventType::AppTick, EventCategory::Window);
 
 		Event* event_1 = new Event(EventType::AppRender, EventCategory::Render);
 		Event* event_2 = new Event(EventType::AppTick, EventCategory::Render);
@@ -55,7 +54,7 @@ TEST_CASE("EventHandler") {
 	}
 
 	SUBCASE("EventHandler with inherited events") {
-		Subscription sub_1 = instance->Subscribe(TestFunction_Input, EventType::AppUpdate, EventCategory::Window);
+		Subscription sub_1 = instance.Subscribe(TestFunction_Input, EventType::AppUpdate, EventCategory::Window);
 
 		newEvent* event_1 = new newEvent(EventType::AppUpdate, EventCategory::Input);
 
@@ -63,7 +62,7 @@ TEST_CASE("EventHandler") {
 	}
 
 	SUBCASE("EventHandler receiving events of a whole group") {
-		Subscription sub_1 = instance->Subscribe(TestFunction_AllInput, EventType::None, EventCategory::Input);
+		Subscription sub_1 = instance.Subscribe(TestFunction_AllInput, EventType::None, EventCategory::Input);
 
 		Event* event_1 = new Event(EventType::KeyPressed, EventCategory::Input);
 
