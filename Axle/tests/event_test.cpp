@@ -15,22 +15,25 @@ public:
 	}
 };
 
-void TestFunction_Render(Axle::EventType type, Axle::Event* event) {
+void TestFunction_Render(Event* event) {
 	CHECK(event != nullptr);
-	CHECK(type == Axle::EventType::AppRender);
-	CHECK(type == event->GetEventType());
+	CHECK(event->GetEventType() == Axle::EventType::AppRender);
 }
 
-void TestFunction_Tick(Axle::EventType type, Axle::Event* event) {
+void TestFunction_Tick(Event* event) {
 	CHECK(event != nullptr);
-	CHECK(type == Axle::EventType::AppTick);
-	CHECK(type == event->GetEventType());
+	CHECK(event->GetEventType() == Axle::EventType::AppTick);
 }
 
-void TestFunction_Input(Axle::EventType type, Axle::Event* event) {
+void TestFunction_Input(Event* event) {
 	CHECK(event != nullptr);
-	CHECK(type == Axle::EventType::AppUpdate);
-	CHECK(type == event->GetEventType());
+	CHECK(event->GetEventType() == Axle::EventType::AppUpdate);
+}
+
+void TestFunction_AllInput(Event* event) {
+	CHECK(event != nullptr);
+	CHECK(event->GetEventType() == Axle::EventType::KeyPressed);
+	CHECK(event->GetEventGategory() == Axle::EventCategory::Input);
 }
 
 TEST_CASE("EventHandler") {
@@ -40,9 +43,9 @@ TEST_CASE("EventHandler") {
 
 	CHECK(instance != nullptr);
 
-	SUBCASE("Eventhandler AddEvent") {
-		Subscription sub_1 = instance->Subscribe(TestFunction_Render, EventType::AppRender);
-		Subscription sub_2 = instance->Subscribe(TestFunction_Tick, EventType::AppTick);
+	SUBCASE("EventHandler AddEvent") {
+		Subscription sub_1 = instance->Subscribe(TestFunction_Render, EventType::AppRender, EventCategory::Render);
+		Subscription sub_2 = instance->Subscribe(TestFunction_Tick, EventType::AppTick, EventCategory::Window);
 
 		Event* event_1 = new Event(EventType::AppRender, EventCategory::Render);
 		Event* event_2 = new Event(EventType::AppTick, EventCategory::Render);
@@ -51,10 +54,18 @@ TEST_CASE("EventHandler") {
 		CHECK_NOTHROW(AX_ADD_EVENT(event_2));
 	}
 
-	SUBCASE("Eventhandler with inherited events") {
-		Subscription sub_1 = instance->Subscribe(TestFunction_Input, EventType::AppUpdate);
+	SUBCASE("EventHandler with inherited events") {
+		Subscription sub_1 = instance->Subscribe(TestFunction_Input, EventType::AppUpdate, EventCategory::Window);
 
 		newEvent* event_1 = new newEvent(EventType::AppUpdate, EventCategory::Input);
+
+		CHECK_NOTHROW(AX_ADD_EVENT(event_1));
+	}
+
+	SUBCASE("EventHandler receiving events of a whole group") {
+		Subscription sub_1 = instance->Subscribe(TestFunction_AllInput, EventType::None, EventCategory::Input);
+
+		Event* event_1 = new Event(EventType::KeyPressed, EventCategory::Input);
 
 		CHECK_NOTHROW(AX_ADD_EVENT(event_1));
 	}

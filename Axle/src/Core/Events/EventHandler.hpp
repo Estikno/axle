@@ -16,7 +16,7 @@ namespace Axle {
 	*
 	* TODO: Right now there is no buffer or multi thread safety. Every incoming event is handled and notified right away. This needs to be changed.
 	*/
-	class AXLE_API EventHandler : public Subject<EventType, Event*> {
+	class AXLE_API EventHandler : public Subject<Event*> {
 	public:
 		/**
 		* Initializes the event handler and its singleton
@@ -48,10 +48,13 @@ namespace Axle {
 		*
 		* @param handler The function that has to be called when receiving a cerating event
 		* @param type The type of event it is interested in
+		* @param category The category of the event
+		* 
+		* If you want to receive notifications of all events with in a category simply left the type as NONE
 		*
 		* @returns A subscription object that has to be kept on scope. As if it's not the handler will be unsubscribed automatically. This object can also be used to manage the subscription.
 		*/
-		Subscription<EventType, Event*> Subscribe(const HandlerType& handler, EventType type);
+		Subscription<Event*> Subscribe(const HandlerType& handler, EventType type, EventCategory category);
 
 	protected:
 		/**
@@ -70,19 +73,18 @@ namespace Axle {
 		*
 		* TODO: Right now all the events stored are never removed or checked if they have been handled. This needs to be added in the future.
 		*/
-		void Notify(EventType type, Event* event) override;
+		void Notify(Event* event) override;
 
 	private:
 		/// The singleton of the event handler class
 		static std::shared_ptr<EventHandler> m_eventHandler;
+		/// A map that stores the type and category of event each handler wants (by the id)
+		std::unordered_map<int, std::pair<EventCategory, EventType>> m_handlersType;
 
 		/// A map that stores the events by EventType
 		std::unordered_map<EventType, std::vector<std::shared_ptr<Event>>> m_eventsType;
 		/// A map that stores the events by EventCategory
 		std::unordered_map<EventCategory, std::vector<std::shared_ptr<Event>>> m_eventsCategory;
-
-		/// A map that stores the type of event each handler wants (by the id)
-		std::unordered_map<int, EventType> m_handlersType;
 	};
 }
 

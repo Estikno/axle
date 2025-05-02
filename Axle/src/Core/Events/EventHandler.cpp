@@ -6,11 +6,11 @@
 #include "../../Other/ObserverPattern/Observer.hpp"
 
 namespace Axle {
-    std::shared_ptr<EventHandler> EventHandler::m_eventHandler;
+	std::shared_ptr<EventHandler> EventHandler::m_eventHandler;
 
 	void EventHandler::Init() {
 		if (m_eventHandler != nullptr) {
-            AX_CORE_WARN("Init method of the event handler has been called a second time. IGNORING");
+			AX_CORE_WARN("Init method of the event handler has been called a second time. IGNORING");
 			return;
 		}
 
@@ -18,7 +18,7 @@ namespace Axle {
 
 		AX_CORE_TRACE("Event handler initialized...");
 	}
-	
+
 	void EventHandler::AddEvent(Event* event) {
 		std::shared_ptr<Event> p_event(event);
 
@@ -27,23 +27,27 @@ namespace Axle {
 
 		AX_CORE_INFO("Added a new event of type: {}", (int)(event->GetEventType()));
 
-		Notify(event->GetEventType(), event);
+		Notify(event);
 	}
 
-	Subscription<EventType, Event*> EventHandler::Subscribe(const HandlerType& handler, EventType type) {
-		m_handlersType[m_nextId] = type;
-		return Subject<EventType, Event*>::Subscribe(handler);
+	Subscription<Event*> EventHandler::Subscribe(const HandlerType& handler, EventType type, EventCategory category) {
+		m_handlersType[m_nextId] = std::make_pair(category, type);
+		return Subject<Event*>::Subscribe(handler);
 	}
 
 	void EventHandler::Unsubscribe(int id) {
 		m_handlersType.erase(id);
-		Subject<EventType, Event*>::Unsubscribe(id);
+		Subject<Event*>::Unsubscribe(id);
 	}
 
-	void EventHandler::Notify(EventType type, Event* event) {
+	void EventHandler::Notify(Event* event) {
 		for (auto& [id, handler] : m_handlers) {
-			if (m_handlersType[id] == type) {
-				handler(type, event);
+			if (m_handlersType[id].first != event->GetEventGategory()) {
+				continue;
+			}
+
+			if (m_handlersType[id].second == EventType::None || m_handlersType[id].second == event->GetEventType()) {
+				handler(event);
 			}
 		}
 	}

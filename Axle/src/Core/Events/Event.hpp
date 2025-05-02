@@ -15,7 +15,7 @@ namespace Axle {
 	};
 
 	/// Enum that defines the event category
-	enum EventCategory {
+	enum class EventCategory {
 		None = 0,
 		Window,
 		Input,
@@ -87,6 +87,13 @@ namespace std {
 		size_t operator()(const Axle::EventType& eventType) const {
 			// EventType is casted to int, since enums are just integer values
 			return std::hash<int>()(static_cast<int>(eventType));
+		}
+	};
+	template <>
+	struct hash<Axle::EventCategory> {
+		size_t operator()(const Axle::EventCategory& eventCategory) const {
+			// EventCategory is casted to int, since enums are just integer values
+			return std::hash<int>()(static_cast<int>(eventCategory));
 		}
 	};
 }
