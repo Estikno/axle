@@ -15,7 +15,7 @@
 *** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
-[![WIN][Windows-shield]][Windows-url]
+<!--[![WIN][Windows-shield]][Windows-url]-->
 [![Last Commit][last-commit-shield]][last-commit-url]
 [![Total Commits][total-commits-shield]][total-commits-url]
 [![Apache 2.0 License][license-shield]][license-url]
@@ -55,7 +55,7 @@ If you’re curious about the process or want to follow along with the ups and d
 <!-- Prerequisites -->
 ### :bangbang: Prerequisites
 
-This project uses **Premake** to generate the project files and is only compatible with windows (for now).
+This project uses **Premake** to generate the project files and is mainly developed for windows, althought Linux is also supported.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -76,6 +76,12 @@ And excecute the *premake5.exe* file in the vendor folder with the specific acti
 
 ```
 .\vendor\premake\premake5.exe [action]
+```
+
+Or if you are in linux:
+
+```
+/vendor/premake/premake5 [action]
 ```
 
 For more information check: [Using Premake](https://premake.github.io/docs/Using-Premake/)
