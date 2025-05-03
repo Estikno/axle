@@ -15,4 +15,4 @@ namespace Axle {
 
     // To be defined in client
     Application *CreateApplication();
-} 
+} // namespace Axle

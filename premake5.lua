@@ -43,6 +43,18 @@ project "Axle"
             ("{COPYFILE} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/Tests")
         }
 
+    filter "system:Linux"
+        systemversion "latest"
+
+        defines { "AX_PLATFORM_LINUX", "AX_BUILD_DLL" }
+
+        postbuildcommands {
+                        ("{MKDIR} ../bin/" .. outputdir .. "/Sandbox"),
+            ("{COPYFILE} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/Sandbox"),
+                        ("{MKDIR} ../bin/" .. outputdir .. "/Tests"),
+            ("{COPYFILE} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/Tests")
+        }
+
     filter "configurations:Debug"
         defines "AX_DEBUG"
         symbols "On"
@@ -80,6 +92,11 @@ project "Sandbox"
         systemversion "latest"
 
         defines { "AX_PLATFORM_WINDOWS" }
+
+    filter "system:Linux"
+        systemversion "latest"
+
+        defines { "AX_PLATFORM_LINUX" }
 
     filter "configurations:Debug"
         defines "AX_DEBUG"
@@ -122,6 +139,10 @@ project "Tests"
     filter "system:Windows"
         systemversion "latest"
         defines { "AX_PLATFORM_WINDOWS" }
+
+    filter "system:Linux"
+        systemversion "latest"
+        defines { "AX_PLATFORM_LINUX" }
 
     filter "configurations:Debug"
         defines { "AX_DEBUG" }
