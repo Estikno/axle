@@ -10,6 +10,7 @@ namespace Axle {
 		None = 0,
 		WindowClose, WindowResize, WindowFocus, WindowLostFocus, WindowMoved,
 		AppTick, AppUpdate, AppRender,
+		//Input
 		KeyPressed, KeyReleased,
 		MouseButtonPressed, MouseButtonReleased, MouseMoved, MouseScrolled
 	};

@@ -50,4 +50,4 @@ int main(int argc, char **argv) {
     delete app;
 }
 
-#endif // AX_PLATFORM_WINDOWS
+#endif 

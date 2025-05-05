@@ -6,7 +6,7 @@
 #define AXLE_API __declspec(dllexport)
 #else
 #define AXLE_API __declspec(dllimport)
-#endif // AX_BUILD_DLL
+#endif
 #elif AX_PLATFORM_LINUX
 #ifdef AX_BUILD_DLL
 #define AXLE_API __attribute__((visibility("default")))
@@ -14,5 +14,5 @@
 #define AXLE_API
 #endif
 #else
-#error Axle only supports windows
-#endif // AX_PLATFORM_WINDOWS
+#error Axle only supports windows and linux
+#endif 
