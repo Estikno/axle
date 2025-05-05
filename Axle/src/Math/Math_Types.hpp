@@ -72,7 +72,8 @@ namespace Axle {
 			return LerpUnclamped(a, b, Mathf::Clamp01(t));
 		}
 		static Vector2 Reflect(Vector2& inDirection, Vector2& inNormal) {
-			return inDirection - inNormal * 2 * Vector2::Dot(inDirection, inNormal);
+			Vector2 inNormalNormalized = inNormal.Normalized();
+			return inDirection - inNormalNormalized * 2 * Vector2::Dot(inDirection, inNormalNormalized);
 		}
 		static float ScalarProjection(Vector2& toProject, Vector2& onProject) {
 			return Vector2::Dot(toProject, onProject) / onProject.Magnitude();
@@ -108,6 +109,101 @@ namespace Axle {
 		union {
 			float z, b, p, w;
 		};
+
+		Vector3(float x, float y, float z) : x(x), y(y), z(z) {}
+
+		inline Vector3 Zero() {
+			return Vector3(0.0f, 0.0f, 0.0f);
+		}
+		inline Vector3 One() {
+			return Vector3(1.0f, 1.0f, 1.0f);
+		}
+		inline Vector3 Right() {
+			return Vector3(1.0f, 0.0f, 0.0f);
+		}
+		inline Vector3 Left() {
+			return Vector3(-1.0f, 0.0f, 0.0f);
+		}
+		inline Vector3 Up() {
+			return Vector3(0.0f, 1.0f, 0.0f);
+		}
+		inline Vector3 Down() {
+			return Vector3(0.0f, -1.0f, 0.0f);
+		}
+		inline Vector3 Forward() {
+			return Vector3(0.0f, 0.0f, 1.0f);
+		}
+		inline Vector3 Back() {
+			return Vector3(0.0f, 0.0f, -1.0f);
+		}
+
+		inline float SqrMagnitude() {
+			return x * x + y * y + z * z;
+		}
+		inline float Magnitude() {
+			Mathf::Sqrt(SqrMagnitude());
+		}
+
+		inline void Normalize() {
+			const float magnitude = Magnitude();
+			this->x /= magnitude;
+			this->y /= magnitude;
+			this->z /= magnitude;
+		}
+		inline Vector3 Normalized() {
+			Vector3 vec = Vector3(this->x, this->y, this->z);
+			vec.Normalize();
+			return vec;
+		}
+		static float Distance(Vector3& a, Vector3& b) {
+			return (a - b).Magnitude();
+		}
+		static float Dot(Vector3& a, Vector3& b) {
+			return a.x * b.x + a.y * b.y + a.z * b.z;
+		}
+		static float Angle(Vector3& a, Vector3& b) {
+			return Mathf::Acos(Vector3::Dot(a, b) / (a.Magnitude() * b.Magnitude()));
+		}
+		static Vector3 LerpUnclamped(Vector3& a, Vector3& b, float t) {
+			return a * (1.0f - t) + b * t;
+		}
+		static Vector3 Lerp(Vector3& a, Vector3& b, float t) {
+			return LerpUnclamped(a, b, Mathf::Clamp01(t));
+		}
+		static Vector3 Reflect(Vector3& inDirection, Vector3& inNormal) {
+			Vector3 inNormalNormalized = inNormal.Normalized();
+			return inDirection - inNormalNormalized * 2 * Vector3::Dot(inDirection, inNormalNormalized);
+		}
+		static float ScalarProjection(Vector3& toProject, Vector3& onProject) {
+			return Vector3::Dot(toProject, onProject) / onProject.Magnitude();
+		}
+		static Vector3 Projection(Vector3& toProject, Vector3& onProject) {
+			return onProject.Normalized() * ScalarProjection(toProject, onProject);
+		}
+		static Vector3 Cross(Vector3& a, Vector3& b) {
+			return Vector3(a.y * b.z - b.y * a.z, b.x * a.z - a.x * b.z, a.x * b.y - b.x * a.y);
+		}
+		static Vector3 ProjectOnPlane(Vector3& vector, Vector3& planeNormal) {
+			Vector3 projectionOnNormal = Projection(vector, planeNormal);
+			return vector - projectionOnNormal;
+		}
+
+		Vector3 operator+(const Vector3& other) const {
+			return Vector3(x + other.x, y + other.y, z + other.z);
+		}
+		Vector3 operator-(const Vector3& other) const {
+			return Vector3(x - other.x, y - other.y, z - other.z);
+		}
+		Vector3 operator*(const float& other) const {
+			return Vector3(x * other, y * other, z * other);
+		}
+		Vector3 operator/(const float& other) const {
+			return Vector3(x / other, y / other, z / other);
+		}
+		bool operator==(const Vector3& other) const {
+			return Mathf::Approximately(x, other.x) && Mathf::Approximately(y, other.y) && Mathf::Approximately(z, other.z);
+		}
+
 	};
 
 	struct AXLE_API Vector4 {
