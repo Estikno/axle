@@ -6,6 +6,7 @@
 #include "Mathf.hpp"
 
 namespace Axle {
+	/// Representation of 2D vectors and points
 	struct AXLE_API Vector2 {
 		union {
 			float x, r, s, u;
@@ -211,6 +212,7 @@ namespace Axle {
 		}
 	};
 
+	/// Representation of 3D vectors and points
 	struct AXLE_API Vector3 {
 		union {
 			float x, r, s, u;
@@ -223,6 +225,17 @@ namespace Axle {
 		};
 
 		Vector3(float x, float y, float z) : x(x), y(y), z(z) {}
+
+		/**
+		* Converts the current vector3 to a vector4
+		* 
+		* @param w The component w of the new Vector4
+		* 
+		* @returns The converted Vector4
+		*/
+		Vector4 ConvertToVector4(float w) {
+			return Vector4(this->x, this->y, this->z, w);
+		}
 
 		/// Shorthand of writing Vector3(0.0f, 0.0f, 0.0f)
 		inline Vector3 Zero() {
@@ -443,9 +456,9 @@ namespace Axle {
 		bool operator==(const Vector3& other) const {
 			return Mathf::Approximately(x, other.x) && Mathf::Approximately(y, other.y) && Mathf::Approximately(z, other.z);
 		}
-
 	};
 
+	/// Representation of 4D vectors and points
 	struct AXLE_API Vector4 {
 		union {
 			float x, r, s;
@@ -459,6 +472,107 @@ namespace Axle {
 		union {
 			float w, a, q;
 		};
+
+		Vector4(float x, float y, float z, float w) : x(x), y(y), z(z), w(w) {}
+
+		/// Shorthand of writing Vector4(0.0f, 0.0f, 0.0f, 0.0f)
+		Vector4 Zero() {
+			return Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+		}
+
+		/// Shorthand of writing Vector4(1.0f, 1.0f, 1.0f, 1.0f)
+		Vector4 One() {
+			return Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+		}
+
+		/**
+		* Returns the squared magnitude of the vector
+		* 
+		* It's helpful if you don't need to compare the magnitudes directly because doing the square root is computer intensive.
+		* 
+		* @returns The squared magnitude of the vector
+		*/
+		inline float SqrMagnitude() {
+			return x * x + y * y + z * z + w * w;
+		}
+
+		/**
+		* Returns the magnitude of the vector
+		* 
+		* If you only need to compare magnitudes of some vectors, you can use SsqrMagnitude (computing squared magnitudes is faster)
+		* 
+		* @returns The magnitude of the vector
+		*/
+		inline float Magnitude() {
+			Mathf::Sqrt(SqrMagnitude());
+		}
+
+		/// Modifies the current vector to have a magnitude of 1
+		inline void Normalize() {
+			const float magnitude = Magnitude();
+			this->x /= magnitude;
+			this->y /= magnitude;
+			this->z /= magnitude;
+			this->w /= magnitude;
+		}
+
+		/**
+		* Returns a new vector with the same direction as the current one, but with a magnitude of 1
+		* 
+		* @returns A new vector with the same direction but with a magnitude of 1
+		*/
+		inline Vector4 Normalized() {
+			Vector4 vec = Vector4(this->x, this->y, this->z, this->w);
+			vec.Normalize();
+			return vec;
+		}
+
+		/**
+		* Converts the current vector4 to a vector3
+		* 
+		* @returns The converted Vector3
+		*/
+		Vector3 ConvertToVector3() {
+			return Vector3(this->x, this->y, this->z);
+		}
+
+		/**
+		* Converts the current vector4 to a vector2
+		* 
+		* @returns The converted Vector2
+		*/
+		Vector2 ConvertToVector2() {
+			return Vector2(this->x, this->y);
+		}
+		
+		/**
+		* Calculates the dot product of two vectors
+		* 
+		* @param a The first vector
+		* @param b The second vector
+		*
+		* @returns The dot product of the two vectors
+		*/
+		static float Dot(Vector4& a, Vector4& b) {
+			return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+		}
+
+		Vector4 operator+(const Vector4& other) const {
+			return Vector4(x + other.x, y + other.y, z + other.z, w + other.w);
+		}
+		Vector4 operator-(const Vector4& other) const {
+			return Vector4(x - other.x, y - other.y, z - other.z, w - other.w);
+		}
+		Vector4 operator*(const float& other) const {
+			return Vector4(x * other, y * other, z * other, w * other);
+		}
+		Vector4 operator/(const float& other) const {
+			return Vector4(x / other, y / other, z / other, w / other);
+		}
+		bool operator==(const Vector4& other) const {
+			return Mathf::Approximately(x, other.x) && Mathf::Approximately(y, other.y) && Mathf::Approximately(z, other.z) && Mathf::Approximately(w, other.w);
+		}
+
 	};
 
 	using Quaternion = Vector4;
