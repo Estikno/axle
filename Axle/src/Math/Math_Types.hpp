@@ -61,7 +61,7 @@ namespace Axle {
 		* @returns The magnitude of the vector
 		*/
 		inline float Magnitude() {
-			Mathf::Sqrt(SqrMagnitude());
+			return Mathf::Sqrt(SqrMagnitude());
 		}
 
 		/// Modifies the current vector to have a magnitude of 1
@@ -289,7 +289,7 @@ namespace Axle {
 		* @returns The magnitude of the vector
 		*/
 		inline float Magnitude() {
-			Mathf::Sqrt(SqrMagnitude());
+			return Mathf::Sqrt(SqrMagnitude());
 		}
 
 		/// Modifies the current vector to have a magnitude of 1
@@ -504,7 +504,7 @@ namespace Axle {
 		* @returns The magnitude of the vector
 		*/
 		inline float Magnitude() {
-			Mathf::Sqrt(SqrMagnitude());
+			return Mathf::Sqrt(SqrMagnitude());
 		}
 
 		/// Modifies the current vector to have a magnitude of 1

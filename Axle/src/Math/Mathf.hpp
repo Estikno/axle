@@ -1,7 +1,8 @@
 #pragma once
 
+#include "axpch.hpp"
+
 #include "Core/Core.hpp"
-#include "Math_Types.hpp"
 
 namespace Axle {
 	class AXLE_API Mathf {
