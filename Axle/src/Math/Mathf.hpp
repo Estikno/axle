@@ -2,6 +2,8 @@
 
 #include "axpch.hpp"
 
+#include <cmath>
+
 #include "Core/Core.hpp"
 
 namespace Axle {
@@ -34,21 +36,23 @@ namespace Axle {
 		/// Smallest positive number different form zero
 		static constexpr float Epsilon = 1.192092896e-07f;
 
-		static float Abs(float f);
-		static float Sin(float f);
-		static float Cos(float f);
-		static float Tan(float f);
-		static float Asin(float f);
-		static float Acos(float f);
-		static float Atan(float f);
-		static float Atan2(float y, float x);
-		static float Sqrt(float f);
+		inline static float Abs(float f) { return std::abs(f); }
+		inline static float Sin(float f) { return std::sin(f); }
+		inline static float Cos(float f) { return std::cos(f); }
+		inline static float Tan(float f) { return std::tan(f); }
+		inline static float Asin(float f) { return std::asin(f); }
+		inline static float Acos(float f) { return std::acos(f); }
+		inline static float Atan(float f) { return std::atan(f); }
+		inline static float Atan2(float y, float x) { return std::atan2(y, x); }
+		inline static float Sqrt(float f) { return std::sqrt(f); }
 
-		static inline bool IsPowerOfTwo(int value) {
+		inline static bool IsPowerOfTwo(int value) {
 			return (value != 0) && ((value & (value - 1)) == 0);
 		}
-		static inline float Clamp(float value, float min, float max);
-		static inline float Clamp01(float value) {
+		inline static float Clamp(float value, float min, float max) {
+			return value < min ? min : (value > max ? max : value);
+		}
+		inline static float Clamp01(float value) {
 			return Clamp(value, 0.0f, 1.0f);
 		}
 
@@ -57,8 +61,8 @@ namespace Axle {
 		static float RandomFloat();
 		static float RandomFloat(float min, float max);
 
-		static bool Approximately(float a, float b) {
-			return Abs(a - b) <= Epsilon;
+		inline static bool Approximately(float a, float b) {
+			return Abs(a - b) <= Epsilon * 8.0f;
 		}
 	};
 }

@@ -159,9 +159,5 @@ namespace Axle {
 
 		// Modify the keys state (functions should only be called by the event system)
         static void SetKey(Keys key, bool pressed);
-		static void SetMouseButton(MouseButtons button, bool pressed);
-		static void SetMousePosition(float x, float y);
-        static void SetMousePosition(Vector2 position);
-        static void SetMouseWheel(float delta);
     };
 }

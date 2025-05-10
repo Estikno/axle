@@ -2,12 +2,12 @@
 
 #include "axpch.hpp"
 
-#include "Core/Core.hpp";
+#include "Core/Core.hpp"
 #include "Mathf.hpp"
 
 namespace Axle {
 	/// Representation of 2D vectors and points
-	struct AXLE_API Vector2 {
+	struct Vector2 {
 		union {
 			float x, r, s, u;
 		};
@@ -16,29 +16,30 @@ namespace Axle {
 		};
 
 		Vector2(float x, float y) : x(x), y(y) {}
+		Vector2() : x(0.0f), y(0.0f) {}
 
 		/// Shorthand of writing Vector2(0.0f, 0.0f)
-		static inline Vector2 Zero() {
+		inline static Vector2 Zero() {
 			return Vector2(0.0f, 0.0f);
 		}
 		/// Shorthand of writing Vector2(1.0f, 1.0f)
-		static inline Vector2 One() {
+		inline static Vector2 One() {
 			return Vector2(1.0f, 1.0f);
 		}
 		/// Shorthand of writing Vector2(1.0f, 0.0f)
-		static inline Vector2 Right() {
+		inline static Vector2 Right() {
 			return Vector2(1.0f, 0.0f);
 		}
 		/// Shorthand of writing Vector2(-1.0f, 0.0f)
-		static inline Vector2 Left() {
+		inline static Vector2 Left() {
 			return Vector2(-1.0f, 0.0f);
 		}
 		/// Shorthand of writing Vector2(0.0f, 1.0f)
-		static inline Vector2 Up() {
+		inline static Vector2 Up() {
 			return Vector2(0.0f, 1.0f);
 		}
 		/// Shorthand of writing Vector2(0.0f, -1.0f)
-		static inline Vector2 Down() {
+		inline static Vector2 Down() {
 			return Vector2(0.0f, -1.0f);
 		}
 
@@ -49,7 +50,7 @@ namespace Axle {
 		*
 		* @returns The squared magnitude of the vector
 		*/
-		inline float SqrMagnitude() {
+		inline float SqrMagnitude() const {
 			return x * x + y * y;
 		}
 
@@ -60,11 +61,12 @@ namespace Axle {
 		*
 		* @returns The magnitude of the vector
 		*/
-		inline float Magnitude() {
+		inline float Magnitude() const {
 			return Mathf::Sqrt(SqrMagnitude());
 		}
 
 		/// Modifies the current vector to have a magnitude of 1
+		// TODO: Check for division by zero
 		inline void Normalize() {
 			const float magnitude = Magnitude();
 			this->x /= magnitude;
@@ -76,7 +78,7 @@ namespace Axle {
 		*
 		* @returns A new vector with the same direction but with a magnitude of 1
 		*/
-		inline Vector2 Normalized() {
+		inline Vector2 Normalized() const {
 			Vector2 vec = Vector2(this->x, this->y);
 			vec.Normalize();
 			return vec;
@@ -89,7 +91,7 @@ namespace Axle {
 		*
 		* @returns A new vector that is perpendicular to the current vector.
 		*/
-		inline Vector2 Perpendicular() {
+		inline Vector2 Perpendicular() const {
 			return Vector2(-(this->y), this->x);
 		}
 
@@ -101,7 +103,7 @@ namespace Axle {
 		*
 		* @returns The distance between two vectors
 		*/
-		static float Distance(Vector2& a, Vector2& b) {
+		inline static float Distance(const Vector2& a, const Vector2& b) {
 			return (a - b).Magnitude();
 		}
 
@@ -113,7 +115,7 @@ namespace Axle {
 		*
 		* @returns The dot product of the two vectors
 		*/
-		static float Dot(Vector2& a, Vector2& b) {
+		inline static float Dot(const Vector2& a, const Vector2& b) {
 			return a.x * b.x + a.y * b.y;
 		}
 
@@ -125,7 +127,7 @@ namespace Axle {
 		*
 		* @returns The angle in radians between two vectors
 		*/
-		static float Angle(Vector2& a, Vector2& b) {
+		inline static float Angle(const Vector2& a, const Vector2& b) {
 			return Mathf::Acos(Vector2::Dot(a, b) / (a.Magnitude() * b.Magnitude()));
 		}
 
@@ -139,7 +141,7 @@ namespace Axle {
 		*
 		* @returns The interpolated vector
 		*/
-		static Vector2 LerpUnclamped(Vector2& a, Vector2& b, float t) {
+		inline static Vector2 LerpUnclamped(const Vector2& a, const Vector2& b, float t) {
 			return a * (1.0f - t) + b * t;
 		}
 
@@ -152,7 +154,7 @@ namespace Axle {
 		*
 		* @returns The interpolated vector
 		*/
-		static Vector2 Lerp(Vector2& a, Vector2& b, float t) {
+		inline static Vector2 Lerp(const Vector2& a, const Vector2& b, float t) {
 			return LerpUnclamped(a, b, Mathf::Clamp01(t));
 		}
 
@@ -166,7 +168,7 @@ namespace Axle {
 		*
 		* @returns The reflected vector
 		*/
-		static Vector2 Reflect(Vector2& inDirection, Vector2& inNormal) {
+		inline static Vector2 Reflect(const Vector2& inDirection, const Vector2& inNormal) {
 			Vector2 inNormalNormalized = inNormal.Normalized();
 			return inDirection - inNormalNormalized * 2 * Vector2::Dot(inDirection, inNormalNormalized);
 		}
@@ -179,7 +181,7 @@ namespace Axle {
 		*
 		* @returns The scalar projection of toProject onto onProject.
 		*/
-		static float ScalarProjection(Vector2& toProject, Vector2& onProject) {
+		inline static float ScalarProjection(const Vector2& toProject, const Vector2& onProject) {
 			return Vector2::Dot(toProject, onProject) / onProject.Magnitude();
 		}
 
@@ -191,7 +193,7 @@ namespace Axle {
 		*
 		* @returns The orthogonal projection of toProject onto onProject
 		*/
-		static Vector2 Project(Vector2& toProject, Vector2& onProject) {
+		inline static Vector2 Project(const Vector2& toProject, const Vector2& onProject) {
 			return onProject.Normalized() * ScalarProjection(toProject, onProject);
 		}
 
@@ -213,7 +215,7 @@ namespace Axle {
 	};
 
 	/// Representation of 3D vectors and points
-	struct AXLE_API Vector3 {
+	struct Vector3 {
 		union {
 			float x, r, s, u;
 		};
@@ -225,17 +227,6 @@ namespace Axle {
 		};
 
 		Vector3(float x, float y, float z) : x(x), y(y), z(z) {}
-
-		/**
-		* Converts the current vector3 to a vector4
-		*
-		* @param w The component w of the new Vector4
-		*
-		* @returns The converted Vector4
-		*/
-		Vector4 ConvertToVector4(float w) {
-			return Vector4(this->x, this->y, this->z, w);
-		}
 
 		/// Shorthand of writing Vector3(0.0f, 0.0f, 0.0f)
 		static inline Vector3 Zero() {
@@ -459,7 +450,7 @@ namespace Axle {
 	};
 
 	/// Representation of 4D vectors and points
-	struct AXLE_API Vector4 {
+	struct Vector4 {
 		union {
 			float x, r, s;
 		};
@@ -574,7 +565,7 @@ namespace Axle {
 		}
 	};
 
-	struct AXLE_API Matrix4x4 {
+	struct Matrix4x4 {
 		float data[16];
 
 		/**
@@ -609,20 +600,20 @@ namespace Axle {
 		* @param right The right side of the view frustum.
 		* @param bottom The bottom side of the view frustum.
 		* @param top The top side of the view frustum.
-		* @param near The near clipping plane distance.
-		* @param far The far clipping plane distance.
+		* @param nearClip The near clipping plane distance.
+		* @param farClip The far clipping plane distance.
 		*
 		* @returns A new orthographic projection matrix.
 		*/
-		static Matrix4x4 OrthographicProjection(float left, float right, float bottom, float top, float near, float far) {
+		static Matrix4x4 OrthographicProjection(float left, float right, float bottom, float top, float nearClip, float farClip) {
 			Matrix4x4 mat;
 			mat.data[0] = 2.0f / (right - left);
 			mat.data[5] = 2.0f / (top - bottom);
-			mat.data[10] = -2.0f / (far - near);
+			mat.data[10] = -2.0f / (farClip - nearClip);
 
 			mat.data[12] = -(right + left) / (right - left);
 			mat.data[13] = -(top + bottom) / (top - bottom);
-			mat.data[14] = -(far + near) / (far - near);
+			mat.data[14] = -(farClip + nearClip) / (farClip - nearClip);
 			return mat;
 		}
 
@@ -631,20 +622,20 @@ namespace Axle {
 		*
 		* @param fovRadians The field of view in radians.
 		* @param aspectRatio The aspect ratio.
-		* @param near The near clipping plane distance.
-		* @param far The far clipping plane distance.
+		* @param nearClip The near clipping plane distance.
+		* @param farClip The far clipping plane distance.
 		*
 		* @returns A new perspective matrix.
 		*/
-		static Matrix4x4 PerspectiveProjection(float fovRadians, float aspectRatio, float near, float far) {
+		static Matrix4x4 PerspectiveProjection(float fovRadians, float aspectRatio, float nearClip, float farClip) {
 			Matrix4x4 mat;
 			float f = 1.0f / Mathf::Tan(fovRadians / 2.0f);
 
 			mat.data[0] = f / aspectRatio;
 			mat.data[5] = f;
-			mat.data[10] = (far + near) / (near - far);
+			mat.data[10] = (farClip + nearClip) / (nearClip - farClip);
 			mat.data[11] = -1.0f;
-			mat.data[14] = (2.0f * far * near) / (near - far);
+			mat.data[14] = (2.0f * farClip * nearClip) / (nearClip - farClip);
 
 			return mat;
 		}
@@ -849,7 +840,7 @@ namespace Axle {
 
 	};
 
-	struct AXLE_API Quaternion {
+	struct Quaternion {
 		Vector4 vec;
 
 		Quaternion(float x, float y, float z, float w) : vec(x, y, z, w) {}

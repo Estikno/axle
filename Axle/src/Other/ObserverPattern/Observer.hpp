@@ -8,7 +8,7 @@
 namespace Axle {
 	// Forward declaration
 	template<typename... Args>
-	class AXLE_API Subject;
+	class Subject;
 
 	/**
 	* Represents an active subscription to a Subject.
@@ -16,7 +16,7 @@ namespace Axle {
 	* It automatically unsubscribes when destroyed, unless already manually unsubscribed.
 	*/
 	template<typename... Args>
-	class AXLE_API Subscription {
+	class Subscription {
 	public:
 		/**
 		* Constructs a Subscription associated with a Subject and a handler ID
@@ -81,7 +81,7 @@ namespace Axle {
 	* Observers can subscribe handlers (functions) to this subject.
 	*/
 	template<typename... Args>
-	class AXLE_API Subject {
+	class Subject {
 	public:
 		/// The type of function the subject accepts
 		using HandlerType = std::function<void(Args...)>;
