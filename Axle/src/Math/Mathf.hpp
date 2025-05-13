@@ -36,33 +36,44 @@ namespace Axle {
 		/// Smallest positive number different form zero
 		static constexpr float Epsilon = 1.192092896e-07f;
 
+		/// Abs value of a float
 		inline static float Abs(float f) { return std::abs(f); }
+		/// Sine of a float (in radians)
 		inline static float Sin(float f) { return std::sin(f); }
+		/// Cos of a float (in radians)
 		inline static float Cos(float f) { return std::cos(f); }
+		/// Tangent of a float (in radians)
 		inline static float Tan(float f) { return std::tan(f); }
+		/// Arc sinus of a float (in radians)
 		inline static float Asin(float f) { return std::asin(f); }
+		/// Arc cosinus of a float (in radians)
 		inline static float Acos(float f) { return std::acos(f); }
+		/// Arc tangent of a float (in radians)
 		inline static float Atan(float f) { return std::atan(f); }
+		/// Gets the angle (in radians) between the x-axis and the point (x, y)
 		inline static float Atan2(float y, float x) { return std::atan2(y, x); }
+		/// Square root of a float
 		inline static float Sqrt(float f) { return std::sqrt(f); }
 
-		inline static bool IsPowerOfTwo(int value) {
-			return (value != 0) && ((value & (value - 1)) == 0);
-		}
+		/// Returns wheter or not the value is a power of two
+		inline static bool IsPowerOfTwo(int value) { return (value != 0) && ((value & (value - 1)) == 0); }
+		/// Clamps a value between min and max
 		inline static float Clamp(float value, float min, float max) {
 			return value < min ? min : (value > max ? max : value);
 		}
-		inline static float Clamp01(float value) {
-			return Clamp(value, 0.0f, 1.0f);
-		}
+		/// Same as Clamp, but clamps between 0 and 1
+		inline static float Clamp01(float value) { return Clamp(value, 0.0f, 1.0f); }
 
+		/// Gets a positive random integer
 		static int Random();
+		/// Gets a random integer between min and max (inclusive)
 		static int Random(int min, int max);
+		/// Gets a random float between 0 and 1
 		static float RandomFloat();
+		/// Gets a random float between min and max (inclusive)
 		static float RandomFloat(float min, float max);
 
-		inline static bool Approximately(float a, float b) {
-			return Abs(a - b) <= Epsilon * 8.0f;
-		}
+		/// Returns true if the two floats are approximately equal
+		inline static bool Approximately(float a, float b) { return Abs(a - b) <= Epsilon * 8.0f; }
 	};
-}
+} // namespace Axle

@@ -19,51 +19,37 @@ namespace Axle {
 		Vector2() : x(0.0f), y(0.0f) {}
 
 		/// Shorthand of writing Vector2(0.0f, 0.0f)
-		inline static Vector2 Zero() {
-			return Vector2(0.0f, 0.0f);
-		}
+		inline static Vector2 Zero() { return Vector2(0.0f, 0.0f); }
 		/// Shorthand of writing Vector2(1.0f, 1.0f)
-		inline static Vector2 One() {
-			return Vector2(1.0f, 1.0f);
-		}
+		inline static Vector2 One() { return Vector2(1.0f, 1.0f); }
 		/// Shorthand of writing Vector2(1.0f, 0.0f)
-		inline static Vector2 Right() {
-			return Vector2(1.0f, 0.0f);
-		}
+		inline static Vector2 Right() { return Vector2(1.0f, 0.0f); }
 		/// Shorthand of writing Vector2(-1.0f, 0.0f)
-		inline static Vector2 Left() {
-			return Vector2(-1.0f, 0.0f);
-		}
+		inline static Vector2 Left() { return Vector2(-1.0f, 0.0f); }
 		/// Shorthand of writing Vector2(0.0f, 1.0f)
-		inline static Vector2 Up() {
-			return Vector2(0.0f, 1.0f);
-		}
+		inline static Vector2 Up() { return Vector2(0.0f, 1.0f); }
 		/// Shorthand of writing Vector2(0.0f, -1.0f)
-		inline static Vector2 Down() {
-			return Vector2(0.0f, -1.0f);
-		}
+		inline static Vector2 Down() { return Vector2(0.0f, -1.0f); }
 
 		/**
-		* Returns the squared magnitude of the vector
-		*
-		* It's helpful if you don't need to compare the magnitudes directly because doing the square root is computer intensive.
-		*
-		* @returns The squared magnitude of the vector
-		*/
-		inline float SqrMagnitude() const {
-			return x * x + y * y;
-		}
+		 * Returns the squared magnitude of the vector
+		 *
+		 * It's helpful if you don't need to compare the magnitudes directly because doing the square root is computer
+		 * intensive.
+		 *
+		 * @returns The squared magnitude of the vector
+		 */
+		inline float SqrMagnitude() const { return x * x + y * y; }
 
 		/**
-		* Returns the magnitude of the vector
-		*
-		* If you only need to compare magnitudes of some vectors, you can use SsqrMagnitude (computing squared magnitudes is faster)
-		*
-		* @returns The magnitude of the vector
-		*/
-		inline float Magnitude() const {
-			return Mathf::Sqrt(SqrMagnitude());
-		}
+		 * Returns the magnitude of the vector
+		 *
+		 * If you only need to compare magnitudes of some vectors, you can use SsqrMagnitude (computing squared
+		 * magnitudes is faster)
+		 *
+		 * @returns The magnitude of the vector
+		 */
+		inline float Magnitude() const { return Mathf::Sqrt(SqrMagnitude()); }
 
 		/// Modifies the current vector to have a magnitude of 1
 		// TODO: Check for division by zero
@@ -74,10 +60,10 @@ namespace Axle {
 		}
 
 		/**
-		* Returns a new vector with the same direction as the current one, but with a magnitude of 1
-		*
-		* @returns A new vector with the same direction but with a magnitude of 1
-		*/
+		 * Returns a new vector with the same direction as the current one, but with a magnitude of 1
+		 *
+		 * @returns A new vector with the same direction but with a magnitude of 1
+		 */
 		inline Vector2 Normalized() const {
 			Vector2 vec = Vector2(this->x, this->y);
 			vec.Normalize();
@@ -85,130 +71,117 @@ namespace Axle {
 		}
 
 		/**
-		* Returns a new vector that is perpendicular to the current vector
-		*
-		* The result is always rotated 90-degrees in a counter-clockwise direction for a 2D coordinate system where the positive Y axis goes up.
-		*
-		* @returns A new vector that is perpendicular to the current vector.
-		*/
-		inline Vector2 Perpendicular() const {
-			return Vector2(-(this->y), this->x);
-		}
+		 * Returns a new vector that is perpendicular to the current vector
+		 *
+		 * The result is always rotated 90-degrees in a counter-clockwise direction for a 2D coordinate system where the
+		 * positive Y axis goes up.
+		 *
+		 * @returns A new vector that is perpendicular to the current vector.
+		 */
+		inline Vector2 Perpendicular() const { return Vector2(-(this->y), this->x); }
 
 		/**
-		* Calculates the euclidean distance between two vectors
-		*
-		* @param a The first vector
-		* @param b The second vector
-		*
-		* @returns The distance between two vectors
-		*/
-		inline static float Distance(const Vector2& a, const Vector2& b) {
-			return (a - b).Magnitude();
-		}
+		 * Calculates the euclidean distance between two vectors
+		 *
+		 * @param a The first vector
+		 * @param b The second vector
+		 *
+		 * @returns The distance between two vectors
+		 */
+		inline static float Distance(const Vector2& a, const Vector2& b) { return (a - b).Magnitude(); }
 
 		/**
-		* Calculates the dot product of two vectors
-		*
-		* @param a The first vector
-		* @param b The second vector
-		*
-		* @returns The dot product of the two vectors
-		*/
-		inline static float Dot(const Vector2& a, const Vector2& b) {
-			return a.x * b.x + a.y * b.y;
-		}
+		 * Calculates the dot product of two vectors
+		 *
+		 * @param a The first vector
+		 * @param b The second vector
+		 *
+		 * @returns The dot product of the two vectors
+		 */
+		inline static float Dot(const Vector2& a, const Vector2& b) { return a.x * b.x + a.y * b.y; }
 
 		/**
-		* Calculates the angle in radians between two vectors
-		*
-		* @param a The first vector
-		* @param b The second vector
-		*
-		* @returns The angle in radians between two vectors
-		*/
+		 * Calculates the angle in radians between two vectors
+		 *
+		 * @param a The first vector
+		 * @param b The second vector
+		 *
+		 * @returns The angle in radians between two vectors
+		 */
 		inline static float Angle(const Vector2& a, const Vector2& b) {
 			return Mathf::Acos(Vector2::Dot(a, b) / (a.Magnitude() * b.Magnitude()));
 		}
 
 		/**
-		* Performs a linear interpolation between two vectors without clamping the interpolation factor.
-		* If you want the interpolator factor to be clamped use Lerp instead.
-		*
-		* @param a The origin vector
-		* @param b The destination vector
-		* @param t The interpolation factor
-		*
-		* @returns The interpolated vector
-		*/
+		 * Performs a linear interpolation between two vectors without clamping the interpolation factor.
+		 * If you want the interpolator factor to be clamped use Lerp instead.
+		 *
+		 * @param a The origin vector
+		 * @param b The destination vector
+		 * @param t The interpolation factor
+		 *
+		 * @returns The interpolated vector
+		 */
 		inline static Vector2 LerpUnclamped(const Vector2& a, const Vector2& b, float t) {
 			return a * (1.0f - t) + b * t;
 		}
 
 		/**
-		* Performs a linear interpolation between two vectors without clamping the interpolation factor.
-		*
-		* @param a The origin vector
-		* @param b The destination vector
-		* @param t The interpolation factor
-		*
-		* @returns The interpolated vector
-		*/
+		 * Performs a linear interpolation between two vectors without clamping the interpolation factor.
+		 *
+		 * @param a The origin vector
+		 * @param b The destination vector
+		 * @param t The interpolation factor
+		 *
+		 * @returns The interpolated vector
+		 */
 		inline static Vector2 Lerp(const Vector2& a, const Vector2& b, float t) {
 			return LerpUnclamped(a, b, Mathf::Clamp01(t));
 		}
 
 		/**
-		* Reflects a vector off the surface defined by a normal.
-		*
-		* Note: inNormal does not need to be normalized.
-		*
-		* @param inDirection The incident vector
-		* @param inNormal The surface's normal vector
-		*
-		* @returns The reflected vector
-		*/
+		 * Reflects a vector off the surface defined by a normal.
+		 *
+		 * Note: inNormal does not need to be normalized.
+		 *
+		 * @param inDirection The incident vector
+		 * @param inNormal The surface's normal vector
+		 *
+		 * @returns The reflected vector
+		 */
 		inline static Vector2 Reflect(const Vector2& inDirection, const Vector2& inNormal) {
 			Vector2 inNormalNormalized = inNormal.Normalized();
 			return inDirection - inNormalNormalized * 2 * Vector2::Dot(inDirection, inNormalNormalized);
 		}
 
 		/**
-		* Calculates the scalar projection of a vector onto another vector
-		*
-		* @param toProject The vector to be projected
-		* @param onProject The vector to project onto
-		*
-		* @returns The scalar projection of toProject onto onProject.
-		*/
+		 * Calculates the scalar projection of a vector onto another vector
+		 *
+		 * @param toProject The vector to be projected
+		 * @param onProject The vector to project onto
+		 *
+		 * @returns The scalar projection of toProject onto onProject.
+		 */
 		inline static float ScalarProjection(const Vector2& toProject, const Vector2& onProject) {
 			return Vector2::Dot(toProject, onProject) / onProject.Magnitude();
 		}
 
 		/**
-		* Projects a vector onto another vector
-		*
-		* @param toProject The vector to be projected
-		* @param onProject The vector to project onto
-		*
-		* @returns The orthogonal projection of toProject onto onProject
-		*/
+		 * Projects a vector onto another vector
+		 *
+		 * @param toProject The vector to be projected
+		 * @param onProject The vector to project onto
+		 *
+		 * @returns The orthogonal projection of toProject onto onProject
+		 */
 		inline static Vector2 Project(const Vector2& toProject, const Vector2& onProject) {
 			return onProject.Normalized() * ScalarProjection(toProject, onProject);
 		}
 
-		Vector2 operator+(const Vector2& other) const {
-			return Vector2(x + other.x, y + other.y);
-		}
-		Vector2 operator-(const Vector2& other) const {
-			return Vector2(x - other.x, y - other.y);
-		}
-		Vector2 operator*(const float& other) const {
-			return Vector2(x * other, y * other);
-		}
-		Vector2 operator/(const float& other) const {
-			return Vector2(x / other, y / other);
-		}
+		Vector2 operator+(const Vector2& other) const { return Vector2(x + other.x, y + other.y); }
+		Vector2 operator-(const Vector2& other) const { return Vector2(x - other.x, y - other.y); }
+		Vector2 operator*(const float& other) const { return Vector2(x * other, y * other); }
+		Vector2 operator/(const float& other) const { return Vector2(x / other, y / other); }
 		bool operator==(const Vector2& other) const {
 			return Mathf::Approximately(x, other.x) && Mathf::Approximately(y, other.y);
 		}
@@ -227,64 +200,48 @@ namespace Axle {
 		};
 
 		Vector3(float x, float y, float z) : x(x), y(y), z(z) {}
+		Vector3() : x(0.0f), y(0.0f), z(0.0f) {}
 
 		/// Shorthand of writing Vector3(0.0f, 0.0f, 0.0f)
-		static inline Vector3 Zero() {
-			return Vector3(0.0f, 0.0f, 0.0f);
-		}
+		inline static Vector3 Zero() { return Vector3(0.0f, 0.0f, 0.0f); }
 		/// Shorthand of writing Vector3(1.0f, 1.0f, 1.0f)
-		static inline Vector3 One() {
-			return Vector3(1.0f, 1.0f, 1.0f);
-		}
+		inline static Vector3 One() { return Vector3(1.0f, 1.0f, 1.0f); }
 		/// Shorthand of writing Vector3(1.0f, 0.0f, 0.0f)
-		static inline Vector3 Right() {
-			return Vector3(1.0f, 0.0f, 0.0f);
-		}
+		inline static Vector3 Right() { return Vector3(1.0f, 0.0f, 0.0f); }
 		/// Shorthand of writing Vector3(-1.0f, 0.0f, 0.0f)
-		static inline Vector3 Left() {
-			return Vector3(-1.0f, 0.0f, 0.0f);
-		}
+		inline static Vector3 Left() { return Vector3(-1.0f, 0.0f, 0.0f); }
 		/// Shorthand of writing Vector3(0.0f, 1.0f, 0.0f)
-		static inline Vector3 Up() {
-			return Vector3(0.0f, 1.0f, 0.0f);
-		}
+		inline static Vector3 Up() { return Vector3(0.0f, 1.0f, 0.0f); }
 		/// Shorthand of writing Vector3(0.0f, -1.0f, 0.0f)
-		static inline Vector3 Down() {
-			return Vector3(0.0f, -1.0f, 0.0f);
-		}
+		inline static Vector3 Down() { return Vector3(0.0f, -1.0f, 0.0f); }
 		/// Shorthand of writing Vector3(0.0f, 0.0f, 1.0f)
-		static inline Vector3 Forward() {
-			return Vector3(0.0f, 0.0f, 1.0f);
-		}
+		inline static Vector3 Forward() { return Vector3(0.0f, 0.0f, 1.0f); }
 		/// Shorthand of writing Vector3(0.0f, 0.0f, -1.0f)
-		static inline Vector3 Back() {
-			return Vector3(0.0f, 0.0f, -1.0f);
-		}
+		inline static Vector3 Back() { return Vector3(0.0f, 0.0f, -1.0f); }
 
 		/**
-		* Returns the squared magnitude of the vector
-		*
-		* It's helpful if you don't need to compare the magnitudes directly because doing the square root is computer intensive.
-		*
-		* @returns The squared magnitude of the vector
-		*/
-		inline float SqrMagnitude() {
-			return x * x + y * y + z * z;
-		}
+		 * Returns the squared magnitude of the vector
+		 *
+		 * It's helpful if you don't need to compare the magnitudes directly because doing the square root is computer
+		 * intensive.
+		 *
+		 * @returns The squared magnitude of the vector
+		 */
+		inline float SqrMagnitude() const { return x * x + y * y + z * z; }
 
 		/**
-		* Returns the magnitude of the vector
-		*
-		* If you only need to compare magnitudes of some vectors, you can use SsqrMagnitude (computing squared magnitudes is faster)
-		*
-		* @returns The magnitude of the vector
-		*/
-		inline float Magnitude() {
-			return Mathf::Sqrt(SqrMagnitude());
-		}
+		 * Returns the magnitude of the vector
+		 *
+		 * If you only need to compare magnitudes of some vectors, you can use SsqrMagnitude (computing squared
+		 * magnitudes is faster)
+		 *
+		 * @returns The magnitude of the vector
+		 */
+		inline float Magnitude() const { return Mathf::Sqrt(SqrMagnitude()); }
 
 		/// Modifies the current vector to have a magnitude of 1
 		inline void Normalize() {
+			// TODO: Check for division by zero
 			const float magnitude = Magnitude();
 			this->x /= magnitude;
 			this->y /= magnitude;
@@ -292,160 +249,149 @@ namespace Axle {
 		}
 
 		/**
-		* Returns a new vector with the same direction as the current one, but with a magnitude of 1
-		*
-		* @returns A new vector with the same direction but with a magnitude of 1
-		*/
-		inline Vector3 Normalized() {
+		 * Returns a new vector with the same direction as the current one, but with a magnitude of 1
+		 *
+		 * @returns A new vector with the same direction but with a magnitude of 1
+		 */
+		inline Vector3 Normalized() const {
 			Vector3 vec = Vector3(this->x, this->y, this->z);
 			vec.Normalize();
 			return vec;
 		}
 
 		/**
-		* Calculates the euclidean distance between two vectors
-		*
-		* @param a The first vector
-		* @param b The second vector
-		*
-		* @returns The distance between two vectors
-		*/
-		static float Distance(Vector3& a, Vector3& b) {
-			return (a - b).Magnitude();
-		}
+		 * Calculates the euclidean distance between two vectors
+		 *
+		 * @param a The first vector
+		 * @param b The second vector
+		 *
+		 * @returns The distance between two vectors
+		 */
+		inline static float Distance(const Vector3& a, const Vector3& b) { return (a - b).Magnitude(); }
 
 		/**
-		* Calculates the dot product of two vectors
-		*
-		* @param a The first vector
-		* @param b The second vector
-		*
-		* @returns The dot product of the two vectors
-		*/
-		static float Dot(Vector3& a, Vector3& b) {
-			return a.x * b.x + a.y * b.y + a.z * b.z;
-		}
+		 * Calculates the dot product of two vectors
+		 *
+		 * @param a The first vector
+		 * @param b The second vector
+		 *
+		 * @returns The dot product of the two vectors
+		 */
+		inline static float Dot(const Vector3& a, const Vector3& b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
 
 		/**
-		* Calculates the angle in radians between two vectors
-		*
-		* @param a The first vector
-		* @param b The second vector
-		*
-		* @returns The angle in radians between two vectors
-		*/
-		static float Angle(Vector3& a, Vector3& b) {
+		 * Calculates the angle in radians between two vectors
+		 *
+		 * @param a The first vector
+		 * @param b The second vector
+		 *
+		 * @returns The angle in radians between two vectors
+		 */
+		inline static float Angle(const Vector3& a, const Vector3& b) {
 			return Mathf::Acos(Vector3::Dot(a, b) / (a.Magnitude() * b.Magnitude()));
 		}
 
 		/**
-		* Performs a linear interpolation between two vectors without clamping the interpolation factor.
-		* If you want the interpolator factor to be clamped use Lerp instead.
-		*
-		* @param a The origin vector
-		* @param b The destination vector
-		* @param t The interpolation factor
-		*
-		* @returns The interpolated vector
-		*/
-		static Vector3 LerpUnclamped(Vector3& a, Vector3& b, float t) {
+		 * Performs a linear interpolation between two vectors without clamping the interpolation factor.
+		 * If you want the interpolator factor to be clamped use Lerp instead.
+		 *
+		 * @param a The origin vector
+		 * @param b The destination vector
+		 * @param t The interpolation factor
+		 *
+		 * @returns The interpolated vector
+		 */
+		inline static Vector3 LerpUnclamped(const Vector3& a, const Vector3& b, const float t) {
 			return a * (1.0f - t) + b * t;
 		}
 
 		/**
-		* Performs a linear interpolation between two vectors without clamping the interpolation factor.
-		*
-		* @param a The origin vector
-		* @param b The destination vector
-		* @param t The interpolation factor
-		*
-		* @returns The interpolated vector
-		*/
-		static Vector3 Lerp(Vector3& a, Vector3& b, float t) {
+		 * Performs a linear interpolation between two vectors without clamping the interpolation factor.
+		 *
+		 * @param a The origin vector
+		 * @param b The destination vector
+		 * @param t The interpolation factor
+		 *
+		 * @returns The interpolated vector
+		 */
+		inline static Vector3 Lerp(const Vector3& a, const Vector3& b, const float t) {
 			return LerpUnclamped(a, b, Mathf::Clamp01(t));
 		}
 
 		/**
-		* Reflects a vector off the surface defined by a normal
-		*
-		* Note: inNormal does not need to be normalized.
-		*
-		* @param inDirection The incident vector
-		* @param inNormal The surface's normal vector
-		*
-		* @returns The reflected vector
-		*/
-		static Vector3 Reflect(Vector3& inDirection, Vector3& inNormal) {
+		 * Reflects a vector off the surface defined by a normal
+		 *
+		 * Note: inNormal does not need to be normalized.
+		 *
+		 * @param inDirection The incident vector
+		 * @param inNormal The surface's normal vector
+		 *
+		 * @returns The reflected vector
+		 */
+		inline static Vector3 Reflect(const Vector3& inDirection, const Vector3& inNormal) {
 			Vector3 inNormalNormalized = inNormal.Normalized();
 			return inDirection - inNormalNormalized * 2 * Vector3::Dot(inDirection, inNormalNormalized);
 		}
 
 		/**
-		* Calculates the scalar projection of a vector onto another vector
-		*
-		* @param toProject The vector to be projected
-		* @param onProject The vector to project onto
-		*
-		* @returns The scalar projection of toProject onto onProject.
-		*/
-		static float ScalarProjection(Vector3& toProject, Vector3& onProject) {
+		 * Calculates the scalar projection of a vector onto another vector
+		 *
+		 * @param toProject The vector to be projected
+		 * @param onProject The vector to project onto
+		 *
+		 * @returns The scalar projection of toProject onto onProject.
+		 */
+		inline static float ScalarProjection(const Vector3& toProject, const Vector3& onProject) {
 			return Vector3::Dot(toProject, onProject) / onProject.Magnitude();
 		}
 
 		/**
-		* Projects a vector onto another vector
-		*
-		* @param toProject The vector to be projected
-		* @param onProject The vector to project onto
-		*
-		* @returns The orthogonal projection of toProject onto onProject
-		*/
-		static Vector3 Project(Vector3& toProject, Vector3& onProject) {
+		 * Projects a vector onto another vector
+		 *
+		 * @param toProject The vector to be projected
+		 * @param onProject The vector to project onto
+		 *
+		 * @returns The orthogonal projection of toProject onto onProject
+		 */
+		inline static Vector3 Project(const Vector3& toProject, const Vector3& onProject) {
 			return onProject.Normalized() * ScalarProjection(toProject, onProject);
 		}
 
 		/**
-		* Calculates the cross product of two vectors
-		*
-		* @param a The first vector
-		* @param b The second vector
-		*
-		* @returns The cross product of two vectors
-		*/
-		static Vector3 Cross(Vector3& a, Vector3& b) {
+		 * Calculates the cross product of two vectors
+		 *
+		 * @param a The first vector
+		 * @param b The second vector
+		 *
+		 * @returns The cross product of two vectors
+		 */
+		inline static Vector3 Cross(const Vector3& a, const Vector3& b) {
 			return Vector3(a.y * b.z - b.y * a.z, b.x * a.z - a.x * b.z, a.x * b.y - b.x * a.y);
 		}
 
 		/**
-		* Projects a vector onto a plane.
-		*
-		* For a given plane described by planeNormal and a given vector vector, the method generates a new vector orthogonal to planeNormal and parallel to the plane.
-		* Note: planeNormal does not need to be normalized
-		*
-		* @param vector The vector to be projected
-		* @param planeNormal The normal which defines the plane
-		*
-		* @returns The orthogonal projection of vector on the plane
-		*/
-		static Vector3 ProjectOnPlane(Vector3& vector, Vector3& planeNormal) {
+		 * Projects a vector onto a plane.
+		 *
+		 * For a given plane described by planeNormal and a given vector vector, the method generates a new vector
+		 * orthogonal to planeNormal and parallel to the plane. Note: planeNormal does not need to be normalized
+		 *
+		 * @param vector The vector to be projected
+		 * @param planeNormal The normal which defines the plane
+		 *
+		 * @returns The orthogonal projection of vector on the plane
+		 */
+		inline static Vector3 ProjectOnPlane(const Vector3& vector, const Vector3& planeNormal) {
 			Vector3 projectionOnNormal = Project(vector, planeNormal);
 			return vector - projectionOnNormal;
 		}
 
-		Vector3 operator+(const Vector3& other) const {
-			return Vector3(x + other.x, y + other.y, z + other.z);
-		}
-		Vector3 operator-(const Vector3& other) const {
-			return Vector3(x - other.x, y - other.y, z - other.z);
-		}
-		Vector3 operator*(const float& other) const {
-			return Vector3(x * other, y * other, z * other);
-		}
-		Vector3 operator/(const float& other) const {
-			return Vector3(x / other, y / other, z / other);
-		}
+		Vector3 operator+(const Vector3& other) const { return Vector3(x + other.x, y + other.y, z + other.z); }
+		Vector3 operator-(const Vector3& other) const { return Vector3(x - other.x, y - other.y, z - other.z); }
+		Vector3 operator*(const float& other) const { return Vector3(x * other, y * other, z * other); }
+		Vector3 operator/(const float& other) const { return Vector3(x / other, y / other, z / other); }
 		bool operator==(const Vector3& other) const {
-			return Mathf::Approximately(x, other.x) && Mathf::Approximately(y, other.y) && Mathf::Approximately(z, other.z);
+			return Mathf::Approximately(x, other.x) && Mathf::Approximately(y, other.y) &&
+				Mathf::Approximately(z, other.z);
 		}
 	};
 
@@ -467,36 +413,30 @@ namespace Axle {
 		Vector4(float x, float y, float z, float w) : x(x), y(y), z(z), w(w) {}
 
 		/// Shorthand of writing Vector4(0.0f, 0.0f, 0.0f, 0.0f)
-		static Vector4 Zero() {
-			return Vector4(0.0f, 0.0f, 0.0f, 0.0f);
-		}
+		static Vector4 Zero() { return Vector4(0.0f, 0.0f, 0.0f, 0.0f); }
 
 		/// Shorthand of writing Vector4(1.0f, 1.0f, 1.0f, 1.0f)
-		static Vector4 One() {
-			return Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-		}
+		static Vector4 One() { return Vector4(1.0f, 1.0f, 1.0f, 1.0f); }
 
 		/**
-		* Returns the squared magnitude of the vector
-		*
-		* It's helpful if you don't need to compare the magnitudes directly because doing the square root is computer intensive.
-		*
-		* @returns The squared magnitude of the vector
-		*/
-		inline float SqrMagnitude() {
-			return x * x + y * y + z * z + w * w;
-		}
+		 * Returns the squared magnitude of the vector
+		 *
+		 * It's helpful if you don't need to compare the magnitudes directly because doing the square root is computer
+		 * intensive.
+		 *
+		 * @returns The squared magnitude of the vector
+		 */
+		inline float SqrMagnitude() { return x * x + y * y + z * z + w * w; }
 
 		/**
-		* Returns the magnitude of the vector
-		*
-		* If you only need to compare magnitudes of some vectors, you can use SsqrMagnitude (computing squared magnitudes is faster)
-		*
-		* @returns The magnitude of the vector
-		*/
-		inline float Magnitude() {
-			return Mathf::Sqrt(SqrMagnitude());
-		}
+		 * Returns the magnitude of the vector
+		 *
+		 * If you only need to compare magnitudes of some vectors, you can use SsqrMagnitude (computing squared
+		 * magnitudes is faster)
+		 *
+		 * @returns The magnitude of the vector
+		 */
+		inline float Magnitude() { return Mathf::Sqrt(SqrMagnitude()); }
 
 		/// Modifies the current vector to have a magnitude of 1
 		inline void Normalize() {
@@ -508,10 +448,10 @@ namespace Axle {
 		}
 
 		/**
-		* Returns a new vector with the same direction as the current one, but with a magnitude of 1
-		*
-		* @returns A new vector with the same direction but with a magnitude of 1
-		*/
+		 * Returns a new vector with the same direction as the current one, but with a magnitude of 1
+		 *
+		 * @returns A new vector with the same direction but with a magnitude of 1
+		 */
 		inline Vector4 Normalized() {
 			Vector4 vec = Vector4(this->x, this->y, this->z, this->w);
 			vec.Normalize();
@@ -519,34 +459,28 @@ namespace Axle {
 		}
 
 		/**
-		* Converts the current vector4 to a vector3
-		*
-		* @returns The converted Vector3
-		*/
-		Vector3 ConvertToVector3() {
-			return Vector3(this->x, this->y, this->z);
-		}
+		 * Converts the current vector4 to a vector3
+		 *
+		 * @returns The converted Vector3
+		 */
+		Vector3 ConvertToVector3() { return Vector3(this->x, this->y, this->z); }
 
 		/**
-		* Converts the current vector4 to a vector2
-		*
-		* @returns The converted Vector2
-		*/
-		Vector2 ConvertToVector2() {
-			return Vector2(this->x, this->y);
-		}
+		 * Converts the current vector4 to a vector2
+		 *
+		 * @returns The converted Vector2
+		 */
+		Vector2 ConvertToVector2() { return Vector2(this->x, this->y); }
 
 		/**
-		* Calculates the dot product of two vectors
-		*
-		* @param a The first vector
-		* @param b The second vector
-		*
-		* @returns The dot product of the two vectors
-		*/
-		static float Dot(Vector4& a, Vector4& b) {
-			return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
-		}
+		 * Calculates the dot product of two vectors
+		 *
+		 * @param a The first vector
+		 * @param b The second vector
+		 *
+		 * @returns The dot product of the two vectors
+		 */
+		static float Dot(Vector4& a, Vector4& b) { return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w; }
 
 		Vector4 operator+(const Vector4& other) const {
 			return Vector4(x + other.x, y + other.y, z + other.z, w + other.w);
@@ -554,14 +488,11 @@ namespace Axle {
 		Vector4 operator-(const Vector4& other) const {
 			return Vector4(x - other.x, y - other.y, z - other.z, w - other.w);
 		}
-		Vector4 operator*(const float& other) const {
-			return Vector4(x * other, y * other, z * other, w * other);
-		}
-		Vector4 operator/(const float& other) const {
-			return Vector4(x / other, y / other, z / other, w / other);
-		}
+		Vector4 operator*(const float& other) const { return Vector4(x * other, y * other, z * other, w * other); }
+		Vector4 operator/(const float& other) const { return Vector4(x / other, y / other, z / other, w / other); }
 		bool operator==(const Vector4& other) const {
-			return Mathf::Approximately(x, other.x) && Mathf::Approximately(y, other.y) && Mathf::Approximately(z, other.z) && Mathf::Approximately(w, other.w);
+			return Mathf::Approximately(x, other.x) && Mathf::Approximately(y, other.y) &&
+				Mathf::Approximately(z, other.z) && Mathf::Approximately(w, other.w);
 		}
 	};
 
@@ -569,10 +500,10 @@ namespace Axle {
 		float data[16];
 
 		/**
-		* Returns the Identity matrix
-		*
-		* @returns The Identity matrix
-		*/
+		 * Returns the Identity matrix
+		 *
+		 * @returns The Identity matrix
+		 */
 		static Matrix4x4 Indentity() {
 			Matrix4x4 mat;
 			mat.data[0] = 1.0f;
@@ -583,28 +514,28 @@ namespace Axle {
 		}
 
 		/**
-		* Shorthand for creating a matrix full of zeros
-		*
-		* @returns A matrix full of zeros
-		*/
+		 * Shorthand for creating a matrix full of zeros
+		 *
+		 * @returns A matrix full of zeros
+		 */
 		static Matrix4x4 Zero() {
 			Matrix4x4 mat;
 			return mat;
 		}
 
 		/**
-		* Creates and returns an orthographic projection matrix. Typically used to
-		* render flat or 2D scenes.
-		*
-		* @param left The left side of the view frustum.
-		* @param right The right side of the view frustum.
-		* @param bottom The bottom side of the view frustum.
-		* @param top The top side of the view frustum.
-		* @param nearClip The near clipping plane distance.
-		* @param farClip The far clipping plane distance.
-		*
-		* @returns A new orthographic projection matrix.
-		*/
+		 * Creates and returns an orthographic projection matrix. Typically used to
+		 * render flat or 2D scenes.
+		 *
+		 * @param left The left side of the view frustum.
+		 * @param right The right side of the view frustum.
+		 * @param bottom The bottom side of the view frustum.
+		 * @param top The top side of the view frustum.
+		 * @param nearClip The near clipping plane distance.
+		 * @param farClip The far clipping plane distance.
+		 *
+		 * @returns A new orthographic projection matrix.
+		 */
 		static Matrix4x4 OrthographicProjection(float left, float right, float bottom, float top, float nearClip, float farClip) {
 			Matrix4x4 mat;
 			mat.data[0] = 2.0f / (right - left);
@@ -618,15 +549,15 @@ namespace Axle {
 		}
 
 		/**
-		* Creates and returns a perspective matrix. Typically used to render 3d scenes.
-		*
-		* @param fovRadians The field of view in radians.
-		* @param aspectRatio The aspect ratio.
-		* @param nearClip The near clipping plane distance.
-		* @param farClip The far clipping plane distance.
-		*
-		* @returns A new perspective matrix.
-		*/
+		 * Creates and returns a perspective matrix. Typically used to render 3d scenes.
+		 *
+		 * @param fovRadians The field of view in radians.
+		 * @param aspectRatio The aspect ratio.
+		 * @param nearClip The near clipping plane distance.
+		 * @param farClip The far clipping plane distance.
+		 *
+		 * @returns A new perspective matrix.
+		 */
 		static Matrix4x4 PerspectiveProjection(float fovRadians, float aspectRatio, float nearClip, float farClip) {
 			Matrix4x4 mat;
 			float f = 1.0f / Mathf::Tan(fovRadians / 2.0f);
@@ -641,15 +572,15 @@ namespace Axle {
 		}
 
 		/**
-		* Creates and returns a look-at matrix, or a matrix looking
-		* at target from the perspective of position.
-		*
-		* @param position The position of the matrix.
-		* @param target The position to "look at".
-		* @param up The up vector.
-		*
-		* @returns A matrix looking at target from the perspective of position.
-		*/
+		 * Creates and returns a look-at matrix, or a matrix looking
+		 * at target from the perspective of position.
+		 *
+		 * @param position The position of the matrix.
+		 * @param target The position to "look at".
+		 * @param up The up vector.
+		 *
+		 * @returns A matrix looking at target from the perspective of position.
+		 */
 		static Matrix4x4 LookAt(Vector3 position, Vector3 target, Vector3 up) {
 			Vector3 zAxis = (position - target).Normalized();
 			Vector3 xAxis = Vector3::Cross(up, zAxis).Normalized();
@@ -678,12 +609,12 @@ namespace Axle {
 		}
 
 		/**
-		* Returns a transposed copy of the provided matrix (rows->colums)
-		*
-		* @param matrix The matrix to be transposed.
-		*
-		* @returns A transposed copy of of the provided matrix.
-		*/
+		 * Returns a transposed copy of the provided matrix (rows->colums)
+		 *
+		 * @param matrix The matrix to be transposed.
+		 *
+		 * @returns A transposed copy of of the provided matrix.
+		 */
 		Matrix4x4 Transpose() {
 			Matrix4x4 out_matrix;
 
@@ -697,12 +628,12 @@ namespace Axle {
 		}
 
 		/**
-		* Creates and returns an inverse of the provided matrix.
-		*
-		* @param matrix The matrix to be inverted.
-		*
-		* @returns A inverted copy of the provided matrix.
-		*/
+		 * Creates and returns an inverse of the provided matrix.
+		 *
+		 * @param matrix The matrix to be inverted.
+		 *
+		 * @returns A inverted copy of the provided matrix.
+		 */
 		Matrix4x4 Inverse() {
 			const float* m = data;
 
@@ -762,12 +693,12 @@ namespace Axle {
 		}
 
 		/**
-		* Creates a translation matrix
-		* 
-		* @param position The position of the translation
-		* 
-		* @returns A translation matrix
-		*/
+		 * Creates a translation matrix
+		 *
+		 * @param position The position of the translation
+		 *
+		 * @returns A translation matrix
+		 */
 		static Matrix4x4 Translation(Vector3 position) {
 			Matrix4x4 mat = Matrix4x4::Indentity();
 			mat.data[12] = position.x;
@@ -777,12 +708,12 @@ namespace Axle {
 		}
 
 		/**
-		* Returns a scale matrix using the provided scale.
-		*
-		* @param scale The 3-component scale.
-		*
-		* @returns A scale matrix.
-		*/
+		 * Returns a scale matrix using the provided scale.
+		 *
+		 * @param scale The 3-component scale.
+		 *
+		 * @returns A scale matrix.
+		 */
 		static Matrix4x4 Scale(Vector3 scale) {
 			Matrix4x4 mat = Matrix4x4::Indentity();
 			mat.data[0] = scale.x;
@@ -792,14 +723,14 @@ namespace Axle {
 		}
 
 		/**
-		* Creates a rotation matrix.
-		* 
-		* @param xRadians The rotation around the x-axis in radians.
-		* @param yRadians The rotation around the y-axis in radians.
-		* @param zRadians The rotation around the z-axis in radians.
-		* 
-		* @returns A rotation matrix.
-		*/
+		 * Creates a rotation matrix.
+		 *
+		 * @param xRadians The rotation around the x-axis in radians.
+		 * @param yRadians The rotation around the y-axis in radians.
+		 * @param zRadians The rotation around the z-axis in radians.
+		 *
+		 * @returns A rotation matrix.
+		 */
 		static Matrix4x4 Rotate(float xRadians, float yRadians, float zRadians) {
 			Matrix4x4 mat = Matrix4x4::Indentity();
 
@@ -829,15 +760,13 @@ namespace Axle {
 			for (int i = 0; i < 4; i++) {
 				// Columns
 				for (int j = 0; j < 4; j++) {
-					result.data[i * 4 + j] = data[i * 4 + 0] * other.data[0 * 4 + j] +
-						data[i * 4 + 1] * other.data[1 * 4 + j] +
-						data[i * 4 + 2] * other.data[2 * 4 + j] +
-						data[i * 4 + 3] * other.data[3 * 4 + j];
+					result.data[i * 4 + j] =
+						data[i * 4 + 0] * other.data[0 * 4 + j] + data[i * 4 + 1] * other.data[1 * 4 + j] +
+						data[i * 4 + 2] * other.data[2 * 4 + j] + data[i * 4 + 3] * other.data[3 * 4 + j];
 				}
 			}
 			return result;
 		}
-
 	};
 
 	struct Quaternion {
@@ -845,13 +774,9 @@ namespace Axle {
 
 		Quaternion(float x, float y, float z, float w) : vec(x, y, z, w) {}
 
-		static Quaternion Identity() {
-			return Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
-		}
+		static Quaternion Identity() { return Quaternion(0.0f, 0.0f, 0.0f, 1.0f); }
 
-		inline void Normalize() {
-			vec.Normalize();
-		}
+		inline void Normalize() { vec.Normalize(); }
 
 		inline Quaternion Normalized() {
 			Quaternion quat = Quaternion(vec.x, vec.y, vec.z, vec.w);
@@ -859,9 +784,7 @@ namespace Axle {
 			return quat;
 		}
 
-		inline Quaternion Conjugate() {
-			return Quaternion(-vec.x, -vec.y, -vec.z, vec.w);
-		}
+		inline Quaternion Conjugate() { return Quaternion(-vec.x, -vec.y, -vec.z, vec.w); }
 
 		inline Quaternion Inverse() {
 			Quaternion quat = Conjugate();
@@ -924,12 +847,10 @@ namespace Axle {
 		}
 
 		Quaternion operator*(const Quaternion& other) const {
-			return Quaternion(
-				vec.w * other.vec.x + vec.x * other.vec.w + vec.y * other.vec.z - vec.z * other.vec.y,
+			return Quaternion(vec.w * other.vec.x + vec.x * other.vec.w + vec.y * other.vec.z - vec.z * other.vec.y,
 				vec.w * other.vec.y - vec.x * other.vec.z + vec.y * other.vec.w + vec.z * other.vec.x,
 				vec.w * other.vec.z + vec.x * other.vec.y - vec.y * other.vec.x + vec.z * other.vec.w,
-				vec.w * other.vec.w - vec.x * other.vec.x - vec.y * other.vec.y - vec.z * other.vec.z
-			);
+				vec.w * other.vec.w - vec.x * other.vec.x - vec.y * other.vec.y - vec.z * other.vec.z);
 		}
 	};
-}
+} // namespace Axle

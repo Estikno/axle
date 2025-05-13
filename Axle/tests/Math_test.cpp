@@ -107,7 +107,6 @@ TEST_CASE("Mathf") {
 
     SUBCASE("Mathf::Random") {
         CHECK(Mathf::Random() >= 0);
-        // CHECK(Mathf::Random() <= 32767);
         CHECK(Mathf::Random(1, 10) >= 1);
         CHECK(Mathf::Random(1, 10) <= 10);
         CHECK(Mathf::Random(5, 15) >= 5);
@@ -144,6 +143,7 @@ TEST_CASE("Vector2") {
 
     SUBCASE("Magnitude and SqrMagnitude") {
         Vector2 v(3.0f, 4.0f);
+
         CHECK(v.SqrMagnitude() == doctest::Approx(25.0f));
         CHECK(v.Magnitude() == doctest::Approx(5.0f));
     }
@@ -151,6 +151,8 @@ TEST_CASE("Vector2") {
     SUBCASE("Normalize and Normalized") {
         Vector2 v(3.0f, 4.0f);
         Vector2 n = v.Normalized();
+
+        CHECK(n.SqrMagnitude() == doctest::Approx(1.0f));
         CHECK(n.Magnitude() == doctest::Approx(1.0f));
         CHECK(n == Vector2(0.6f, 0.8f));
 
@@ -160,7 +162,9 @@ TEST_CASE("Vector2") {
 
     SUBCASE("Perpendicular") {
         Vector2 v(1.0f, 0.0f);
+
         CHECK(v.Perpendicular() == Vector2(0.0f, 1.0f));
+        CHECK(Vector2::Dot(v, v.Perpendicular()) == doctest::Approx(0.0f));
     }
 
     SUBCASE("Operators") {
@@ -169,6 +173,7 @@ TEST_CASE("Vector2") {
 
         CHECK((a + b) == Vector2(4.0f, 6.0f));
         CHECK((b - a) == Vector2(2.0f, 2.0f));
+        CHECK((a - b) == Vector2(-2.0f, -2.0f));
         CHECK((a * 2.0f) == Vector2(2.0f, 4.0f));
         CHECK((b / 2.0f) == Vector2(1.5f, 2.0f));
     }
@@ -179,14 +184,14 @@ TEST_CASE("Vector2") {
 
         CHECK(Vector2::Dot(a, b) == doctest::Approx(0.0f));
         CHECK(Vector2::Dot(a, a) == doctest::Approx(1.0f));
-        CHECK(Vector2::Distance(a, b) == doctest::Approx(std::sqrt(2.0f)));
+        CHECK(Vector2::Distance(a, b) == doctest::Approx(Mathf::SQRT_2));
     }
 
     SUBCASE("Angle between vectors") {
         Vector2 a(1.0f, 0.0f);
         Vector2 b(0.0f, 1.0f);
-        CHECK(Vector2::Angle(a, b) ==
-              doctest::Approx(Mathf::PI / 2.0f)); // assumes PI is defined
+
+        CHECK(Vector2::Angle(a, b) == doctest::Approx(Mathf::PI_1_2));
     }
 
     SUBCASE("Lerp and LerpUnclamped") {
@@ -195,11 +200,13 @@ TEST_CASE("Vector2") {
 
         CHECK(Vector2::Lerp(a, b, 0.5f) == Vector2(1.0f, 1.0f));
         CHECK(Vector2::LerpUnclamped(a, b, 1.5f) == Vector2(3.0f, 3.0f));
+        CHECK(Vector2::Lerp(a, b, 2.0f) == b);
     }
 
     SUBCASE("Reflect") {
         Vector2 dir(1.0f, -1.0f);
         Vector2 normal(0.0f, 1.0f);
+
         CHECK(Vector2::Reflect(dir, normal) == Vector2(1.0f, 1.0f));
     }
 
@@ -209,5 +216,113 @@ TEST_CASE("Vector2") {
 
         CHECK(Vector2::ScalarProjection(a, b) == doctest::Approx(2.0f));
         CHECK(Vector2::Project(a, b) == Vector2(2.0f, 0.0f));
+    }
+}
+
+TEST_CASE("Vector3") {
+    SUBCASE("Constructors and equality") {
+        Vector3 v(1.0f, 2.0f, 3.0f);
+
+        CHECK(v.x == doctest::Approx(1.0f));
+        CHECK(v.y == doctest::Approx(2.0f));
+        CHECK(v.z == doctest::Approx(3.0f));
+        CHECK(v == Vector3(1.0f, 2.0f, 3.0f));
+    }
+
+    SUBCASE("Static constructors") {
+        CHECK(Vector3::Zero() == Vector3(0.0f, 0.0f, 0.0f));
+        CHECK(Vector3::One() == Vector3(1.0f, 1.0f, 1.0f));
+        CHECK(Vector3::Right() == Vector3(1.0f, 0.0f, 0.0f));
+        CHECK(Vector3::Left() == Vector3(-1.0f, 0.0f, 0.0f));
+        CHECK(Vector3::Up() == Vector3(0.0f, 1.0f, 0.0f));
+        CHECK(Vector3::Down() == Vector3(0.0f, -1.0f, 0.0f));
+        CHECK(Vector3::Forward() == Vector3(0.0f, 0.0f, 1.0f));
+        CHECK(Vector3::Back() == Vector3(0.0f, 0.0f, -1.0f));
+    }
+
+    SUBCASE("Operators + - * /") {
+        Vector3 v1(1, 2, 3);
+        Vector3 v2(4, 5, 6);
+
+        CHECK(v1 + v2 == Vector3(5, 7, 9));
+        CHECK(v2 - v1 == Vector3(3, 3, 3));
+        CHECK(v1 - v2 == Vector3(-3, -3, -3));
+        CHECK(v1 * 2.0f == Vector3(2, 4, 6));
+        CHECK(v2 / 2.0f == Vector3(2, 2.5f, 3));
+    }
+
+    SUBCASE("Magnitude and SqrMagnitude") {
+        Vector3 v(3, 4, 0);
+
+        CHECK(v.SqrMagnitude() == doctest::Approx(25.0f));
+        CHECK(v.Magnitude() == doctest::Approx(5.0f));
+    }
+
+    SUBCASE("Normalization") {
+        Vector3 v(3, 4, 0);
+        Vector3 n = v.Normalized();
+
+        CHECK(n.SqrMagnitude() == doctest::Approx(1.0f));
+        CHECK(n.Magnitude() == doctest::Approx(1.0f));
+        CHECK(n == v / v.Magnitude());
+
+        Vector3 mod = v;
+        mod.Normalize();
+
+        CHECK(mod == n);
+    }
+
+    SUBCASE("Dot product and angle") {
+        Vector3 a(1, 0, 0);
+        Vector3 b(0, 1, 0);
+
+        CHECK(Vector3::Dot(a, b) == doctest::Approx(0.0f));
+        CHECK(Vector3::Dot(a, a) == doctest::Approx(1.0f));
+        CHECK(Vector3::Angle(a, b) == doctest::Approx(Mathf::PI_1_2));
+    }
+
+    SUBCASE("Distance") {
+        Vector3 a(0, 3, 4);
+        Vector3 b(0, 0, 0);
+
+        CHECK(Vector3::Distance(a, b) == doctest::Approx(5.0f));
+    }
+
+    SUBCASE("Cross product") {
+        Vector3 a(1, 0, 0);
+        Vector3 b(0, 1, 0);
+        Vector3 result = Vector3::Cross(a, b);
+
+        CHECK(result == Vector3(0, 0, 1));
+    }
+
+    SUBCASE("Projection and scalar projection") {
+        Vector3 v(3, 4, 0);
+        Vector3 axis(1, 0, 0);
+
+        CHECK(Vector3::ScalarProjection(v, axis) == doctest::Approx(3.0f));
+        CHECK(Vector3::Project(v, axis) == Vector3(3, 0, 0));
+    }
+
+    SUBCASE("Lerp and LerpUnclamped") {
+        Vector3 a(0, 0, 0), b(10, 10, 10);
+
+        CHECK(Vector3::Lerp(a, b, 0.5f) == Vector3(5, 5, 5));
+        CHECK(Vector3::LerpUnclamped(a, b, 1.5f) == Vector3(15, 15, 15));
+    }
+
+    SUBCASE("Reflect") {
+        Vector3 dir(1, -1, 0);
+        Vector3 normal(0, 1, 0);
+
+        CHECK(Vector3::Reflect(dir, normal) == Vector3(1, 1, 0));
+    }
+
+    SUBCASE("ProjectOnPlane") {
+        Vector3 v(1, 2, 3);
+        Vector3 normal(0, 1, 0);
+        Vector3 result = Vector3::ProjectOnPlane(v, normal);
+
+        CHECK(result == Vector3(1, 0, 3));
     }
 }

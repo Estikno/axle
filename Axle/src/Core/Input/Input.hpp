@@ -146,18 +146,18 @@ namespace Axle {
         KEYS_MAX_KEYS
 	};
 
-    class AXLE_API Input {
+    class Input {
     public:
-        static bool GetKeyDown(Keys key);
-        static bool GetKeyUp(Keys key);
-        static bool GetKey(Keys key);
+        AXLE_API static bool GetKeyDown(Keys key);
+        AXLE_API static bool GetKeyUp(Keys key);
+        AXLE_API static bool GetKey(Keys key);
 
-        static bool GetMouseButtonDown(MouseButtons button);
-        static bool GetMouseButtonUp(MouseButtons button);
-        static bool GetMouseButton(MouseButtons button);
-		static Vector2 GetMousePosition();
+        AXLE_API static bool GetMouseButtonDown(MouseButtons button);
+        AXLE_API static bool GetMouseButtonUp(MouseButtons button);
+        AXLE_API static bool GetMouseButton(MouseButtons button);
+		AXLE_API static Vector2 GetMousePosition();
 
-		// Modify the keys state (functions should only be called by the event system)
+		// Modify the keys state. This should only be called by the event system and should not be available to the end user.
         static void SetKey(Keys key, bool pressed);
 		static void SetMouseButton(MouseButtons button, bool pressed);
 		static void SetMousePosition(float x, float y);
