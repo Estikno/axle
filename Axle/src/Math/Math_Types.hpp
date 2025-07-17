@@ -411,12 +411,13 @@ namespace Axle {
 		};
 
 		Vector4(float x, float y, float z, float w) : x(x), y(y), z(z), w(w) {}
+		Vector4() : x(0.0f), y(0.0f), z(0.0f), w(0.0f) {}
 
 		/// Shorthand of writing Vector4(0.0f, 0.0f, 0.0f, 0.0f)
-		static Vector4 Zero() { return Vector4(0.0f, 0.0f, 0.0f, 0.0f); }
+		inline static Vector4 Zero() { return Vector4(0.0f, 0.0f, 0.0f, 0.0f); }
 
 		/// Shorthand of writing Vector4(1.0f, 1.0f, 1.0f, 1.0f)
-		static Vector4 One() { return Vector4(1.0f, 1.0f, 1.0f, 1.0f); }
+		inline static Vector4 One() { return Vector4(1.0f, 1.0f, 1.0f, 1.0f); }
 
 		/**
 		 * Returns the squared magnitude of the vector
@@ -463,14 +464,14 @@ namespace Axle {
 		 *
 		 * @returns The converted Vector3
 		 */
-		Vector3 ConvertToVector3() { return Vector3(this->x, this->y, this->z); }
+		inline Vector3 ConvertToVector3() { return Vector3(this->x, this->y, this->z); }
 
 		/**
 		 * Converts the current vector4 to a vector2
 		 *
 		 * @returns The converted Vector2
 		 */
-		Vector2 ConvertToVector2() { return Vector2(this->x, this->y); }
+		inline Vector2 ConvertToVector2() { return Vector2(this->x, this->y); }
 
 		/**
 		 * Calculates the dot product of two vectors
@@ -480,7 +481,7 @@ namespace Axle {
 		 *
 		 * @returns The dot product of the two vectors
 		 */
-		static float Dot(Vector4& a, Vector4& b) { return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w; }
+		inline static float Dot(Vector4& a, Vector4& b) { return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w; }
 
 		Vector4 operator+(const Vector4& other) const {
 			return Vector4(x + other.x, y + other.y, z + other.z, w + other.w);
@@ -497,14 +498,16 @@ namespace Axle {
 	};
 
 	struct Matrix4x4 {
-		float data[16];
+		float data[16] = {};
+
+		Matrix4x4() = default;
 
 		/**
 		 * Returns the Identity matrix
 		 *
 		 * @returns The Identity matrix
 		 */
-		static Matrix4x4 Indentity() {
+		inline static Matrix4x4 Indentity() {
 			Matrix4x4 mat;
 			mat.data[0] = 1.0f;
 			mat.data[5] = 1.0f;
@@ -518,7 +521,7 @@ namespace Axle {
 		 *
 		 * @returns A matrix full of zeros
 		 */
-		static Matrix4x4 Zero() {
+		inline static Matrix4x4 Zero() {
 			Matrix4x4 mat;
 			return mat;
 		}
@@ -536,7 +539,7 @@ namespace Axle {
 		 *
 		 * @returns A new orthographic projection matrix.
 		 */
-		static Matrix4x4 OrthographicProjection(float left, float right, float bottom, float top, float nearClip, float farClip) {
+		inline static Matrix4x4 OrthographicProjection(float left, float right, float bottom, float top, float nearClip, float farClip) {
 			Matrix4x4 mat;
 			mat.data[0] = 2.0f / (right - left);
 			mat.data[5] = 2.0f / (top - bottom);
@@ -558,7 +561,7 @@ namespace Axle {
 		 *
 		 * @returns A new perspective matrix.
 		 */
-		static Matrix4x4 PerspectiveProjection(float fovRadians, float aspectRatio, float nearClip, float farClip) {
+		inline static Matrix4x4 PerspectiveProjection(float fovRadians, float aspectRatio, float nearClip, float farClip) {
 			Matrix4x4 mat;
 			float f = 1.0f / Mathf::Tan(fovRadians / 2.0f);
 
@@ -581,7 +584,7 @@ namespace Axle {
 		 *
 		 * @returns A matrix looking at target from the perspective of position.
 		 */
-		static Matrix4x4 LookAt(Vector3 position, Vector3 target, Vector3 up) {
+		inline static Matrix4x4 LookAt(Vector3 position, Vector3 target, Vector3 up) {
 			Vector3 zAxis = (position - target).Normalized();
 			Vector3 xAxis = Vector3::Cross(up, zAxis).Normalized();
 			Vector3 yAxis = Vector3::Cross(zAxis, xAxis).Normalized();
@@ -615,7 +618,7 @@ namespace Axle {
 		 *
 		 * @returns A transposed copy of of the provided matrix.
 		 */
-		Matrix4x4 Transpose() {
+		inline Matrix4x4 Transpose() {
 			Matrix4x4 out_matrix;
 
 			for (int i = 0; i < 4; i++) {
@@ -634,7 +637,7 @@ namespace Axle {
 		 *
 		 * @returns A inverted copy of the provided matrix.
 		 */
-		Matrix4x4 Inverse() {
+		inline Matrix4x4 Inverse() {
 			const float* m = data;
 
 			float t0 = m[10] * m[15];
