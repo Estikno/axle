@@ -4,6 +4,7 @@
 
 #include "Core/Core.hpp"
 #include "Math/Math_Types.hpp"
+#include "InputState.hpp"
 
 namespace Axle {
 	enum class MouseButtons {
@@ -160,8 +161,12 @@ namespace Axle {
 		// Modify the keys state. This should only be called by the event system and should not be available to the end user.
         static void SetKey(Keys key, bool pressed);
 		static void SetMouseButton(MouseButtons button, bool pressed);
-		static void SetMousePosition(float x, float y);
-        static void SetMousePosition(Vector2 position);
+		static void SetMousePosition(Vector2 position);
         static void SetMouseWheel(float delta);
+
+		static void Update();
+
+	private:
+		static InputState s_inputState;
     };
 }

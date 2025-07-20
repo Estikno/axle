@@ -32,7 +32,7 @@ namespace Axle {
 		*
 		* @returns Returns a reference to the Event Handler
 		*/
-		static EventHandler& GetInstance() {
+		inline static EventHandler& GetInstance() {
 			return *m_eventHandler;
 		}
 
