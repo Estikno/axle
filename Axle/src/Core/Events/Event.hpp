@@ -33,6 +33,7 @@ namespace Axle {
 		union {
 			/// 2 x 64-bit signed integers
 			long long i64[2];
+
 			/// 2 x 64-bit unsigned integers
 			unsigned long long u64[2];
 
@@ -41,18 +42,22 @@ namespace Axle {
 
 			/// 4 x 32-bit signed integers
 			int i32[4];
+
 			/// 4 x 32-bit unsigned integers
 			unsigned int u32[4];
+
 			/// 4 x 32-bit floats
 			float f32[4];
 
 			/// 8 x 16-bit signed integers
 			short i16[8];
+
 			/// 8 x 16-bit unsigned integers
 			unsigned short u16[8];
 
 			/// 16 x 8-bit signed integers
 			signed char i8[16];
+
 			/// 16 x 8-bit unsigned integers
 			unsigned char u8[16];
 
@@ -109,6 +114,10 @@ namespace Axle {
 		*/
 		EventCategory GetEventGategory() {
 			return m_eventCategory;
+		}
+
+		EventContext& GetContext() {
+			return m_context;
 		}
 
 		/**

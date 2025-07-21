@@ -15,6 +15,11 @@ public:
 	}
 };
 
+struct PlayerData {
+	short id;
+	float health;
+};
+
 void TestFunction_Render(Event* event) {
 	CHECK(event != nullptr);
 	CHECK(event->GetEventType() == Axle::EventType::AppRender);
@@ -34,6 +39,29 @@ void TestFunction_AllInput(Event* event) {
 	CHECK(event != nullptr);
 	CHECK(event->GetEventType() == Axle::EventType::KeyPressed);
 	CHECK(event->GetEventGategory() == Axle::EventCategory::Input);
+}
+
+void TestFunction_AllInput_With_Data(Event* event) {
+	CHECK(event != nullptr);
+	CHECK(event->GetEventType() == Axle::EventType::KeyPressed);
+	CHECK(event->GetEventGategory() == Axle::EventCategory::Input);
+
+	CHECK(event->GetContext().u16[0] == 12);
+}
+
+void TestFunction_Complex_CustomData(Event* event) {
+	CHECK(event != nullptr);
+	CHECK(event->GetEventType() == Axle::EventType::KeyPressed);
+	CHECK(event->GetEventGategory() == Axle::EventCategory::Input);
+
+	CHECK(event->GetContext().custom_data.size == sizeof(PlayerData));
+
+	PlayerData* player = static_cast<PlayerData*>(event->GetContext().custom_data.data);
+
+	CHECK(player->id == 12);
+	CHECK(player->health == doctest::Approx(100.0f));
+
+	delete player;
 }
 
 TEST_CASE("EventHandler") {
@@ -65,6 +93,27 @@ TEST_CASE("EventHandler") {
 		Subscription sub_1 = instance.Subscribe(TestFunction_AllInput, EventType::None, EventCategory::Input);
 
 		Event* event_1 = new Event(EventType::KeyPressed, EventCategory::Input);
+
+		CHECK_NOTHROW(AX_ADD_EVENT(event_1));
+	}
+
+	SUBCASE("Event containing custom data") {
+		Subscription sub_1 = instance.Subscribe(TestFunction_AllInput_With_Data, EventType::None, EventCategory::Input);
+
+		Event* event_1 = new Event(EventType::KeyPressed, EventCategory::Input);
+		event_1->GetContext().u16[0] = 12;
+
+		CHECK_NOTHROW(AX_ADD_EVENT(event_1));
+	}
+
+	SUBCASE("Event containing complex custom data") {
+		Subscription sub_1 = instance.Subscribe(TestFunction_Complex_CustomData, EventType::None, EventCategory::Input);
+
+		PlayerData* pdata = new PlayerData{ 12, 100.0f };
+
+		Event* event_1 = new Event(EventType::KeyPressed, EventCategory::Input);
+		event_1->GetContext().custom_data.size = sizeof(PlayerData);
+		event_1->GetContext().custom_data.data = pdata;
 
 		CHECK_NOTHROW(AX_ADD_EVENT(event_1));
 	}
