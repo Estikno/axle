@@ -99,9 +99,24 @@ namespace Axle {
 		* @param pressed True if the mouse button is pressed, false otherwise.
         */
 		static void SetMouseButton(MouseButtons button, bool pressed);
+
+        /**
+		* Sets the mouse position.
+        * 
+		* @param position The new mouse position in screen coordinates.
+        */
 		static void SetMousePosition(Vector2 position);
+
+        /**
+		* Sets the mouse wheel delta.
+        * 
+		* @param delta The amount the mouse wheel has been scrolled.
+        */
         static void SetMouseWheel(float delta);
 
+        /**
+		* Updates the input state.
+        */
 		static void Update();
 
 	private:
