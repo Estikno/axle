@@ -11,7 +11,7 @@ namespace Axle {
 		WindowClose, WindowResize, WindowFocus, WindowLostFocus, WindowMoved,
 		AppTick, AppUpdate, AppRender,
 		//Input
-		KeyPressed, KeyReleased,
+		KeyPressed, KeyIsPressed, KeyReleased,
 		MouseButtonPressed, MouseButtonReleased, MouseMoved, MouseScrolled
 	};
 

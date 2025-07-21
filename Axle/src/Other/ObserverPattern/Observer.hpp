@@ -58,7 +58,7 @@ namespace Axle {
 		/**
 		* Manually unsubscribe from the Subject.
 		*
-		* Safe to call multiple times (only unsubscribes once).
+		* Safe to call multiple times.
 		*/
 		void Unsubscribe() {
 			if (!m_unsubscribed && m_subject) {
