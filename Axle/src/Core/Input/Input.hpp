@@ -9,7 +9,7 @@
 namespace Axle {
     class Input {
     public:
-        /*
+        /**
 		* Returns true if the key was pressed down this frame.
         * 
         * This will only return true once per key press.
@@ -21,7 +21,7 @@ namespace Axle {
         */
         AXLE_API static bool GetKeyDown(Keys key);
 
-        /*
+        /**
 		* Returns true if the key was released this frame.
         * 
 		* Just as GetKeyDown, this will only return true once per key release.
@@ -33,7 +33,7 @@ namespace Axle {
         */
         AXLE_API static bool GetKeyUp(Keys key);
 
-        /*
+        /**
 		* Returns true if the key is currently being pressed.
         * 
 		* Unlike GetKeyDown and GetKeyUp, this will return true as long as the key is pressed down.
@@ -44,7 +44,7 @@ namespace Axle {
         */
         AXLE_API static bool GetKey(Keys key);
 
-        /*
+        /**
 		* Same as GetKeyDown, but for mouse buttons.
         * 
 		* @param button The mouse button to check.
@@ -53,7 +53,7 @@ namespace Axle {
         */
         AXLE_API static bool GetMouseButtonDown(MouseButtons button);
 
-        /*
+        /**
 		* Same as GetKeyUp, but for mouse buttons.
         *
 		* @param button The mouse button to check.
@@ -62,7 +62,7 @@ namespace Axle {
         */
         AXLE_API static bool GetMouseButtonUp(MouseButtons button);
 
-        /*
+        /**
 		* Same as GetKey, but for mouse buttons.
         * 
 		* @param button The mouse button to check.
@@ -71,7 +71,7 @@ namespace Axle {
         */
         AXLE_API static bool GetMouseButton(MouseButtons button);
 
-        /*
+        /**
 		* Gets the current mouse position in screen coordinates.
         * 
 		* @returns The current mouse position in screen coordinates.
@@ -80,7 +80,7 @@ namespace Axle {
 
 		// Modify the keys state. This should only be called by the event system and should not be available to the end user.
 
-        /*
+        /**
 		* Sets the state of a key.
         *
         * Additionaly, the function will also invoke an event to the event system informing of the action.
@@ -90,7 +90,7 @@ namespace Axle {
         */
         static void SetKey(Keys key, bool pressed);
 
-        /*
+        /**
 		* Sets the state of a mouse button.
         *
         * Additionaly, the function will also invoke an event to the event system informing of the action.

@@ -24,6 +24,53 @@ namespace Axle {
 	};
 
 	/**
+	* @brief Context of the event. Contains data that can be used by the event.
+	* 
+	* Multiple data can be used.
+	*/
+	struct EventContext {
+		// 128 bits
+		union {
+			/// 2 x 64-bit signed integers
+			long long i64[2];
+			/// 2 x 64-bit unsigned integers
+			unsigned long long u64[2];
+
+			/// 2 x 64-bit floating-point numbers
+			double f64[2];
+
+			/// 4 x 32-bit signed integers
+			int i32[4];
+			/// 4 x 32-bit unsigned integers
+			unsigned int u32[4];
+			/// 4 x 32-bit floats
+			float f32[4];
+
+			/// 8 x 16-bit signed integers
+			short i16[8];
+			/// 8 x 16-bit unsigned integers
+			unsigned short u16[8];
+
+			/// 16 x 8-bit signed integers
+			signed char i8[16];
+			/// 16 x 8-bit unsigned integers
+			unsigned char u8[16];
+
+			/**
+			* @brief Allows a pointer to arbitrary data to be passed. Also includes size info.
+			*
+			* NOTE: If used, should be freed by the sender or listener. Normally by the listener.
+			*/
+			struct {
+				// The size of the data pointed to (in bytes)
+				unsigned long long size;
+				// A pointer to a memory block of data to be included with the event.
+				void* data;
+			} custom_data;
+		};
+	};
+
+	/**
 	* Base class for all events.
 	*
 	* This class is recommended to be inherited and to add the necessary functionality of each event type.
@@ -32,7 +79,7 @@ namespace Axle {
 	public:
 		/**
 		* Returns if the event has already been handled.
-		* 
+		*
 		* @returns If the event has already been handled.
 		*/
 		bool IsHadled() {
@@ -48,7 +95,7 @@ namespace Axle {
 
 		/**
 		* Gets the type of event
-		* 
+		*
 		* @returns The type of event
 		*/
 		EventType GetEventType() {
@@ -57,7 +104,7 @@ namespace Axle {
 
 		/**
 		* Gets the category of the event
-		* 
+		*
 		* @returns The cateory of the event
 		*/
 		EventCategory GetEventGategory() {
@@ -66,7 +113,7 @@ namespace Axle {
 
 		/**
 		* Constructor
-		* 
+		*
 		* @param eventType The type of the event
 		* @param eventCategory The category of the event
 		*/
@@ -78,6 +125,8 @@ namespace Axle {
 
 		EventType m_eventType = EventType::None;
 		EventCategory m_eventCategory = EventCategory::None;
+
+		EventContext m_context = {};
 	};
 }
 
