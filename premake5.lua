@@ -6,6 +6,63 @@ workspace "Axle"
 
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
+project "GLFW"
+    location "Axle/vendor/GLFW"
+    kind "StaticLib"
+    language "C"
+    staticruntime "on"
+
+    targetdir ("bin/" .. outputdir .. "/%{prj.name}")
+    objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+
+    files {
+        "Axle/vendor/GLFW/src/**.c",
+        "Axle/vendor/GLFW/include/**.h"
+    }
+
+    includedirs {
+        "Axle/vendor/GLFW/include"
+    }
+
+    filter "system:windows"
+        systemversion "latest"
+        defines { "_GLFW_WIN32", "_CRT_SECURE_NO_WARNINGS" }
+
+        files {
+            "Axle/vendor/GLFW/src/win32_*.c",
+            "Axle/vendor/GLFW/src/wgl_context.c",
+            "Axle/vendor/GLFW/src/egl_context.c",
+            "Axle/vendor/GLFW/src/osmesa_context.c"
+        }
+
+    filter "system:linux"
+        systemversion "latest"
+        defines { "_GLFW_X11" }
+		pic "On"
+
+        files {
+            "Axle/vendor/GLFW/src/x11_*.c",
+            "Axle/vendor/GLFW/src/glx_context.c",
+            "Axle/vendor/GLFW/src/egl_context.c",
+            "Axle/vendor/GLFW/src/osmesa_context.c",
+            "Axle/vendor/GLFW/src/posix_time.c",
+            "Axle/vendor/GLFW/src/posix_thread.c"
+        }
+
+        links { "GL", "m", "dl", "X11", "pthread", "Xrandr", "Xi", "Xxf86vm", "Xcursor" }
+
+    filter "configurations:Debug"
+        runtime "Debug"
+        symbols "on"
+
+    filter "configurations:Release"
+        runtime "Release"
+        optimize "on"
+
+    filter "configurations:Dist"
+        runtime "Release"
+        optimize "on"
+
 project "Axle"
     location "Axle"
     kind "SharedLib"
@@ -23,10 +80,13 @@ project "Axle"
 
     includedirs { 
         "%{prj.name}/src",
-        "%{prj.name}/vendor/spdlog/include" 
+        "%{prj.name}/vendor/spdlog/include",
+		"Axle/vendor/GLFW/include"
     }
 
     -- buildoptions { "/utf-8" }
+	
+	links { "GLFW" }
 
     filter "action:vs*"
         buildoptions { "/utf-8" }
