@@ -6,11 +6,55 @@ workspace "Axle"
 
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
+IncludeDir = {}
+IncludeDir["GLFW"] = "Axle/vendor/GLFW/include"
+IncludeDir["Glad"] = "Axle/vendor/Glad/include"
+
+project "Glad"
+    kind "StaticLib"
+    language "C"
+    staticruntime "on"
+    -- warnings "off"
+
+    targetdir ("bin/" .. outputdir .. "/%{prj.name}")
+    objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+
+    files {
+        "Axle/vendor/Glad/src/glad.c",
+        "Axle/vendor/Glad/include/glad/glad.h",
+        "Axle/vendor/Glad/include/KHR/khrplatform.h"
+    }
+
+    includedirs {
+        "Axle/vendor/Glad/include"
+    }
+
+    filter "system:windows"
+        systemversion "latest"
+
+    filter "system:linux"
+        pic "On"
+        systemversion "latest"
+
+    filter "configurations:Debug"
+        runtime "Debug"
+        symbols "on"
+
+    filter "configurations:Release"
+        runtime "Release"
+        optimize "speed"
+
+    filter "configurations:Dist"
+        runtime "Release"
+        optimize "speed"
+        symbols "off"
+
 project "GLFW"
     location "Axle/vendor/GLFW"
     kind "StaticLib"
     language "C"
     staticruntime "on"
+	-- warnings "off"
 
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
@@ -81,12 +125,13 @@ project "Axle"
     includedirs { 
         "%{prj.name}/src",
         "%{prj.name}/vendor/spdlog/include",
-		"Axle/vendor/GLFW/include"
+		"%{IncludeDir.GLFW}",
+        "%{IncludeDir.Glad}"
     }
 
     -- buildoptions { "/utf-8" }
 	
-	links { "GLFW" }
+	links { "GLFW", "Glad" }
 
     filter "action:vs*"
         buildoptions { "/utf-8" }
