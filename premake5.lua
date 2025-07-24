@@ -11,6 +11,7 @@ IncludeDir["GLFW"] = "Axle/vendor/GLFW/include"
 IncludeDir["Glad"] = "Axle/vendor/Glad/include"
 
 project "Glad"
+	location "Axle/vendor/Glad"
     kind "StaticLib"
     language "C"
     staticruntime "on"
