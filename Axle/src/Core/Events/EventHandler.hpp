@@ -33,7 +33,7 @@ namespace Axle {
 		* @returns Returns a reference to the Event Handler
 		*/
 		inline static EventHandler& GetInstance() {
-			return *m_eventHandler;
+			return *m_EventHandler;
 		}
 
 		/**
@@ -79,14 +79,14 @@ namespace Axle {
 
 	private:
 		/// The singleton of the event handler class
-		static std::unique_ptr<EventHandler> m_eventHandler;
+		static std::unique_ptr<EventHandler> m_EventHandler;
 		/// A map that stores the type and category of event each handler wants (by the id)
-		std::unordered_map<int, std::pair<EventCategory, EventType>> m_handlersType;
+		std::unordered_map<int, std::pair<EventCategory, EventType>> m_HandlersType;
 
 		/// A map that stores the events by EventType
-		std::unordered_map<EventType, std::vector<std::shared_ptr<Event>>> m_eventsType;
+		std::unordered_map<EventType, std::vector<std::shared_ptr<Event>>> m_EventsType;
 		/// A map that stores the events by EventCategory
-		std::unordered_map<EventCategory, std::vector<std::shared_ptr<Event>>> m_eventsCategory;
+		std::unordered_map<EventCategory, std::vector<std::shared_ptr<Event>>> m_EventsCategory;
 	};
 }
 

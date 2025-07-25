@@ -12,7 +12,7 @@ namespace Axle {
 		AppTick, AppUpdate, AppRender,
 		//Input
 		KeyPressed, KeyIsPressed, KeyReleased,
-		MouseButtonPressed, MouseButtonIsPressed, MouseButtonReleased, MouseMoved, MouseScrolled
+		MouseButtonPressed, MouseButtonReleased, MouseMoved, MouseScrolled
 	};
 
 	/// Enum that defines the event category

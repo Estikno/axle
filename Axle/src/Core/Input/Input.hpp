@@ -105,7 +105,7 @@ namespace Axle {
         * 
 		* @param position The new mouse position in screen coordinates.
         */
-		static void SetMousePosition(Vector2 position);
+		static void SetMousePosition(Vector2 &position);
 
         /**
 		* Sets the mouse wheel delta.
@@ -120,6 +120,6 @@ namespace Axle {
 		static void Update();
 
 	private:
-		static InputState s_inputState;
+		static InputState s_InputState;
     };
 }

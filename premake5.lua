@@ -21,8 +21,8 @@ project "Glad"
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
 
     files {
-        "Axle/vendor/Glad/src/glad.c",
-        "Axle/vendor/Glad/include/glad/glad.h",
+        "Axle/vendor/Glad/src/gl.c",
+        "Axle/vendor/Glad/include/glad/gl.h",
         "Axle/vendor/Glad/include/KHR/khrplatform.h"
     }
 
@@ -185,7 +185,12 @@ project "Sandbox"
 
     files { "%{prj.name}/src/**.hpp", "%{prj.name}/src/**.cpp", "%{prj.name}/src/**.h" }
 
-    includedirs { "Axle/vendor/spdlog/include", "Axle/src" }
+    includedirs { 
+		"Axle/vendor/spdlog/include", 
+		"Axle/src", 
+		"%{IncludeDir.GLFW}",
+        "%{IncludeDir.Glad}" 
+	}
 
     links { "Axle" }
 
