@@ -159,7 +159,6 @@ namespace Axle {
 	struct MouseState {
 		Vector2 position;
 		bool buttons[(int)MouseButtons::BUTTON_MAX_BUTTONS];
-		float wheel_delta = 0.0f;
 	};
 
 	struct InputState {

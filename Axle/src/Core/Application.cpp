@@ -51,6 +51,10 @@ namespace Axle {
 		Input::SetMouseButton(button_enum, action == GLFW_PRESS);
 	}
 
+	static void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+		Input::SetMouseWheel(static_cast<float>(yoffset));
+	}
+
 	Application::Application() {
 		AX_CORE_TRACE("Starting the engine...");
 
@@ -79,6 +83,7 @@ namespace Axle {
 		glfwSetKeyCallback(m_window, KeyCallback);
 		glfwSetCursorPosCallback(m_window, CursorPositionCallback);
 		glfwSetMouseButtonCallback(m_window, MouseButtonCallback);
+		glfwSetScrollCallback(m_window, ScrollCallback);
 
 		glfwMakeContextCurrent(m_window);
 		glfwSwapInterval(1);

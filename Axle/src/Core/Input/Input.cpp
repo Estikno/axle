@@ -67,15 +67,10 @@ namespace Axle {
 	}
 
 	void Input::SetMouseWheel(float delta) {
-		// Only handles if the state of the key has changed
-		if (Mathf::Approximately(s_InputState.mouse_current.wheel_delta, delta)) return;
-
-		s_InputState.mouse_current.wheel_delta = delta;
-
 		// Fire off an event informing of the change in state
 		Event* event = new Event(EventType::MouseScrolled, EventCategory::Input);
 
-		event->GetContext().u16[0] = (unsigned short)delta;
+		event->GetContext().f32[0] = delta;
 
 		AX_ADD_EVENT(event);
 	}
