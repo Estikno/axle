@@ -162,7 +162,7 @@ project "Axle"
         }
 
     filter "configurations:Debug"
-        defines "AX_DEBUG"
+        defines { "AX_DEBUG", "AXLE_TESTING" }
         symbols "On"
 
     filter "configurations:Release"
@@ -227,6 +227,8 @@ project "Tests"
     language "C++"
     cppdialect "C++20"
     staticruntime "On"
+	
+	defines { "AXLE_TESTING" }
 
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
@@ -239,7 +241,8 @@ project "Tests"
     includedirs {
         "Axle/vendor/doctest/doctest",
         "Axle/src",
-        "Axle/vendor/spdlog/include"
+        "Axle/vendor/spdlog/include",
+		"%{IncludeDir.GLFW}",
     }
 
     links { "Axle" }

@@ -105,7 +105,7 @@ namespace Axle {
         * 
 		* @param position The new mouse position in screen coordinates.
         */
-		static void SetMousePosition(Vector2 &position);
+		static void SetMousePosition(const Vector2 &position);
 
         /**
 		* Sets the mouse wheel delta.
@@ -118,6 +118,18 @@ namespace Axle {
 		* Updates the input state.
         */
 		static void Update();
+
+
+        // For testing purposes only
+#ifdef AXLE_TESTING
+		AXLE_TEST_API static void SimulateKeyState(Keys key, bool pressed);
+		AXLE_TEST_API static void SimulateMouseButtonState(MouseButtons button, bool pressed);
+		AXLE_TEST_API static void SimulateMousePosition(const Vector2& position);
+		AXLE_TEST_API static void SimulateMouseWheel(float delta);
+		AXLE_TEST_API static void SimulateUpdate();
+        AXLE_TEST_API static void SimulateReset();
+#endif // AXLE_TESTING
+
 
 	private:
 		static InputState s_InputState;

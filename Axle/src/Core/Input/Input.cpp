@@ -50,7 +50,7 @@ namespace Axle {
 		AX_ADD_EVENT(event);
 	}
 
-	void Input::SetMousePosition(Vector2 &position) {
+	void Input::SetMousePosition(const Vector2 &position) {
 		// Only handles if the state of the key has changed
 		if (s_InputState.mouse_current.position == position) return;
 
@@ -102,4 +102,26 @@ namespace Axle {
 	Vector2 Input::GetMousePosition() {
 		return s_InputState.mouse_current.position;
 	}
+
+#ifdef AXLE_TESTING
+	void Input::SimulateKeyState(Keys key, bool pressed) {
+		SetKey(key, pressed);
+	}
+	void Input::SimulateMouseButtonState(MouseButtons button, bool pressed) {
+		SetMouseButton(button, pressed);
+	}
+	void Input::SimulateMousePosition(const Vector2 &position) {
+		SetMousePosition(position);
+	}
+	void Input::SimulateMouseWheel(float delta) {
+		SetMouseWheel(delta);
+	}
+	void Input::SimulateUpdate() {
+		Update();
+	}
+	void Input::SimulateReset() {
+		s_InputState = InputState();
+	}
+#endif // AXLE_TESTING
+
 }

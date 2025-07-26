@@ -16,3 +16,10 @@
 #else
 #error Axle only supports windows and linux
 #endif 
+
+// Only exports if it's for testing
+#ifdef AXLE_TESTING
+#define AXLE_TEST_API AXLE_API
+#else
+#define AXLE_TEST_API
+#endif 
