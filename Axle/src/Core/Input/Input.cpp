@@ -3,6 +3,7 @@
 #include "Input.hpp"
 #include "../Logger/Log.hpp"
 #include "../Events/EventHandler.hpp"
+#include "Math/Math_Types.hpp"
 
 namespace Axle {
 	InputState Input::s_InputState;

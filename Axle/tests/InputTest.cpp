@@ -1,11 +1,36 @@
 #include <doctest.h>
 
+#include "Math/Mathf.hpp"
+
 #include "Core/Input/Input.hpp"
+#include "Core/Events/Event.hpp"
+#include "Core/Events/EventHandler.hpp"
 
 using namespace Axle;
 
+void TestKeyEvents(Event* event) {
+	CHECK_FALSE(event == nullptr);
+	CHECK(event->GetEventGategory() == Axle::EventCategory::Input);
+	CHECK(event->GetContext().u16[0] == (unsigned short)Keys::A);
+}
+
+void TestMouseButtonEvents(Event* event) {
+	CHECK_FALSE(event == nullptr);
+	CHECK(event->GetEventGategory() == Axle::EventCategory::Input);
+	CHECK(event->GetContext().u16[0] == (unsigned short)MouseButtons::BUTTON_LEFT);
+}
+
+void TestMouseWheelEvents(Event* event) {
+	CHECK_FALSE(event == nullptr);
+	CHECK(event->GetEventGategory() == Axle::EventCategory::Input);
+	CHECK(Mathf::Approximately(event->GetContext().f32[0], 1.0f));
+}
+
 TEST_CASE("Input system key handling") {
 	Input::SimulateReset();
+	EventHandler::Init();
+
+	Subscription sub_1 = EventHandler::GetInstance().Subscribe(TestKeyEvents, EventType::None, EventCategory::Input);
 
 	SUBCASE("No key action") {
 		CHECK_FALSE(Input::GetKeyDown(Keys::A));
@@ -47,6 +72,9 @@ TEST_CASE("Input system key handling") {
 
 TEST_CASE("Input system mouse button handling") {
 	Input::SimulateReset();
+	EventHandler::Init();
+
+	Subscription sub_1 = EventHandler::GetInstance().Subscribe(TestMouseButtonEvents, EventType::None, EventCategory::Input);
 
 	SUBCASE("No mouse button action") {
 		CHECK_FALSE(Input::GetMouseButtonDown(MouseButtons::BUTTON_LEFT));
@@ -84,4 +112,36 @@ TEST_CASE("Input system mouse button handling") {
 		CHECK_FALSE(Input::GetMouseButtonDown(MouseButtons::BUTTON_LEFT));
 		CHECK(Input::GetMouseButton(MouseButtons::BUTTON_LEFT));
 	}
+}
+
+TEST_CASE("Mouse position handling") {
+	Input::SimulateReset();
+	EventHandler::Init();
+
+	Vector2 testPosition(100.0f, 200.0f);
+	Input::SimulateMousePosition(testPosition);
+
+	SUBCASE("Get Mouse Position") {
+		Vector2 mousePos = Input::GetMousePosition();
+
+		CHECK(mousePos == testPosition);
+	}
+
+	SUBCASE("Set Mouse Position") {
+		Vector2 newPosition(300.0f, 400.0f);
+
+		Input::SimulateMousePosition(newPosition);
+		Vector2 mousePos = Input::GetMousePosition();
+
+		CHECK(mousePos == newPosition);
+	}
+}
+
+TEST_CASE("Mouse wheel handling") {
+	Input::SimulateReset();
+	EventHandler::Init();
+
+	Subscription sub_1 = EventHandler::GetInstance().Subscribe(TestMouseWheelEvents, EventType::None, EventCategory::Input);
+
+	Input::SimulateMouseWheel(1.0f);
 }
