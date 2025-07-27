@@ -30,7 +30,10 @@ namespace Axle {
 	* Multiple data can be used.
 	*/
 	struct EventContext {
-		// 128 bits
+		///  Optional custom data that can be used by the event. The pointer retrieved shall not be deleted.
+		std::optional<std::any> custom_data;
+
+		// Raw numeric / fixed-size data (128 bits in total)
 		union {
 			/// 2 x 64-bit signed integers
 			i64 i64_values[2];
@@ -61,18 +64,6 @@ namespace Axle {
 
 			/// 16 x 8-bit unsigned integers
 			u8 u8_values[16];
-
-			/**
-			* @brief Allows a pointer to arbitrary data to be passed. Also includes size info.
-			*
-			* NOTE: If used, should be freed by the sender or listener. Normally by the listener.
-			*/
-			struct {
-				// The size of the data pointed to (in bytes)
-				u64 size;
-				// A pointer to a memory block of data to be included with the event.
-				void* data;
-			} custom_data;
 		};
 	};
 

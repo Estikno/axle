@@ -45,6 +45,7 @@ void TestFunction_AllInput_With_Data(Event* event) {
 	CHECK(event != nullptr);
 	CHECK(event->GetEventType() == Axle::EventType::KeyPressed);
 	CHECK(event->GetEventGategory() == Axle::EventCategory::Input);
+	CHECK_FALSE(event->GetContext().custom_data.has_value());
 
 	CHECK(event->GetContext().u16_values[0] == 12);
 }
@@ -54,14 +55,12 @@ void TestFunction_Complex_CustomData(Event* event) {
 	CHECK(event->GetEventType() == Axle::EventType::KeyPressed);
 	CHECK(event->GetEventGategory() == Axle::EventCategory::Input);
 
-	CHECK(event->GetContext().custom_data.size == sizeof(PlayerData));
+	REQUIRE(event->GetContext().custom_data.has_value());
 
-	PlayerData* player = static_cast<PlayerData*>(event->GetContext().custom_data.data);
+	PlayerData* player = std::any_cast<PlayerData*>(event->GetContext().custom_data.value());
 
 	CHECK(player->id == 12);
 	CHECK(player->health == doctest::Approx(100.0f));
-
-	delete player;
 }
 
 TEST_CASE("EventHandler") {
@@ -112,8 +111,7 @@ TEST_CASE("EventHandler") {
 		PlayerData* pdata = new PlayerData{ 12, 100.0f };
 
 		Event* event_1 = new Event(EventType::KeyPressed, EventCategory::Input);
-		event_1->GetContext().custom_data.size = sizeof(PlayerData);
-		event_1->GetContext().custom_data.data = pdata;
+		event_1->GetContext().custom_data = std::make_any<PlayerData*>(pdata);
 
 		CHECK_NOTHROW(AX_ADD_EVENT(event_1));
 	}
