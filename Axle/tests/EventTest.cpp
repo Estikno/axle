@@ -113,7 +113,7 @@ TEST_CASE("EventHandler") {
 		PlayerData* pdata = new PlayerData{ 12, 100.0f };
 
 		Event* event_1 = new Event(EventType::KeyPressed, EventCategory::Input);
-		event_1->GetContext().custom_data = std::make_any<PlayerData*>(pdata);
+		event_1->GetContext().custom_data = pdata;
 
 		CHECK_NOTHROW(AX_ADD_EVENT(event_1));
 	}

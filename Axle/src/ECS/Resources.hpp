@@ -20,16 +20,21 @@ namespace Axle {
 		}
 
 		template<typename T>
-		std::optional<T*> Get() {
+		void Add(std::unique_ptr<T> resource) {
+			m_Data[std::type_index(typeid(T))] = std::move(resource);
+		}
+
+		template<typename T>
+		T* Get() {
 			auto it = m_Data.find(std::type_index(typeid(T)));
 
 			if (it != m_Data.end()) {
 				if (auto ptr = std::any_cast<std::unique_ptr<T>>(&it->second)) {
-					return ptr.get();
+					return ptr->get();
 				}
 			}
 
-			return std::nullopt;
+			return nullptr;
 		}
 
 		template<typename T>
@@ -38,6 +43,11 @@ namespace Axle {
 			if (it != m_Data.end()) {
 				m_Data.erase(it);
 			}
+		}
+
+		template<typename T>
+		bool Contains() const noexcept {
+			return m_Data.find(std::type_index(typeid(T))) != m_Data.end();
 		}
 	private:
 		std::unordered_map<std::type_index, std::any> m_Data;
