@@ -12,16 +12,23 @@ namespace Axle {
 		Resources() = default;
 
 		template<typename T>
-		void Add(T resource) {
-			m_Data[std::type_index(typeid(T))] = std::make_any<T>(std::move(resource));
+		void Add(const T* resource) = delete; // forbid const pointers
+
+		template<typename T>
+		void Add(T* resource) {
+			m_Data[std::type_index(typeid(T))] = std::unique_ptr<T>(resource);
 		}
 
 		template<typename T>
 		std::optional<T*> Get() {
 			auto it = m_Data.find(std::type_index(typeid(T)));
+
 			if (it != m_Data.end()) {
-				return std::any_cast<T>(it->second);
+				if (auto ptr = std::any_cast<std::unique_ptr<T>>(&it->second)) {
+					return ptr.get();
+				}
 			}
+
 			return std::nullopt;
 		}
 

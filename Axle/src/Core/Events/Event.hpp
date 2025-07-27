@@ -30,7 +30,8 @@ namespace Axle {
 	* Multiple data can be used.
 	*/
 	struct EventContext {
-		///  Optional custom data that can be used by the event. The pointer retrieved shall not be deleted.
+		/// Optional custom data that can be used by the event. 
+		/// The pointer retrieved shall be deleted by the retriever.
 		std::optional<std::any> custom_data;
 
 		// Raw numeric / fixed-size data (128 bits in total)
@@ -104,7 +105,7 @@ namespace Axle {
 		*
 		* @returns The cateory of the event
 		*/
-		EventCategory GetEventGategory() {
+		EventCategory GetEventCategory() {
 			return m_eventCategory;
 		}
 

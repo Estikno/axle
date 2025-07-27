@@ -24,7 +24,7 @@ namespace Axle {
 		std::shared_ptr<Event> p_event(event);
 
 		m_EventsType[event->GetEventType()].push_back(p_event);
-		m_EventsCategory[event->GetEventGategory()].push_back(p_event);
+		m_EventsCategory[event->GetEventCategory()].push_back(p_event);
 
 		AX_CORE_INFO("Added a new event of type: {}", (i32)(event->GetEventType()));
 
@@ -43,7 +43,7 @@ namespace Axle {
 
 	void EventHandler::Notify(Event* event) {
 		for (auto& [id, handler] : m_handlers) {
-			if (m_HandlersType[id].first != event->GetEventGategory()) {
+			if (m_HandlersType[id].first != event->GetEventCategory()) {
 				continue;
 			}
 

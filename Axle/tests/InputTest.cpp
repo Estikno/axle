@@ -10,19 +10,19 @@ using namespace Axle;
 
 void TestKeyEvents(Event* event) {
 	CHECK_FALSE(event == nullptr);
-	CHECK(event->GetEventGategory() == Axle::EventCategory::Input);
+	CHECK(event->GetEventCategory() == Axle::EventCategory::Input);
 	CHECK(event->GetContext().u16_values[0] == (unsigned short)Keys::A);
 }
 
 void TestMouseButtonEvents(Event* event) {
 	CHECK_FALSE(event == nullptr);
-	CHECK(event->GetEventGategory() == Axle::EventCategory::Input);
+	CHECK(event->GetEventCategory() == Axle::EventCategory::Input);
 	CHECK(event->GetContext().u16_values[0] == (unsigned short)MouseButtons::BUTTON_LEFT);
 }
 
 void TestMouseWheelEvents(Event* event) {
 	CHECK_FALSE(event == nullptr);
-	CHECK(event->GetEventGategory() == Axle::EventCategory::Input);
+	CHECK(event->GetEventCategory() == Axle::EventCategory::Input);
 	CHECK(Mathf::Approximately(event->GetContext().f32_values[0], 1.0f));
 }
 

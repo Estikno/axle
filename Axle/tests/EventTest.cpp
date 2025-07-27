@@ -38,13 +38,13 @@ void TestFunction_Input(Event* event) {
 void TestFunction_AllInput(Event* event) {
 	CHECK(event != nullptr);
 	CHECK(event->GetEventType() == Axle::EventType::KeyPressed);
-	CHECK(event->GetEventGategory() == Axle::EventCategory::Input);
+	CHECK(event->GetEventCategory() == Axle::EventCategory::Input);
 }
 
 void TestFunction_AllInput_With_Data(Event* event) {
 	CHECK(event != nullptr);
 	CHECK(event->GetEventType() == Axle::EventType::KeyPressed);
-	CHECK(event->GetEventGategory() == Axle::EventCategory::Input);
+	CHECK(event->GetEventCategory() == Axle::EventCategory::Input);
 	CHECK_FALSE(event->GetContext().custom_data.has_value());
 
 	CHECK(event->GetContext().u16_values[0] == 12);
@@ -53,7 +53,7 @@ void TestFunction_AllInput_With_Data(Event* event) {
 void TestFunction_Complex_CustomData(Event* event) {
 	CHECK(event != nullptr);
 	CHECK(event->GetEventType() == Axle::EventType::KeyPressed);
-	CHECK(event->GetEventGategory() == Axle::EventCategory::Input);
+	CHECK(event->GetEventCategory() == Axle::EventCategory::Input);
 
 	REQUIRE(event->GetContext().custom_data.has_value());
 
@@ -61,6 +61,8 @@ void TestFunction_Complex_CustomData(Event* event) {
 
 	CHECK(player->id == 12);
 	CHECK(player->health == doctest::Approx(100.0f));
+
+	delete player;
 }
 
 TEST_CASE("EventHandler") {
