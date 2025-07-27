@@ -1,6 +1,7 @@
 #pragma once
 
 #include "axpch.hpp"
+#include "../Types.hpp"
 
 #include "Core/Core.hpp"
 #include "Math/Math_Types.hpp"
@@ -158,7 +159,7 @@ namespace Axle {
 
 	struct MouseState {
 		Vector2 position;
-		bool buttons[(int)MouseButtons::BUTTON_MAX_BUTTONS];
+		bool buttons[static_cast<i32>(MouseButtons::BUTTON_MAX_BUTTONS)];
 	};
 
 	struct InputState {
@@ -168,7 +169,7 @@ namespace Axle {
 		MouseState mouse_previous;
 	};
 
-	static Keys ConvertGLFWKeys(int glfw_key) {
+	static Keys ConvertGLFWKeys(i32 glfw_key) {
 		switch (glfw_key) {
 		case GLFW_KEY_BACKSPACE: return Keys::Backspace;
 		case GLFW_KEY_ENTER: return Keys::Enter;
@@ -267,7 +268,7 @@ namespace Axle {
 		}
 	}
 
-	static MouseButtons ConvertGLFWMouseButtons(int glfw_button) {
+	static MouseButtons ConvertGLFWMouseButtons(i32 glfw_button) {
 		switch (glfw_button) {
 		case GLFW_MOUSE_BUTTON_LEFT: return MouseButtons::BUTTON_LEFT;
 		case GLFW_MOUSE_BUTTON_RIGHT: return MouseButtons::BUTTON_RIGHT;

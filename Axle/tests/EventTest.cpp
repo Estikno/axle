@@ -46,7 +46,7 @@ void TestFunction_AllInput_With_Data(Event* event) {
 	CHECK(event->GetEventType() == Axle::EventType::KeyPressed);
 	CHECK(event->GetEventGategory() == Axle::EventCategory::Input);
 
-	CHECK(event->GetContext().u16[0] == 12);
+	CHECK(event->GetContext().u16_values[0] == 12);
 }
 
 void TestFunction_Complex_CustomData(Event* event) {
@@ -101,7 +101,7 @@ TEST_CASE("EventHandler") {
 		Subscription sub_1 = instance.Subscribe(TestFunction_AllInput_With_Data, EventType::None, EventCategory::Input);
 
 		Event* event_1 = new Event(EventType::KeyPressed, EventCategory::Input);
-		event_1->GetContext().u16[0] = 12;
+		event_1->GetContext().u16_values[0] = 12;
 
 		CHECK_NOTHROW(AX_ADD_EVENT(event_1));
 	}

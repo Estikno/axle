@@ -1,9 +1,7 @@
 #pragma once
 
 #include "axpch.hpp"
-
-#include "../../Core/Events/Event.hpp"
-#include "../../Core/Core.hpp"
+#include "Core/Types.hpp"
 
 namespace Axle {
 	// Forward declaration
@@ -12,7 +10,7 @@ namespace Axle {
 
 	/**
 	* Represents an active subscription to a Subject.
-	* 
+	*
 	* It automatically unsubscribes when destroyed, unless already manually unsubscribed.
 	*/
 	template<typename... Args>
@@ -20,18 +18,19 @@ namespace Axle {
 	public:
 		/**
 		* Constructs a Subscription associated with a Subject and a handler ID
-		* 
+		*
 		* @param subject The subject it would be associated to
 		* @param id A simple identifier
 		*/
-		Subscription(Subject<Args...>* subject, int id)
-			: m_subject(subject), m_id(id) { }
+		Subscription(Subject<Args...>* subject, i32 id)
+			: m_subject(subject), m_id(id) {
+		}
 
 		// Destructor automatically unsubscribes if not already done
 		~Subscription() {
 			Unsubscribe();
 		}
- 
+
 		// Move constructor: transfers ownership from another subscription
 		Subscription(Subscription&& other) noexcept
 			: m_subject(other.m_subject), m_id(other.m_id), m_unsubscribed(other.m_unsubscribed) {
@@ -71,7 +70,7 @@ namespace Axle {
 		/// Pointer back to the Subject
 		Subject<Args...>* m_subject;
 		/// Unique ID of the subscription
-		int m_id;
+		i32 m_id;
 		/// Whether already unsubscribed
 		bool m_unsubscribed = false;
 	};
@@ -93,7 +92,7 @@ namespace Axle {
 		* @return Subscription object that manages the subscription lifetime.
 		*/
 		virtual Subscription<Args...> Subscribe(const HandlerType& handler) {
-			int id = m_nextId++;
+			i32 id = m_nextId++;
 			m_handlers[id] = handler;
 			return Subscription<Args...>(this, id);
 		}
@@ -115,16 +114,16 @@ namespace Axle {
 
 		/**
 		* Remove a subscription by its ID
-		* 
+		*
 		* Called internally by Subscription when unsubscribing
 		*/
-		virtual void Unsubscribe(int id) {
+		virtual void Unsubscribe(i32 id) {
 			m_handlers.erase(id);
 		}
 
 		/// Active handlers mapped by their ID
-		std::unordered_map<int, HandlerType> m_handlers;
+		std::unordered_map<i32, HandlerType> m_handlers;
 		/// Next unique ID for new subscriptions
-		int m_nextId = 0;
+		i32 m_nextId = 0;
 	};
 }

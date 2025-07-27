@@ -1,6 +1,7 @@
 #pragma once
 
 #include "axpch.hpp"
+#include "Core/Types.hpp"
 
 #include "Core/Core.hpp"
 #include "Mathf.hpp"
@@ -9,13 +10,13 @@ namespace Axle {
 	/// Representation of 2D vectors and points
 	struct Vector2 {
 		union {
-			float x, r, s, u;
+			f32 x, r, s, u;
 		};
 		union {
-			float y, g, t, v;
+			f32 y, g, t, v;
 		};
 
-		Vector2(float x, float y) : x(x), y(y) {}
+		Vector2(f32 x, f32 y) : x(x), y(y) {}
 		Vector2() : x(0.0f), y(0.0f) {}
 
 		/// Shorthand of writing Vector2(0.0f, 0.0f)
@@ -39,7 +40,7 @@ namespace Axle {
 		 *
 		 * @returns The squared magnitude of the vector
 		 */
-		inline float SqrMagnitude() const { return x * x + y * y; }
+		inline f32 SqrMagnitude() const { return x * x + y * y; }
 
 		/**
 		 * Returns the magnitude of the vector
@@ -49,12 +50,12 @@ namespace Axle {
 		 *
 		 * @returns The magnitude of the vector
 		 */
-		inline float Magnitude() const { return Mathf::Sqrt(SqrMagnitude()); }
+		inline f32 Magnitude() const { return Mathf::Sqrt(SqrMagnitude()); }
 
 		/// Modifies the current vector to have a magnitude of 1
 		// TODO: Check for division by zero
 		inline void Normalize() {
-			const float magnitude = Magnitude();
+			const f32 magnitude = Magnitude();
 			this->x /= magnitude;
 			this->y /= magnitude;
 		}
@@ -88,7 +89,7 @@ namespace Axle {
 		 *
 		 * @returns The distance between two vectors
 		 */
-		inline static float Distance(const Vector2& a, const Vector2& b) { return (a - b).Magnitude(); }
+		inline static f32 Distance(const Vector2& a, const Vector2& b) { return (a - b).Magnitude(); }
 
 		/**
 		 * Calculates the dot product of two vectors
@@ -98,7 +99,7 @@ namespace Axle {
 		 *
 		 * @returns The dot product of the two vectors
 		 */
-		inline static float Dot(const Vector2& a, const Vector2& b) { return a.x * b.x + a.y * b.y; }
+		inline static f32 Dot(const Vector2& a, const Vector2& b) { return a.x * b.x + a.y * b.y; }
 
 		/**
 		 * Calculates the angle in radians between two vectors
@@ -108,7 +109,7 @@ namespace Axle {
 		 *
 		 * @returns The angle in radians between two vectors
 		 */
-		inline static float Angle(const Vector2& a, const Vector2& b) {
+		inline static f32 Angle(const Vector2& a, const Vector2& b) {
 			return Mathf::Acos(Vector2::Dot(a, b) / (a.Magnitude() * b.Magnitude()));
 		}
 
@@ -122,7 +123,7 @@ namespace Axle {
 		 *
 		 * @returns The interpolated vector
 		 */
-		inline static Vector2 LerpUnclamped(const Vector2& a, const Vector2& b, float t) {
+		inline static Vector2 LerpUnclamped(const Vector2& a, const Vector2& b, f32 t) {
 			return a * (1.0f - t) + b * t;
 		}
 
@@ -135,7 +136,7 @@ namespace Axle {
 		 *
 		 * @returns The interpolated vector
 		 */
-		inline static Vector2 Lerp(const Vector2& a, const Vector2& b, float t) {
+		inline static Vector2 Lerp(const Vector2& a, const Vector2& b, f32 t) {
 			return LerpUnclamped(a, b, Mathf::Clamp01(t));
 		}
 
@@ -162,7 +163,7 @@ namespace Axle {
 		 *
 		 * @returns The scalar projection of toProject onto onProject.
 		 */
-		inline static float ScalarProjection(const Vector2& toProject, const Vector2& onProject) {
+		inline static f32 ScalarProjection(const Vector2& toProject, const Vector2& onProject) {
 			return Vector2::Dot(toProject, onProject) / onProject.Magnitude();
 		}
 
@@ -180,8 +181,8 @@ namespace Axle {
 
 		Vector2 operator+(const Vector2& other) const { return Vector2(x + other.x, y + other.y); }
 		Vector2 operator-(const Vector2& other) const { return Vector2(x - other.x, y - other.y); }
-		Vector2 operator*(const float& other) const { return Vector2(x * other, y * other); }
-		Vector2 operator/(const float& other) const { return Vector2(x / other, y / other); }
+		Vector2 operator*(const f32& other) const { return Vector2(x * other, y * other); }
+		Vector2 operator/(const f32& other) const { return Vector2(x / other, y / other); }
 		bool operator==(const Vector2& other) const {
 			return Mathf::Approximately(x, other.x) && Mathf::Approximately(y, other.y);
 		}
@@ -190,16 +191,16 @@ namespace Axle {
 	/// Representation of 3D vectors and points
 	struct Vector3 {
 		union {
-			float x, r, s, u;
+			f32 x, r, s, u;
 		};
 		union {
-			float y, g, t, v;
+			f32 y, g, t, v;
 		};
 		union {
-			float z, b, p, w;
+			f32 z, b, p, w;
 		};
 
-		Vector3(float x, float y, float z) : x(x), y(y), z(z) {}
+		Vector3(f32 x, f32 y, f32 z) : x(x), y(y), z(z) {}
 		Vector3() : x(0.0f), y(0.0f), z(0.0f) {}
 
 		/// Shorthand of writing Vector3(0.0f, 0.0f, 0.0f)
@@ -227,7 +228,7 @@ namespace Axle {
 		 *
 		 * @returns The squared magnitude of the vector
 		 */
-		inline float SqrMagnitude() const { return x * x + y * y + z * z; }
+		inline f32 SqrMagnitude() const { return x * x + y * y + z * z; }
 
 		/**
 		 * Returns the magnitude of the vector
@@ -237,12 +238,12 @@ namespace Axle {
 		 *
 		 * @returns The magnitude of the vector
 		 */
-		inline float Magnitude() const { return Mathf::Sqrt(SqrMagnitude()); }
+		inline f32 Magnitude() const { return Mathf::Sqrt(SqrMagnitude()); }
 
 		/// Modifies the current vector to have a magnitude of 1
 		inline void Normalize() {
 			// TODO: Check for division by zero
-			const float magnitude = Magnitude();
+			const f32 magnitude = Magnitude();
 			this->x /= magnitude;
 			this->y /= magnitude;
 			this->z /= magnitude;
@@ -267,7 +268,7 @@ namespace Axle {
 		 *
 		 * @returns The distance between two vectors
 		 */
-		inline static float Distance(const Vector3& a, const Vector3& b) { return (a - b).Magnitude(); }
+		inline static f32 Distance(const Vector3& a, const Vector3& b) { return (a - b).Magnitude(); }
 
 		/**
 		 * Calculates the dot product of two vectors
@@ -277,7 +278,7 @@ namespace Axle {
 		 *
 		 * @returns The dot product of the two vectors
 		 */
-		inline static float Dot(const Vector3& a, const Vector3& b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
+		inline static f32 Dot(const Vector3& a, const Vector3& b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
 
 		/**
 		 * Calculates the angle in radians between two vectors
@@ -287,7 +288,7 @@ namespace Axle {
 		 *
 		 * @returns The angle in radians between two vectors
 		 */
-		inline static float Angle(const Vector3& a, const Vector3& b) {
+		inline static f32 Angle(const Vector3& a, const Vector3& b) {
 			return Mathf::Acos(Vector3::Dot(a, b) / (a.Magnitude() * b.Magnitude()));
 		}
 
@@ -301,7 +302,7 @@ namespace Axle {
 		 *
 		 * @returns The interpolated vector
 		 */
-		inline static Vector3 LerpUnclamped(const Vector3& a, const Vector3& b, const float t) {
+		inline static Vector3 LerpUnclamped(const Vector3& a, const Vector3& b, const f32 t) {
 			return a * (1.0f - t) + b * t;
 		}
 
@@ -314,7 +315,7 @@ namespace Axle {
 		 *
 		 * @returns The interpolated vector
 		 */
-		inline static Vector3 Lerp(const Vector3& a, const Vector3& b, const float t) {
+		inline static Vector3 Lerp(const Vector3& a, const Vector3& b, const f32 t) {
 			return LerpUnclamped(a, b, Mathf::Clamp01(t));
 		}
 
@@ -341,7 +342,7 @@ namespace Axle {
 		 *
 		 * @returns The scalar projection of toProject onto onProject.
 		 */
-		inline static float ScalarProjection(const Vector3& toProject, const Vector3& onProject) {
+		inline static f32 ScalarProjection(const Vector3& toProject, const Vector3& onProject) {
 			return Vector3::Dot(toProject, onProject) / onProject.Magnitude();
 		}
 
@@ -387,8 +388,8 @@ namespace Axle {
 
 		Vector3 operator+(const Vector3& other) const { return Vector3(x + other.x, y + other.y, z + other.z); }
 		Vector3 operator-(const Vector3& other) const { return Vector3(x - other.x, y - other.y, z - other.z); }
-		Vector3 operator*(const float& other) const { return Vector3(x * other, y * other, z * other); }
-		Vector3 operator/(const float& other) const { return Vector3(x / other, y / other, z / other); }
+		Vector3 operator*(const f32& other) const { return Vector3(x * other, y * other, z * other); }
+		Vector3 operator/(const f32& other) const { return Vector3(x / other, y / other, z / other); }
 		bool operator==(const Vector3& other) const {
 			return Mathf::Approximately(x, other.x) && Mathf::Approximately(y, other.y) &&
 				Mathf::Approximately(z, other.z);
@@ -398,19 +399,19 @@ namespace Axle {
 	/// Representation of 4D vectors and points
 	struct Vector4 {
 		union {
-			float x, r, s;
+			f32 x, r, s;
 		};
 		union {
-			float y, g, t;
+			f32 y, g, t;
 		};
 		union {
-			float z, b, p;
+			f32 z, b, p;
 		};
 		union {
-			float w, a, q;
+			f32 w, a, q;
 		};
 
-		Vector4(float x, float y, float z, float w) : x(x), y(y), z(z), w(w) {}
+		Vector4(f32 x, f32 y, f32 z, f32 w) : x(x), y(y), z(z), w(w) {}
 		Vector4() : x(0.0f), y(0.0f), z(0.0f), w(0.0f) {}
 
 		/// Shorthand of writing Vector4(0.0f, 0.0f, 0.0f, 0.0f)
@@ -427,7 +428,7 @@ namespace Axle {
 		 *
 		 * @returns The squared magnitude of the vector
 		 */
-		inline float SqrMagnitude() { return x * x + y * y + z * z + w * w; }
+		inline f32 SqrMagnitude() { return x * x + y * y + z * z + w * w; }
 
 		/**
 		 * Returns the magnitude of the vector
@@ -437,11 +438,11 @@ namespace Axle {
 		 *
 		 * @returns The magnitude of the vector
 		 */
-		inline float Magnitude() { return Mathf::Sqrt(SqrMagnitude()); }
+		inline f32 Magnitude() { return Mathf::Sqrt(SqrMagnitude()); }
 
 		/// Modifies the current vector to have a magnitude of 1
 		inline void Normalize() {
-			const float magnitude = Magnitude();
+			const f32 magnitude = Magnitude();
 			this->x /= magnitude;
 			this->y /= magnitude;
 			this->z /= magnitude;
@@ -481,7 +482,7 @@ namespace Axle {
 		 *
 		 * @returns The dot product of the two vectors
 		 */
-		inline static float Dot(Vector4& a, Vector4& b) { return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w; }
+		inline static f32 Dot(Vector4& a, Vector4& b) { return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w; }
 
 		Vector4 operator+(const Vector4& other) const {
 			return Vector4(x + other.x, y + other.y, z + other.z, w + other.w);
@@ -489,8 +490,8 @@ namespace Axle {
 		Vector4 operator-(const Vector4& other) const {
 			return Vector4(x - other.x, y - other.y, z - other.z, w - other.w);
 		}
-		Vector4 operator*(const float& other) const { return Vector4(x * other, y * other, z * other, w * other); }
-		Vector4 operator/(const float& other) const { return Vector4(x / other, y / other, z / other, w / other); }
+		Vector4 operator*(const f32& other) const { return Vector4(x * other, y * other, z * other, w * other); }
+		Vector4 operator/(const f32& other) const { return Vector4(x / other, y / other, z / other, w / other); }
 		bool operator==(const Vector4& other) const {
 			return Mathf::Approximately(x, other.x) && Mathf::Approximately(y, other.y) &&
 				Mathf::Approximately(z, other.z) && Mathf::Approximately(w, other.w);
@@ -498,7 +499,7 @@ namespace Axle {
 	};
 
 	struct Matrix4x4 {
-		float data[16] = {};
+		f32 data[16] = {};
 
 		Matrix4x4() = default;
 
@@ -539,7 +540,7 @@ namespace Axle {
 		 *
 		 * @returns A new orthographic projection matrix.
 		 */
-		inline static Matrix4x4 OrthographicProjection(float left, float right, float bottom, float top, float nearClip, float farClip) {
+		inline static Matrix4x4 OrthographicProjection(f32 left, f32 right, f32 bottom, f32 top, f32 nearClip, f32 farClip) {
 			Matrix4x4 mat;
 			mat.data[0] = 2.0f / (right - left);
 			mat.data[5] = 2.0f / (top - bottom);
@@ -561,9 +562,9 @@ namespace Axle {
 		 *
 		 * @returns A new perspective matrix.
 		 */
-		inline static Matrix4x4 PerspectiveProjection(float fovRadians, float aspectRatio, float nearClip, float farClip) {
+		inline static Matrix4x4 PerspectiveProjection(f32 fovRadians, f32 aspectRatio, f32 nearClip, f32 farClip) {
 			Matrix4x4 mat;
-			float f = 1.0f / Mathf::Tan(fovRadians / 2.0f);
+			f32 f = 1.0f / Mathf::Tan(fovRadians / 2.0f);
 
 			mat.data[0] = f / aspectRatio;
 			mat.data[5] = f;
@@ -621,8 +622,8 @@ namespace Axle {
 		inline Matrix4x4 Transpose() {
 			Matrix4x4 out_matrix;
 
-			for (int i = 0; i < 4; i++) {
-				for (int j = 0; j < 4; j++) {
+			for (i32 i = 0; i < 4; i++) {
+				for (i32 j = 0; j < 4; j++) {
 					out_matrix.data[i * 4 + j] = data[j * 4 + i];
 				}
 			}
@@ -638,42 +639,42 @@ namespace Axle {
 		 * @returns A inverted copy of the provided matrix.
 		 */
 		inline Matrix4x4 Inverse() {
-			const float* m = data;
+			const f32* m = data;
 
-			float t0 = m[10] * m[15];
-			float t1 = m[14] * m[11];
-			float t2 = m[6] * m[15];
-			float t3 = m[14] * m[7];
-			float t4 = m[6] * m[11];
-			float t5 = m[10] * m[7];
-			float t6 = m[2] * m[15];
-			float t7 = m[14] * m[3];
-			float t8 = m[2] * m[11];
-			float t9 = m[10] * m[3];
-			float t10 = m[2] * m[7];
-			float t11 = m[6] * m[3];
-			float t12 = m[8] * m[13];
-			float t13 = m[12] * m[9];
-			float t14 = m[4] * m[13];
-			float t15 = m[12] * m[5];
-			float t16 = m[4] * m[9];
-			float t17 = m[8] * m[5];
-			float t18 = m[0] * m[13];
-			float t19 = m[12] * m[1];
-			float t20 = m[0] * m[9];
-			float t21 = m[8] * m[1];
-			float t22 = m[0] * m[5];
-			float t23 = m[4] * m[1];
+			f32 t0 = m[10] * m[15];
+			f32 t1 = m[14] * m[11];
+			f32 t2 = m[6] * m[15];
+			f32 t3 = m[14] * m[7];
+			f32 t4 = m[6] * m[11];
+			f32 t5 = m[10] * m[7];
+			f32 t6 = m[2] * m[15];
+			f32 t7 = m[14] * m[3];
+			f32 t8 = m[2] * m[11];
+			f32 t9 = m[10] * m[3];
+			f32 t10 = m[2] * m[7];
+			f32 t11 = m[6] * m[3];
+			f32 t12 = m[8] * m[13];
+			f32 t13 = m[12] * m[9];
+			f32 t14 = m[4] * m[13];
+			f32 t15 = m[12] * m[5];
+			f32 t16 = m[4] * m[9];
+			f32 t17 = m[8] * m[5];
+			f32 t18 = m[0] * m[13];
+			f32 t19 = m[12] * m[1];
+			f32 t20 = m[0] * m[9];
+			f32 t21 = m[8] * m[1];
+			f32 t22 = m[0] * m[5];
+			f32 t23 = m[4] * m[1];
 
 			Matrix4x4 out_matrix;
-			float* o = out_matrix.data;
+			f32* o = out_matrix.data;
 
 			o[0] = (t0 * m[5] + t3 * m[9] + t4 * m[13]) - (t1 * m[5] + t2 * m[9] + t5 * m[13]);
 			o[1] = (t1 * m[1] + t6 * m[9] + t9 * m[13]) - (t0 * m[1] + t7 * m[9] + t8 * m[13]);
 			o[2] = (t2 * m[1] + t7 * m[5] + t10 * m[13]) - (t3 * m[1] + t6 * m[5] + t11 * m[13]);
 			o[3] = (t5 * m[1] + t8 * m[5] + t11 * m[9]) - (t4 * m[1] + t9 * m[5] + t10 * m[9]);
 
-			float d = 1.0f / (m[0] * o[0] + m[4] * o[1] + m[8] * o[2] + m[12] * o[3]);
+			f32 d = 1.0f / (m[0] * o[0] + m[4] * o[1] + m[8] * o[2] + m[12] * o[3]);
 
 			o[0] = d * o[0];
 			o[1] = d * o[1];
@@ -734,15 +735,15 @@ namespace Axle {
 		 *
 		 * @returns A rotation matrix.
 		 */
-		static Matrix4x4 Rotate(float xRadians, float yRadians, float zRadians) {
+		static Matrix4x4 Rotate(f32 xRadians, f32 yRadians, f32 zRadians) {
 			Matrix4x4 mat = Matrix4x4::Indentity();
 
-			float xSin = Mathf::Sin(xRadians);
-			float xCos = Mathf::Cos(xRadians);
-			float ySin = Mathf::Sin(yRadians);
-			float yCos = Mathf::Cos(yRadians);
-			float zSin = Mathf::Sin(zRadians);
-			float zCos = Mathf::Cos(zRadians);
+			f32 xSin = Mathf::Sin(xRadians);
+			f32 xCos = Mathf::Cos(xRadians);
+			f32 ySin = Mathf::Sin(yRadians);
+			f32 yCos = Mathf::Cos(yRadians);
+			f32 zSin = Mathf::Sin(zRadians);
+			f32 zCos = Mathf::Cos(zRadians);
 
 			mat.data[0] = yCos * zCos;
 			mat.data[1] = -yCos * zSin;
@@ -760,9 +761,9 @@ namespace Axle {
 		Matrix4x4 operator*(const Matrix4x4& other) const {
 			Matrix4x4 result;
 			// Rows
-			for (int i = 0; i < 4; i++) {
+			for (i32 i = 0; i < 4; i++) {
 				// Columns
-				for (int j = 0; j < 4; j++) {
+				for (i32 j = 0; j < 4; j++) {
 					result.data[i * 4 + j] =
 						data[i * 4 + 0] * other.data[0 * 4 + j] + data[i * 4 + 1] * other.data[1 * 4 + j] +
 						data[i * 4 + 2] * other.data[2 * 4 + j] + data[i * 4 + 3] * other.data[3 * 4 + j];
@@ -775,7 +776,7 @@ namespace Axle {
 	struct Quaternion {
 		Vector4 vec;
 
-		Quaternion(float x, float y, float z, float w) : vec(x, y, z, w) {}
+		Quaternion(f32 x, f32 y, f32 z, f32 w) : vec(x, y, z, w) {}
 
 		static Quaternion Identity() { return Quaternion(0.0f, 0.0f, 0.0f, 1.0f); }
 
@@ -795,7 +796,7 @@ namespace Axle {
 			return quat;
 		}
 
-		static inline float Dot(Quaternion& a, Quaternion& b) {
+		static inline f32 Dot(Quaternion& a, Quaternion& b) {
 			return a.vec.x * b.vec.x + a.vec.y * b.vec.y + a.vec.z * b.vec.z + a.vec.w * b.vec.w;
 		}
 
@@ -818,7 +819,7 @@ namespace Axle {
 		Matrix4x4 ConvertToRotationMatrix(Vector3 center) {
 			Matrix4x4 out_matrix;
 
-			float* o = out_matrix.data;
+			f32* o = out_matrix.data;
 			o[0] = (vec.x * vec.x) - (vec.y * vec.y) - (vec.z * vec.z) + (vec.w * vec.w);
 			o[1] = 2.0f * ((vec.x * vec.y) + (vec.z * vec.w));
 			o[2] = 2.0f * ((vec.x * vec.z) - (vec.y * vec.w));
@@ -842,9 +843,9 @@ namespace Axle {
 			return out_matrix;
 		}
 
-		static Quaternion FromAxisAngle(Vector3 axis, float angle) {
-			float sin = Mathf::Sin(angle / 2.0f);
-			float cos = Mathf::Cos(angle / 2.0f);
+		static Quaternion FromAxisAngle(Vector3 axis, f32 angle) {
+			f32 sin = Mathf::Sin(angle / 2.0f);
+			f32 cos = Mathf::Cos(angle / 2.0f);
 
 			return Quaternion(axis.x * sin, axis.y * sin, axis.z * sin, cos);
 		}

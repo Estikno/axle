@@ -3,6 +3,7 @@
 #include "axpch.hpp"
 
 #include "../Core.hpp"
+#include "../Types.hpp"
 
 namespace Axle {
 	/// Enum that defines the event type
@@ -32,34 +33,34 @@ namespace Axle {
 		// 128 bits
 		union {
 			/// 2 x 64-bit signed integers
-			long long i64[2];
+			i64 i64_values[2];
 
 			/// 2 x 64-bit unsigned integers
-			unsigned long long u64[2];
+			u64 u64_values[2];
 
 			/// 2 x 64-bit floating-point numbers
-			double f64[2];
+			f64 f64_values[2];
 
 			/// 4 x 32-bit signed integers
-			int i32[4];
+			i32 i32_values[4];
 
 			/// 4 x 32-bit unsigned integers
-			unsigned int u32[4];
+			u32 u32_values[4];
 
 			/// 4 x 32-bit floats
-			float f32[4];
+			f32 f32_values[4];
 
 			/// 8 x 16-bit signed integers
-			short i16[8];
+			i16 i16_values[8];
 
 			/// 8 x 16-bit unsigned integers
-			unsigned short u16[8];
+			u16 u16_values[8];
 
 			/// 16 x 8-bit signed integers
-			signed char i8[16];
+			i8 i8_values[16];
 
 			/// 16 x 8-bit unsigned integers
-			unsigned char u8[16];
+			u8 u8_values[16];
 
 			/**
 			* @brief Allows a pointer to arbitrary data to be passed. Also includes size info.
@@ -68,7 +69,7 @@ namespace Axle {
 			*/
 			struct {
 				// The size of the data pointed to (in bytes)
-				unsigned long long size;
+				u64 size;
 				// A pointer to a memory block of data to be included with the event.
 				void* data;
 			} custom_data;

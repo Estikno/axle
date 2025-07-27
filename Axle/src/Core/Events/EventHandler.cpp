@@ -1,4 +1,5 @@
 #include "axpch.hpp"
+#include "../Types.hpp"
 
 #include "EventHandler.hpp"
 #include "../Logger/Log.hpp"
@@ -25,7 +26,7 @@ namespace Axle {
 		m_EventsType[event->GetEventType()].push_back(p_event);
 		m_EventsCategory[event->GetEventGategory()].push_back(p_event);
 
-		AX_CORE_INFO("Added a new event of type: {}", (int)(event->GetEventType()));
+		AX_CORE_INFO("Added a new event of type: {}", (i32)(event->GetEventType()));
 
 		Notify(event);
 	}
@@ -35,7 +36,7 @@ namespace Axle {
 		return Subject<Event*>::Subscribe(handler);
 	}
 
-	void EventHandler::Unsubscribe(int id) {
+	void EventHandler::Unsubscribe(i32 id) {
 		m_HandlersType.erase(id);
 		Subject<Event*>::Unsubscribe(id);
 	}

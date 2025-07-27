@@ -1,4 +1,5 @@
 #include "axpch.hpp"
+#include "../Types.hpp"
 
 #include "Input.hpp"
 #include "../Logger/Log.hpp"
@@ -29,7 +30,7 @@ namespace Axle {
 	}
 
 	void CursorPositionCallback(GLFWwindow* window, double xpos, double ypos) {
-		Vector2 position(static_cast<float>(xpos), static_cast<float>(ypos));
+		Vector2 position(static_cast<f32>(xpos), static_cast<f32>(ypos));
 		Input::SetMousePosition(position);
 	}
 
@@ -46,6 +47,6 @@ namespace Axle {
 	}
 
 	void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
-		Input::SetMouseWheel(static_cast<float>(yoffset));
+		Input::SetMouseWheel(static_cast<f32>(yoffset));
 	}
 }

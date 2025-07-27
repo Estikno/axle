@@ -1,6 +1,7 @@
 #pragma once
 
 #include "axpch.hpp"
+#include "../Types.hpp"
 
 #include "Core/Core.hpp"
 #include "Math/Math_Types.hpp"
@@ -112,7 +113,7 @@ namespace Axle {
         * 
 		* @param delta The amount the mouse wheel has been scrolled.
         */
-        static void SetMouseWheel(float delta);
+        static void SetMouseWheel(f32 delta);
 
         /**
 		* Updates the input state.
@@ -125,7 +126,7 @@ namespace Axle {
 		AXLE_TEST_API static void SimulateKeyState(Keys key, bool pressed);
 		AXLE_TEST_API static void SimulateMouseButtonState(MouseButtons button, bool pressed);
 		AXLE_TEST_API static void SimulateMousePosition(const Vector2& position);
-		AXLE_TEST_API static void SimulateMouseWheel(float delta);
+		AXLE_TEST_API static void SimulateMouseWheel(f32 delta);
 		AXLE_TEST_API static void SimulateUpdate();
         AXLE_TEST_API static void SimulateReset();
 #endif // AXLE_TESTING

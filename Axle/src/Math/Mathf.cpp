@@ -1,4 +1,5 @@
 #include "axpch.hpp"
+#include "Core/Types.hpp"
 
 #include <cmath>
 #include <random>
@@ -14,20 +15,20 @@ namespace Axle {
 		}
 	}
 
-	int Mathf::Random() {
-		std::uniform_int_distribution<int> dist(0, RAND_MAX);
+	i32 Mathf::Random() {
+		std::uniform_int_distribution<i32> dist(0, RAND_MAX);
 		return dist(GetEngine());
 	}
-	int Mathf::Random(int min, int max) {
-		std::uniform_int_distribution<int> dist(min, max);
+	i32 Mathf::Random(i32 min, i32 max) {
+		std::uniform_int_distribution<i32> dist(min, max);
 		return dist(GetEngine());
 	}
-	float Mathf::RandomFloat() {
-		std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+	f32 Mathf::RandomFloat() {
+		std::uniform_real_distribution<f32> dist(0.0f, 1.0f);
 		return dist(GetEngine());
 	}
-	float Mathf::RandomFloat(float min, float max) {
-		std::uniform_real_distribution<float> dist(min, max);
+	f32 Mathf::RandomFloat(f32 min, f32 max) {
+		std::uniform_real_distribution<f32> dist(min, max);
 		return dist(GetEngine());
 	}
 }

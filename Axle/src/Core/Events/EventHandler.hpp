@@ -1,6 +1,7 @@
 #pragma once
 
 #include "axpch.hpp"
+#include "../Types.hpp"
 
 #include "../Core.hpp"
 #include "Event.hpp"
@@ -66,7 +67,7 @@ namespace Axle {
 		*
 		* @param id Id to delete
 		*/
-		void Unsubscribe(int id) override;
+		void Unsubscribe(i32 id) override;
 
 		/**
 		* The notify method is called internally and it notifies the suscribers about the new event that has arrived.
@@ -81,7 +82,7 @@ namespace Axle {
 		/// The singleton of the event handler class
 		static std::unique_ptr<EventHandler> m_EventHandler;
 		/// A map that stores the type and category of event each handler wants (by the id)
-		std::unordered_map<int, std::pair<EventCategory, EventType>> m_HandlersType;
+		std::unordered_map<i32, std::pair<EventCategory, EventType>> m_HandlersType;
 
 		/// A map that stores the events by EventType
 		std::unordered_map<EventType, std::vector<std::shared_ptr<Event>>> m_EventsType;
