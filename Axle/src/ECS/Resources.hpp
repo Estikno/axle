@@ -1,55 +1,66 @@
 #pragma once
 
-#include <typeindex>
-#include <typeinfo>
-
 #include "axpch.hpp"
+
+#include "Core/Core.hpp"
 #include "Core/Types.hpp"
+#include "Core/Logger/Log.hpp"
 
 namespace Axle {
+	struct ResourceEntry {
+		std::any ptr;
+		std::function<void()> deleter;
+	};
+
 	class Resources {
 	public:
 		Resources() = default;
+		AXLE_TEST_API ~Resources();
 
 		template<typename T>
 		void Add(const T* resource) = delete; // forbid const pointers
 
+		/**
+		* Add a global resource to the resource manager.
+		* 
+		* @param resource Pointer to the resource to be added. The added pointer will be managed
+		* by the resource manager, you must not delete it.
+		*/
 		template<typename T>
-		void Add(T* resource) {
-			m_Data[std::type_index(typeid(T))] = std::unique_ptr<T>(resource);
-		}
+		void Add(T* resource);
 
+		/**
+		* Gets a resource of type T from the resource manager.
+		* 
+		* @returns Pointer to the resource of type T if it exists, otherwise nullptr.
+		*/
 		template<typename T>
-		void Add(std::unique_ptr<T> resource) {
-			m_Data[std::type_index(typeid(T))] = std::move(resource);
-		}
+		T* Get();
 
+		/**
+		* Removes a resource of type T from the resource manager.
+		*/
 		template<typename T>
-		T* Get() {
-			auto it = m_Data.find(std::type_index(typeid(T)));
+		void Remove();
 
-			if (it != m_Data.end()) {
-				if (auto ptr = std::any_cast<std::unique_ptr<T>>(&it->second)) {
-					return ptr->get();
-				}
-			}
-
-			return nullptr;
-		}
-
+		/**
+		* Checks if a resource of type T exists in the resource manager.
+		* 
+		* @returns True if the resource exists, otherwise false.
+		*/
 		template<typename T>
-		void Remove() {
-			auto it = m_Data.find(std::type_index(typeid(T)));
-			if (it != m_Data.end()) {
-				m_Data.erase(it);
-			}
-		}
+		bool Contains() const noexcept;
 
-		template<typename T>
-		bool Contains() const noexcept {
-			return m_Data.find(std::type_index(typeid(T))) != m_Data.end();
+#ifdef AXLE_TESTING
+		/// This function is only available for testing purposes.
+		std::unordered_map<std::type_index, ResourceEntry>& GetData() {
+			return m_Data;
 		}
+#endif // AXLE_TESTING
+
 	private:
-		std::unordered_map<std::type_index, std::any> m_Data;
+		/// The hash map that stores the resources, where the key is the type index of the resource type.
+		/// This means that there can't be two resources of the same type stored at the same time.
+		std::unordered_map<std::type_index, ResourceEntry> m_Data;
 	};
 }

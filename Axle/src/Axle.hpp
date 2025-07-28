@@ -10,6 +10,8 @@
 #include "Math/Math_Types.hpp"
 #include "Core/Input/Input.hpp"
 
+#include "ECS/Resources.hpp"
+
 // ---Entry Point---
 #include "Core/EntryPoint.hpp"
 // -----------------

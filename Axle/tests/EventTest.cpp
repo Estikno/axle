@@ -55,9 +55,7 @@ void TestFunction_Complex_CustomData(Event* event) {
 	CHECK(event->GetEventType() == Axle::EventType::KeyPressed);
 	CHECK(event->GetEventCategory() == Axle::EventCategory::Input);
 
-	REQUIRE(event->GetContext().custom_data.has_value());
-
-	PlayerData* player = std::any_cast<PlayerData*>(event->GetContext().custom_data.value());
+	PlayerData* player = std::any_cast<PlayerData*>(event->GetContext().custom_data);
 
 	CHECK(player->id == 12);
 	CHECK(player->health == doctest::Approx(100.0f));
