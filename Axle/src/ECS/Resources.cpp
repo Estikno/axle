@@ -64,15 +64,15 @@ namespace Axle {
 	}
 
 #ifdef AXLE_TESTING
-	template AXLE_API void Resources::Add<f32>(f32*);
-	template AXLE_API f32* Resources::Get<f32>();
-	template AXLE_API void Resources::Remove<f32>();
-	template AXLE_API bool Resources::Contains<f32>() const noexcept;
-
-	template AXLE_API void Resources::Add<i32>(i32*);
-	template AXLE_API i32* Resources::Get<i32>();
-	template AXLE_API void Resources::Remove<i32>();
-	template AXLE_API bool Resources::Contains<i32>() const noexcept;
+	template AXLE_TEST_API void Resources::Add<f32>(f32*);
+	template AXLE_TEST_API f32* Resources::Get<f32>();
+	template AXLE_TEST_API void Resources::Remove<f32>();
+	template AXLE_TEST_API bool Resources::Contains<f32>() const noexcept;
+	
+	template AXLE_TEST_API void Resources::Add<i32>(i32*);
+	template AXLE_TEST_API i32* Resources::Get<i32>();
+	template AXLE_TEST_API void Resources::Remove<i32>();
+	template AXLE_TEST_API bool Resources::Contains<i32>() const noexcept;
 #endif // AXLE_TESTING
 
 }
