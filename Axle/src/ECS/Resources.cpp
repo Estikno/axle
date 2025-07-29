@@ -23,6 +23,7 @@ namespace Axle {
 
 		if (Contains<T>()) {
 			AX_CORE_WARN("Overwriting resource of type: {0} because it already exists in the resource manager.", typeid(T).name());
+			m_Data.erase(id);
 		}
 
 		m_Data[id] = std::static_pointer_cast<void>(resource);
@@ -62,12 +63,14 @@ namespace Axle {
 
 #ifdef AXLE_TESTING
 	template AXLE_TEST_API void Resources::Add<f32>(f32*);
+	template AXLE_TEST_API void Resources::Add<f32>(std::shared_ptr<f32>);
 	template AXLE_TEST_API f32* Resources::Get<f32>();
 	template AXLE_TEST_API std::shared_ptr<f32> Resources::GetShared<f32>();
 	template AXLE_TEST_API void Resources::Remove<f32>();
 	template AXLE_TEST_API bool Resources::Contains<f32>() const noexcept;
 	
 	template AXLE_TEST_API void Resources::Add<i32>(i32*);
+	template AXLE_TEST_API void Resources::Add<i32>(std::shared_ptr<i32>);
 	template AXLE_TEST_API i32* Resources::Get<i32>();
 	template AXLE_TEST_API std::shared_ptr<i32> Resources::GetShared<i32>();
 	template AXLE_TEST_API void Resources::Remove<i32>();

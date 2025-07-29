@@ -9,12 +9,14 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 IncludeDir = {}
 IncludeDir["GLFW"] = "Axle/vendor/GLFW/include"
 IncludeDir["Glad"] = "Axle/vendor/Glad/include"
+IncludeDir["Doctest"] = "Axle/vendor/doctest/doctest"
+IncludeDir["Spdlog"] = "Axle/vendor/spdlog/include"
 
 project "Glad"
 	location "Axle/vendor/Glad"
     kind "StaticLib"
     language "C"
-    staticruntime "on"
+    -- staticruntime "on"
     -- warnings "off"
 
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
@@ -54,7 +56,7 @@ project "GLFW"
     location "Axle/vendor/GLFW"
     kind "StaticLib"
     language "C"
-    staticruntime "on"
+    -- staticruntime "on"
 	-- warnings "off"
 
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
@@ -113,7 +115,7 @@ project "Axle"
     kind "SharedLib"
     language "C++"
     cppdialect "C++20"
-    staticruntime "On"
+    -- staticruntime "on"
 
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
@@ -125,7 +127,7 @@ project "Axle"
 
     includedirs { 
         "%{prj.name}/src",
-        "%{prj.name}/vendor/spdlog/include",
+		"%{IncludeDir.Spdlog}",
 		"%{IncludeDir.GLFW}",
         "%{IncludeDir.Glad}"
     }
@@ -164,21 +166,24 @@ project "Axle"
     filter "configurations:Debug"
         defines { "AX_DEBUG", "AXLE_TESTING" }
         symbols "On"
+		runtime "Debug"
 
     filter "configurations:Release"
         defines "AX_RELEASE"
         optimize "On"
+		runtime "Release"
 
     filter "configurations:Dist"
         defines "AX_DIST"
         optimize "On"
+		runtime "Release"
 
 project "Sandbox"
     location "Sandbox"
     kind "ConsoleApp"
     language "C++"
     cppdialect "C++20"
-    staticruntime "On"
+    -- staticruntime "On"
 
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
@@ -186,7 +191,7 @@ project "Sandbox"
     files { "%{prj.name}/src/**.hpp", "%{prj.name}/src/**.cpp", "%{prj.name}/src/**.h" }
 
     includedirs { 
-		"Axle/vendor/spdlog/include", 
+		"%{IncludeDir.Spdlog}",
 		"Axle/src", 
 		"%{IncludeDir.GLFW}",
         "%{IncludeDir.Glad}" 
@@ -212,21 +217,24 @@ project "Sandbox"
     filter "configurations:Debug"
         defines "AX_DEBUG"
         symbols "On"
+		runtime "Debug"
 
     filter "configurations:Release"
         defines "AX_RELEASE"
         optimize "On"
+		runtime "Release"
 
     filter "configurations:Dist"
         defines "AX_DIST"
         optimize "On"
+		runtime "Release"
 
 project "Tests"
     location "Axle/tests"
     kind "ConsoleApp"
     language "C++"
     cppdialect "C++20"
-    staticruntime "On"
+    -- staticruntime "On"
 	
 	defines { "AXLE_TESTING" }
 
@@ -239,9 +247,9 @@ project "Tests"
     }
 
     includedirs {
-        "Axle/vendor/doctest/doctest",
+		"%{IncludeDir.Doctest}",
         "Axle/src",
-        "Axle/vendor/spdlog/include",
+        "%{IncludeDir.Spdlog}",
 		"%{IncludeDir.GLFW}",
     }
 
@@ -261,11 +269,17 @@ project "Tests"
     filter "configurations:Debug"
         defines { "AX_DEBUG" }
         symbols "On"
+		runtime "Debug"
+	
+	filter "configurations:Release or configurations:Dist"
+		kind "None"
 
-    filter "configurations:Release"
-        defines { "AX_RELEASE" }
-        optimize "On"
+    --filter "configurations:Release"
+    --    defines { "AX_RELEASE" }
+    --    optimize "On"
+	--	runtime "Release"
 
-    filter "configurations:Dist"
-        defines { "AX_DIST" }
-        optimize "On"
+    --filter "configurations:Dist"
+    --    defines { "AX_DIST" }
+    --    optimize "On"
+	--	runtime "Release"

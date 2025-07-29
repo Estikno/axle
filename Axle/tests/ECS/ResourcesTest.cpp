@@ -24,8 +24,7 @@ TEST_CASE("Resources") {
 		REQUIRE(res.GetData().contains(std::type_index(typeid(f32))));
 		CHECK(res.Contains<f32>());
 
-		ResourceEntry& data = res.GetData().at(std::type_index(typeid(f32)));
-		f32* gravity = std::any_cast<f32*>(data.ptr);
+		f32* gravity = static_cast<f32*>(res.GetData().at(std::type_index(typeid(f32))).get());
 
 		REQUIRE_FALSE(gravity == nullptr);
 		CHECK(*gravity == doctest::Approx(9.81f));
@@ -91,5 +90,33 @@ TEST_CASE("Resources") {
 
 		CHECK(gravity == nullptr);
 		CHECK(size == 0);
+	}
+
+	SUBCASE("Add multiple resources") {
+		{
+			f32* g = new f32;
+			std::shared_ptr<i32> iPtr = std::make_shared<i32>(42);
+
+			*g = 9.81f;
+
+			CHECK(res.GetData().empty());
+
+			res.Add<f32>(g);
+			res.Add<i32>(iPtr);
+
+			CHECK(res.GetData().size() == 2);
+		}
+
+		REQUIRE(res.Contains<f32>());
+		REQUIRE(res.Contains<i32>());
+
+		f32* gravity = res.Get<f32>();
+		i32* integer = res.Get<i32>();
+
+		REQUIRE_FALSE(gravity == nullptr);
+		REQUIRE_FALSE(integer == nullptr);
+
+		CHECK(*gravity == doctest::Approx(9.81f));
+		CHECK(*integer == 42);
 	}
 }
