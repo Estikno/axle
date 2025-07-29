@@ -9,6 +9,11 @@
 namespace Axle {
 	template<typename T>
 	void Resources::Add(T* resource) {
+		Add<T>(std::shared_ptr<T>(resource));
+	}
+
+	template<typename T>
+	void Resources::Add(std::shared_ptr<T> resource) {
 		std::type_index id = std::type_index(typeid(T));
 
 		if (resource == nullptr) {
@@ -16,16 +21,11 @@ namespace Axle {
 			return;
 		}
 
-		if (this->Contains<T>()) {
-			AX_CORE_WARN("An element of the same type already exists in the resource manager. Overwriting it.");
-			this->Remove<T>();
+		if (Contains<T>()) {
+			AX_CORE_WARN("Overwriting resource of type: {0} because it already exists in the resource manager.", typeid(T).name());
 		}
 
-		ResourceEntry entry;
-		entry.ptr = std::make_any<T*>(resource);
-		entry.deleter = [ptr = resource]() { delete ptr; };
-
-		m_Data[id] = std::move(entry);
+		m_Data[id] = std::static_pointer_cast<void>(resource);
 	}
 
 	template<typename T>
@@ -33,7 +33,18 @@ namespace Axle {
 		auto it = m_Data.find(std::type_index(typeid(T)));
 
 		if (it != m_Data.end()) {
-			return std::any_cast<T*>(it->second.ptr);
+			return static_cast<T*>(it->second.get());
+		}
+
+		return nullptr;
+	}
+
+	template<typename T>
+	std::shared_ptr<T> Resources::GetShared() {
+		auto it = m_Data.find(std::type_index(typeid(T)));
+
+		if (it != m_Data.end()) {
+			return std::static_pointer_cast<T>(it->second);
 		}
 
 		return nullptr;
@@ -41,13 +52,7 @@ namespace Axle {
 
 	template<typename T>
 	void Resources::Remove() {
-		std::type_index id = std::type_index(typeid(T));
-
-		if (this->Contains<T>()) {
-			ResourceEntry& p = m_Data[id];
-			p.deleter();
-			m_Data.erase(id);
-		}
+		m_Data.erase(std::type_index(typeid(T)));
 	}
 
 	template<typename T>
@@ -55,24 +60,17 @@ namespace Axle {
 		return m_Data.contains(std::type_index(typeid(T)));
 	}
 
-	Resources::~Resources() {
-		for (auto& [id, entry] : m_Data) {
-			entry.deleter();
-		}
-
-		m_Data.clear();
-	}
-
 #ifdef AXLE_TESTING
 	template AXLE_TEST_API void Resources::Add<f32>(f32*);
 	template AXLE_TEST_API f32* Resources::Get<f32>();
+	template AXLE_TEST_API std::shared_ptr<f32> Resources::GetShared<f32>();
 	template AXLE_TEST_API void Resources::Remove<f32>();
 	template AXLE_TEST_API bool Resources::Contains<f32>() const noexcept;
 	
 	template AXLE_TEST_API void Resources::Add<i32>(i32*);
 	template AXLE_TEST_API i32* Resources::Get<i32>();
+	template AXLE_TEST_API std::shared_ptr<i32> Resources::GetShared<i32>();
 	template AXLE_TEST_API void Resources::Remove<i32>();
 	template AXLE_TEST_API bool Resources::Contains<i32>() const noexcept;
 #endif // AXLE_TESTING
-
 }
