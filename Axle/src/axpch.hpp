@@ -6,6 +6,7 @@
 #include <utility>
 #include <any>
 #include <bitset>
+#include <algorithm>
 
 #include <string>
 #include <vector>

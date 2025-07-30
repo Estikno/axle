@@ -8,32 +8,73 @@
 #include "Math/Mathf.hpp"
 
 namespace Axle {
+	using EntityID = u64;
+
 	constexpr size_t MAX_COMPONENTS = 64;
 	constexpr EntityID MAX_ENTITIES = 10000;
 
-	using EntityID = u64;
 	using ComponentMask = std::bitset<MAX_COMPONENTS>;
 
 	class Entities {
 	public:
 		Entities() = default;
 
+		/**
+		* Registers a component for later use in entities
+		*/
 		template<typename T>
 		void RegisterComponent();
 
-		Entities CreateEntity();
+		/**
+		* Creates a new entity and returns a reference to the entities
+		* class so that you can add components to it via the WithComponent method.
+		* 
+		* @returns A reference to the entities for immediate use
+		*/
+		Entities& CreateEntity();
 
+		/**
+		* Adds a component to the entity that is currently being created.
+		* 
+		* @param component Pointer to the component to be added. The added pointer will be managed by this class.
+		* 
+		* @returns A reference to the entities class so that you can chain calls to this method.
+		*/
 		template<typename T>
-		Entities WithComponent(T* component);
+		Entities& WithComponent(T* component);
 
+		/**
+		* Adds a component to the entity with the given ID.
+		* 
+		* @param id The ID of the entity to add the component to.
+		* @param component Pointer to the component to be added. The added pointer will be managed by this class.
+		*/
 		template<typename T>
 		void Add(EntityID id, T* component);
 
+		/**
+		* Deletes a component of type T from the entity with the given ID.
+		* 
+		* @param id The ID of the entity to remove the component from.
+		*/
 		template<typename T>
 		void Remove(EntityID id);
 
+		/**
+		* Deletes an entity and all its components.
+		* 
+		* @param id The ID of the entity to be deleted.
+		*/
 		void DeleteEntity(EntityID id);
 
+		/**
+		* Gets the id of the last created entity.
+		* 
+		* @returns The ID of the last created entity.
+		*/
+		inline EntityID GetLastCreatedEntity() const noexcept {
+			return m_InsertingIntoIndex;
+		}
 	private:
 		/// A hasmap containing the components for every entity.
 		///
