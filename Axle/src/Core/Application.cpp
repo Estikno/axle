@@ -9,7 +9,7 @@
 #include <GLFW/glfw3.h>
 
 namespace Axle {
-	static void ErrorCallback(int error, const char* description) {
+	void ErrorCallback(int error, const char* description) {
 		AX_CORE_ERROR("GLFW Error ({0}): {1}", error, description);
 	}
 

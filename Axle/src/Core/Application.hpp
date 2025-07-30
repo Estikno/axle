@@ -7,7 +7,7 @@
 #include <GLFW/glfw3.h>
 
 namespace Axle {
-    static void ErrorCallback(int error, const char* description);
+    void ErrorCallback(int error, const char* description);
 
     class AXLE_API Application {
       public:
