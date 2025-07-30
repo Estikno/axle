@@ -75,7 +75,43 @@ namespace Axle {
 		inline EntityID GetLastCreatedEntity() const noexcept {
 			return m_InsertingIntoIndex;
 		}
+
+		/**
+		* Checks if the entity with the given ID has a component of type T.
+		* 
+		* @returns True if the entity has the component, false otherwise.
+		*/
+		template<typename T>
+		inline bool Has(EntityID id) {
+			ComponentMask& mask = GetComponentMask<T>();
+			return m_EntityMasks.at(id) & *mask == *mask;
+		}
+
+		/**
+		* Checks if the entity with the given ID has all the components of the given types.
+		* 
+		* @returns True if the entity has all the components, false otherwise.
+		*/
+		template<typename... Ts>
+		inline bool HasAll(EntityID id) {
+			return (Has<Ts>(id) && ...);
+		}
+
+		/**
+		* Checks if the entity with the given ID has at least one component of the given types.
+		* 
+		* @returns True if the entity has at least one of the components, false otherwise.
+		*/
+		template<typename... Ts>
+		inline bool HasAny(EntityID id) {
+			return (Has<Ts>(id) || ...);
+		}
 	private:
+		template<typename T>
+		inline ComponentMask& GetComponentMask() {
+			return m_ComponentMasks.at(std::type_index(typeid(T)));
+		}
+
 		/// A hasmap containing the components for every entity.
 		///
 		/// The type_index  is used to identify the type of the component, and the vector

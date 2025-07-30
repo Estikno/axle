@@ -2,6 +2,7 @@
 
 #include "Core/Types.hpp"
 #include "Core/Logger/Log.hpp"
+#include "Core/Error/Panic.hpp"
 
 #include "Entities.hpp"
 
@@ -18,7 +19,7 @@ namespace Axle {
 		ComponentMask newMask;
 		newMask.set(m_ComponentMasks.size());
 
-		m_Components.insert({ typeID, std::vector<std::shared_ptr<void>>() });
+		m_Components.insert({ typeID, std::vector<std::shared_ptr<void>>(m_EntityMasks.size()) });
 		m_ComponentMasks.insert({ typeID, newMask });
 	}
 
@@ -36,6 +37,7 @@ namespace Axle {
 
 		m_EntityMasks.push_back(ComponentMask());
 		m_InsertingIntoIndex = m_EntityMasks.size() - 1;
+
 		return *this;
 	}
 
@@ -44,11 +46,22 @@ namespace Axle {
 		std::type_index typeID = std::type_index(typeid(T));
 		EntityID id = m_InsertingIntoIndex;
 
+		if (component == nullptr) {
+			AX_CORE_ERROR("Cannot add a null component of type {0} to entity {1}.", typeID.name(), id);
+			Panic("Cannot add a null component of type {} to entity {}.", typeID.name(), id);
+		}
+
 		if (m_Components.find(typeID) == m_Components.end()) {
 			AX_CORE_ERROR("Component of type {0} is not registered.", typeID.name());
-			throw std::runtime_error("Component not registered");
+			Panic("Component of type {} is not registered.", typeID.name());
 		}
 
 		std::vector<std::shared_ptr<void>>& components = m_Components[typeID];
+		components.at(id) = std::static_pointer_cast<void>(std::shared_ptr<T>(component));
+
+		ComponentMask& bitmask = m_ComponentMasks.at(typeID);
+		m_EntityMasks.at(id) |= *bitmask;
+
+		return *this;
 	}
 }
