@@ -18,7 +18,6 @@ namespace Axle {
 
     protected:
         GLFWwindow* m_window = nullptr;
-        bool m_HasErrorInit = false;
     };
 
     // To be defined in client

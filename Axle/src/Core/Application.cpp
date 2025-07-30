@@ -5,6 +5,7 @@
 #include "Input/Input.hpp"
 #include "Input/InputCallbacks.hpp"
 #include "Math/Math_Types.hpp"
+#include "Error/Panic.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -18,10 +19,7 @@ namespace Axle {
 
 		if (!glfwInit()) {
 			AX_CORE_ERROR("Failed to initialize GLFW");
-
-			m_HasErrorInit = true;
-
-			return;
+			Panic("Failed to initialize GLFW");
 		}
 
 		glfwSetErrorCallback(ErrorCallback);
@@ -31,11 +29,8 @@ namespace Axle {
 		if (!m_window) {
 			AX_CORE_ERROR("Failed to create GLFW window");
 			glfwTerminate();
-			m_window = nullptr;
 
-			m_HasErrorInit = true;
-
-			return;
+			Panic("Failed to create GLFW window");
 		}
 
 		glfwSetKeyCallback(m_window, KeyCallback);
@@ -55,8 +50,6 @@ namespace Axle {
 	}
 
 	void Application::Run() {
-		if (m_HasErrorInit) return;
-
 		while (!glfwWindowShouldClose(m_window)) {
 
 			// NOTE: Input state updating should be performed at the end of each frame.

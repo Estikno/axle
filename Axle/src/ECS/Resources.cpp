@@ -3,6 +3,7 @@
 #include "Core/Core.hpp"
 #include "Core/Types.hpp"
 #include "Core/Logger/Log.hpp"
+#include "Core/Error/Panic.hpp"
 
 #include "Resources.hpp"
 
@@ -18,7 +19,7 @@ namespace Axle {
 
 		if (resource == nullptr) {
 			AX_CORE_ERROR("Cannot add a null resource to the resource manager.");
-			return;
+			Panic("Cannot add a null resource to the resource manager.");
 		}
 
 		if (Contains<T>()) {

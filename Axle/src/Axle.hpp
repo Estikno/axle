@@ -9,6 +9,7 @@
 #include "Math/Mathf.hpp"
 #include "Math/Math_Types.hpp"
 #include "Core/Input/Input.hpp"
+#include "Core/Error/Panic.hpp"
 
 #include "ECS/Resources.hpp"
 
