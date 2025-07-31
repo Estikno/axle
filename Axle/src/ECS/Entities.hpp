@@ -28,16 +28,16 @@ namespace Axle {
 		/**
 		* Creates a new entity and returns a reference to the entities
 		* class so that you can add components to it via the WithComponent method.
-		* 
+		*
 		* @returns A reference to the entities for immediate use
 		*/
-		Entities& CreateEntity();
+		AXLE_TEST_API Entities& CreateEntity();
 
 		/**
 		* Adds a component to the entity that is currently being created.
-		* 
+		*
 		* @param component Pointer to the component to be added. The added pointer will be managed by this class.
-		* 
+		*
 		* @returns A reference to the entities class so that you can chain calls to this method.
 		*/
 		template<typename T>
@@ -45,7 +45,7 @@ namespace Axle {
 
 		/**
 		* Adds a component to the entity with the given ID.
-		* 
+		*
 		* @param id The ID of the entity to add the component to.
 		* @param component Pointer to the component to be added. The added pointer will be managed by this class.
 		*/
@@ -54,7 +54,7 @@ namespace Axle {
 
 		/**
 		* Deletes a component of type T from the entity with the given ID.
-		* 
+		*
 		* @param id The ID of the entity to remove the component from.
 		*/
 		template<typename T>
@@ -62,34 +62,34 @@ namespace Axle {
 
 		/**
 		* Deletes an entity and all its components.
-		* 
+		*
 		* @param id The ID of the entity to be deleted.
 		*/
-		void DeleteEntity(EntityID id);
+		AXLE_TEST_API void DeleteEntity(EntityID id);
 
 		/**
 		* Gets the id of the last created entity.
-		* 
+		*
 		* @returns The ID of the last created entity.
 		*/
-		inline EntityID GetLastCreatedEntity() const noexcept {
+		AXLE_TEST_API inline EntityID GetLastCreatedEntity() const noexcept {
 			return m_InsertingIntoIndex;
 		}
 
 		/**
 		* Checks if the entity with the given ID has a component of type T.
-		* 
+		*
 		* @returns True if the entity has the component, false otherwise.
 		*/
 		template<typename T>
 		inline bool Has(EntityID id) {
 			ComponentMask& mask = GetComponentMask<T>();
-			return m_EntityMasks.at(id) & *mask == *mask;
+			return (m_EntityMasks.at(id) & mask) == mask;
 		}
 
 		/**
 		* Checks if the entity with the given ID has all the components of the given types.
-		* 
+		*
 		* @returns True if the entity has all the components, false otherwise.
 		*/
 		template<typename... Ts>
@@ -99,13 +99,28 @@ namespace Axle {
 
 		/**
 		* Checks if the entity with the given ID has at least one component of the given types.
-		* 
+		*
 		* @returns True if the entity has at least one of the components, false otherwise.
 		*/
 		template<typename... Ts>
 		inline bool HasAny(EntityID id) {
 			return (Has<Ts>(id) || ...);
 		}
+
+#ifdef AXLE_TESTING
+		std::unordered_map<std::type_index, std::vector<std::shared_ptr<void>>>& GetComponentsTEST() {
+			return m_Components;
+		}
+
+		std::unordered_map<std::type_index, ComponentMask>& GetComponentMasksTEST() {
+			return m_ComponentMasks;
+		}
+
+		std::vector<ComponentMask>& GetEntityMasksTEST() {
+			return m_EntityMasks;
+		}
+#endif // AXLE_TESTING
+
 	private:
 		template<typename T>
 		inline ComponentMask& GetComponentMask() {
@@ -143,4 +158,20 @@ namespace Axle {
 		/// creating and inserting components in it with the 'WithComponent' method.
 		EntityID m_InsertingIntoIndex = 0;
 	};
+
+#ifdef AXLE_TESTING
+	struct Position {
+		f32 x;
+		f32 y;
+
+		Position(f32 _x, f32 _y) : x(_x), y(_y) {}
+	};
+
+	struct Velocity {
+		f32 x;
+		f32 y;
+
+		Velocity(f32 _x, f32 _y) : x(_x), y(_y) {}
+	};
+#endif // AXLE_TESTING
 }

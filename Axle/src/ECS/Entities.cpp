@@ -1,5 +1,7 @@
 #include "axpch.hpp"
 
+#include "Core/Core.hpp"
+
 #include "Core/Types.hpp"
 #include "Core/Logger/Log.hpp"
 #include "Core/Error/Panic.hpp"
@@ -67,7 +69,7 @@ namespace Axle {
 		}
 
 		ComponentMask& mask = GetComponentMask<T>();
-		m_EntityMasks.at(id) |= *mask;
+		m_EntityMasks.at(id) |= mask;
 
 		std::vector<std::shared_ptr<void>>& components = m_Components.at(typeID);
 		components.at(id) = std::static_pointer_cast<void>(std::shared_ptr<T>(component));
@@ -75,6 +77,8 @@ namespace Axle {
 
 	template<typename T>
 	void Entities::Remove(EntityID id) {
+		std::type_index typeID = std::type_index(typeid(T));
+
 		if (!IsComponentRegistered<T>()) {
 			AX_CORE_ERROR("Component of type {0} is not registered.", typeID.name());
 			Panic("Component of type {} is not registered.", typeID.name());
@@ -85,11 +89,10 @@ namespace Axle {
 			Panic("Entity ID {} is out of bounds. Maximum ID is {}.", id, m_EntityMasks.size() - 1);
 		}
 
-		std::type_index typeID = std::type_index(typeid(T));
 		ComponentMask& mask = GetComponentMask<T>();
 
 		if (Has<T>(id)) {
-			m_EntityMasks.at(id) ^= *mask;
+			m_EntityMasks.at(id) ^= mask;
 		}
 		else {
 			AX_CORE_WARN("Tried deleting component {0} from entity {1} which does not have it.", typeID.name(), id);
@@ -104,4 +107,22 @@ namespace Axle {
 
 		m_EntityMasks.at(id).reset();
 	}
+
+#ifdef AXLE_TESTING
+	template AXLE_TEST_API Entities& Entities::WithComponent<Velocity>(Velocity*);
+	template AXLE_TEST_API Entities& Entities::WithComponent<Position>(Position*);
+
+	template AXLE_TEST_API void Entities::RegisterComponent<Position>();
+	template AXLE_TEST_API void Entities::Add<Position>(EntityID, Position*);
+	template AXLE_TEST_API void Entities::Remove<Position>(EntityID);
+	template AXLE_TEST_API bool Entities::Has<Position>(EntityID);
+
+	template AXLE_TEST_API void Entities::RegisterComponent<Velocity>();
+	template AXLE_TEST_API void Entities::Add<Velocity>(EntityID, Velocity*);
+	template AXLE_TEST_API void Entities::Remove<Velocity>(EntityID);
+	template AXLE_TEST_API bool Entities::Has<Velocity>(EntityID);
+
+	template AXLE_TEST_API bool Entities::HasAll<Position, Velocity>(EntityID);
+	template AXLE_TEST_API bool Entities::HasAny<Position, Velocity>(EntityID);
+#endif // AXLE_TESTING
 }
