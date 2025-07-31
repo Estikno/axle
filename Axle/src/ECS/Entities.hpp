@@ -112,6 +112,11 @@ namespace Axle {
 			return m_ComponentMasks.at(std::type_index(typeid(T)));
 		}
 
+		template<typename T>
+		inline bool IsComponentRegistered() {
+			return m_Components.find(std::type_index(typeid(T))) != m_Components.end();
+		}
+
 		/// A hasmap containing the components for every entity.
 		///
 		/// The type_index  is used to identify the type of the component, and the vector

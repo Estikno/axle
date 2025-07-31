@@ -25,7 +25,7 @@ namespace Axle {
 
 	Entities& Entities::CreateEntity() {
 		for (size_t i = 0; i < m_EntityMasks.size(); i++) {
-			if (m_EntityMasks[i].none()) {
+			if (m_EntityMasks.at(i).none()) {
 				m_InsertingIntoIndex = i;
 				return *this;
 			}
@@ -43,25 +43,65 @@ namespace Axle {
 
 	template<typename T>
 	Entities& Entities::WithComponent(T* component) {
+		Add<T>(m_InsertingIntoIndex, component);
+		return *this;
+	}
+
+	template<typename T>
+	void Entities::Add(EntityID id, T* component) {
 		std::type_index typeID = std::type_index(typeid(T));
-		EntityID id = m_InsertingIntoIndex;
 
 		if (component == nullptr) {
 			AX_CORE_ERROR("Cannot add a null component of type {0} to entity {1}.", typeID.name(), id);
 			Panic("Cannot add a null component of type {} to entity {}.", typeID.name(), id);
 		}
 
-		if (m_Components.find(typeID) == m_Components.end()) {
+		if (!IsComponentRegistered<T>()) {
 			AX_CORE_ERROR("Component of type {0} is not registered.", typeID.name());
 			Panic("Component of type {} is not registered.", typeID.name());
 		}
 
-		std::vector<std::shared_ptr<void>>& components = m_Components[typeID];
+		if (id >= m_EntityMasks.size()) {
+			AX_CORE_ERROR("Entity ID {0} is out of bounds. Maximum ID is {1}.", id, m_EntityMasks.size() - 1);
+			Panic("Entity ID {} is out of bounds. Maximum ID is {}.", id, m_EntityMasks.size() - 1);
+		}
+
+		ComponentMask& mask = GetComponentMask<T>();
+		m_EntityMasks.at(id) |= *mask;
+
+		std::vector<std::shared_ptr<void>>& components = m_Components.at(typeID);
 		components.at(id) = std::static_pointer_cast<void>(std::shared_ptr<T>(component));
+	}
 
-		ComponentMask& bitmask = m_ComponentMasks.at(typeID);
-		m_EntityMasks.at(id) |= *bitmask;
+	template<typename T>
+	void Entities::Remove(EntityID id) {
+		if (!IsComponentRegistered<T>()) {
+			AX_CORE_ERROR("Component of type {0} is not registered.", typeID.name());
+			Panic("Component of type {} is not registered.", typeID.name());
+		}
 
-		return *this;
+		if (id >= m_EntityMasks.size()) {
+			AX_CORE_ERROR("Entity ID {0} is out of bounds. Maximum ID is {1}.", id, m_EntityMasks.size() - 1);
+			Panic("Entity ID {} is out of bounds. Maximum ID is {}.", id, m_EntityMasks.size() - 1);
+		}
+
+		std::type_index typeID = std::type_index(typeid(T));
+		ComponentMask& mask = GetComponentMask<T>();
+
+		if (Has<T>(id)) {
+			m_EntityMasks.at(id) ^= *mask;
+		}
+		else {
+			AX_CORE_WARN("Tried deleting component {0} from entity {1} which does not have it.", typeID.name(), id);
+		}
+	}
+
+	void Entities::DeleteEntity(EntityID id) {
+		if (id >= m_EntityMasks.size()) {
+			AX_CORE_ERROR("Entity ID {0} is out of bounds. Maximum ID is {1}.", id, m_EntityMasks.size() - 1);
+			Panic("Entity ID {} is out of bounds. Maximum ID is {}.", id, m_EntityMasks.size() - 1);
+		}
+
+		m_EntityMasks.at(id).reset();
 	}
 }
