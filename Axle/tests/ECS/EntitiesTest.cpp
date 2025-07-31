@@ -93,4 +93,128 @@ TEST_CASE("Entities ECS Test") {
 		CHECK(s->x == doctest::Approx(1.0f));
 		CHECK(s->y == doctest::Approx(2.0f));
 	}
+
+	SUBCASE("Entity map updates") {
+		std::type_index typeID = std::type_index(typeid(Position));
+		std::type_index typeID2= std::type_index(typeid(Velocity));
+
+		entities.RegisterComponent<Position>();
+		entities.RegisterComponent<Velocity>();
+
+		entities
+			.CreateEntity()
+			.WithComponent<Velocity>(new Velocity(1.0f, 2.0f));
+
+		CHECK(entities.GetEntityMasksTEST().at(entities.GetLastCreatedEntity()) == 2);
+
+		entities.Add<Position>(0, new Position(3.0f, 4.0f));
+
+		CHECK(entities.GetEntityMasksTEST().at(0) == 3);
+	}
+
+	SUBCASE("Delete component") {
+		std::type_index typeID = std::type_index(typeid(Position));
+		std::type_index typeID2 = std::type_index(typeid(Velocity));
+
+		entities.RegisterComponent<Position>();
+		entities.RegisterComponent<Velocity>();
+
+		entities
+			.CreateEntity()
+			.WithComponent<Position>(new Position(1.0f, 2.0f))
+			.WithComponent<Velocity>(new Velocity(3.0f, 4.0f));
+
+		CHECK(entities.GetEntityMasksTEST().at(entities.GetLastCreatedEntity()).to_ullong() == 3);
+		CHECK(entities.GetComponentsTEST().size() == 2);
+
+		entities.Remove<Position>(0);
+
+		CHECK(entities.GetEntityMasksTEST().at(entities.GetLastCreatedEntity()).to_ullong() == 2);
+		CHECK(entities.GetComponentsTEST().size() == 2);
+	}
+
+	SUBCASE("Add component to an already existing entity") {
+		std::type_index typeID = std::type_index(typeid(Position));
+		std::type_index typeID2= std::type_index(typeid(Velocity));
+
+		entities.RegisterComponent<Position>();
+		entities.RegisterComponent<Velocity>();
+
+		entities
+			.CreateEntity()
+			.WithComponent<Velocity>(new Velocity(1.0f, 2.0f));
+
+		entities.Add<Position>(0, new Position(3.0f, 4.0f));
+
+		Position* pos = static_cast<Position*>(entities.GetComponentsTEST().at(typeID).at(0).get());
+
+		CHECK(pos->x == doctest::Approx(3.0f));
+		CHECK(pos->y == doctest::Approx(4.0f));
+	}
+
+	SUBCASE("Delete entity") {
+		std::type_index typeID = std::type_index(typeid(Position));
+		std::type_index typeID2= std::type_index(typeid(Velocity));
+
+		entities.RegisterComponent<Position>();
+		entities.RegisterComponent<Velocity>();
+
+		entities
+			.CreateEntity()
+			.WithComponent<Velocity>(new Velocity(1.0f, 2.0f));
+
+		entities.DeleteEntity(0);
+
+		CHECK(entities.GetEntityMasksTEST().size() == 1);
+		CHECK(entities.GetEntityMasksTEST().at(0).to_ullong() == 0);
+	}
+
+	SUBCASE("Created entities are inserted into delete space") {
+		std::type_index typeID = std::type_index(typeid(Position));
+		std::type_index typeID2= std::type_index(typeid(Velocity));
+
+		entities.RegisterComponent<Position>();
+		entities.RegisterComponent<Velocity>();
+
+		entities
+			.CreateEntity()
+			.WithComponent<Position>(new Position(0.0f, 0.0f));
+		entities
+			.CreateEntity()
+			.WithComponent<Position>(new Position(1.0f, 1.0f));
+
+		entities.DeleteEntity(0);
+
+		entities
+			.CreateEntity()
+			.WithComponent<Position>(new Position(2.0f, 2.0f));
+
+		entities
+			.CreateEntity()
+			.WithComponent<Velocity>(new Velocity(3.0f, 3.0f));
+
+		CHECK(entities.GetEntityMasksTEST().at(0).to_ullong() == 1);
+
+		Position* pos = static_cast<Position*>(entities.GetComponentsTEST().at(typeID).at(0).get());
+
+		CHECK(pos->x == doctest::Approx(2.0f));
+		CHECK(pos->y == doctest::Approx(2.0f));
+
+		CHECK(entities.GetEntityMasksTEST().at(2).to_ullong() == 2);
+	}
+
+	SUBCASE("Safe deleting a component twice") {
+		std::type_index typeID = std::type_index(typeid(Position));
+
+		entities.RegisterComponent<Position>();
+
+		entities
+			.CreateEntity()
+			.WithComponent<Position>(new Position(0.0f, 0.0f));
+
+		entities.Remove<Position>(0);
+		entities.Remove<Position>(0);
+
+		CHECK(entities.GetEntityMasksTEST().at(0).to_ullong() == 0);
+	}
 }
