@@ -8,6 +8,8 @@
 #include <string_view>
 #include <type_traits>
 
+#include "Core/Logger/Log.hpp"
+
 namespace Axle::Error {
 	struct PanicDynamicStringView {
 		template <class T>
@@ -54,3 +56,12 @@ namespace Axle {
 		Error::PanicImpl(msg.c_str());
 	}
 }
+
+// Macros for easier error handling
+#define AX_PANIC(...) AX_CORE_ERROR(__VA_ARGS__); \
+	::Axle::Panic(__VA_ARGS__);
+
+#define AX_ASSERT(condition, ...) \
+	if (!(condition)) { \
+		AX_PANIC(__VA_ARGS__); \
+	}

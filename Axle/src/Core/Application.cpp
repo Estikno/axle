@@ -1,6 +1,8 @@
 #include "axpch.hpp"
 
 #include "Application.hpp"
+#include "axpch.hpp"
+
 #include "Logger/Log.hpp"
 #include "Input/Input.hpp"
 #include "Input/InputCallbacks.hpp"
@@ -18,8 +20,7 @@ namespace Axle {
 		AX_CORE_TRACE("Starting the engine...");
 
 		if (!glfwInit()) {
-			AX_CORE_ERROR("Failed to initialize GLFW");
-			Panic("Failed to initialize GLFW");
+			AX_PANIC("Failed to initialize GLFW");
 		}
 
 		glfwSetErrorCallback(ErrorCallback);
@@ -27,10 +28,9 @@ namespace Axle {
 		m_window = glfwCreateWindow(1280, 720, "Axle Engine", nullptr, nullptr);
 
 		if (!m_window) {
-			AX_CORE_ERROR("Failed to create GLFW window");
 			glfwTerminate();
 
-			Panic("Failed to create GLFW window");
+			AX_PANIC("Failed to create GLFW window");
 		}
 
 		glfwSetKeyCallback(m_window, KeyCallback);

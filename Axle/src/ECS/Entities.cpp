@@ -9,6 +9,12 @@
 #include "Entities.hpp"
 
 namespace Axle {
+	Entities::Entities() {
+		for (EntityID entity = 0; entity < MAX_ENTITIES; entity++) {
+			m_AvailableEntities.push(entity);
+		}
+	}
+
 	template<typename T>
 	void Entities::RegisterComponent() {
 		std::type_index typeID = std::type_index(typeid(T));
@@ -53,20 +59,9 @@ namespace Axle {
 	void Entities::Add(EntityID id, T* component) {
 		std::type_index typeID = std::type_index(typeid(T));
 
-		if (component == nullptr) {
-			AX_CORE_ERROR("Cannot add a null component of type {0} to entity {1}.", typeID.name(), id);
-			Panic("Cannot add a null component of type {} to entity {}.", typeID.name(), id);
-		}
-
-		if (!IsComponentRegistered<T>()) {
-			AX_CORE_ERROR("Component of type {0} is not registered.", typeID.name());
-			Panic("Component of type {} is not registered.", typeID.name());
-		}
-
-		if (id >= m_EntityMasks.size()) {
-			AX_CORE_ERROR("Entity ID {0} is out of bounds. Maximum ID is {1}.", id, m_EntityMasks.size() - 1);
-			Panic("Entity ID {} is out of bounds. Maximum ID is {}.", id, m_EntityMasks.size() - 1);
-		}
+		AX_ASSERT(component != nullptr, "Cannot add a null component of type {0} to entity {1}", typeID.name(), id);
+		AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeID.name());
+		AX_ASSERT(id < m_EntityMasks.size(), "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, m_EntityMasks.size() - 1);
 
 		ComponentMask& mask = GetComponentMask<T>();
 		m_EntityMasks.at(id) |= mask;
@@ -79,15 +74,8 @@ namespace Axle {
 	void Entities::Remove(EntityID id) {
 		std::type_index typeID = std::type_index(typeid(T));
 
-		if (!IsComponentRegistered<T>()) {
-			AX_CORE_ERROR("Component of type {0} is not registered.", typeID.name());
-			Panic("Component of type {} is not registered.", typeID.name());
-		}
-
-		if (id >= m_EntityMasks.size()) {
-			AX_CORE_ERROR("Entity ID {0} is out of bounds. Maximum ID is {1}.", id, m_EntityMasks.size() - 1);
-			Panic("Entity ID {} is out of bounds. Maximum ID is {}.", id, m_EntityMasks.size() - 1);
-		}
+		AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeID.name());
+		AX_ASSERT(id < m_EntityMasks.size(), "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, m_EntityMasks.size() - 1);
 
 		ComponentMask& mask = GetComponentMask<T>();
 
@@ -100,10 +88,7 @@ namespace Axle {
 	}
 
 	void Entities::DeleteEntity(EntityID id) {
-		if (id >= m_EntityMasks.size()) {
-			AX_CORE_ERROR("Entity ID {0} is out of bounds. Maximum ID is {1}.", id, m_EntityMasks.size() - 1);
-			Panic("Entity ID {} is out of bounds. Maximum ID is {}.", id, m_EntityMasks.size() - 1);
-		}
+		AX_ASSERT(id < m_EntityMasks.size(), "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, m_EntityMasks.size() - 1);
 
 		m_EntityMasks.at(id).reset();
 	}

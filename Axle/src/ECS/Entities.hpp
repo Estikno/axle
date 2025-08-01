@@ -9,15 +9,16 @@
 
 namespace Axle {
 	using EntityID = u64;
+	using ComponentType = u8;
 
-	constexpr size_t MAX_COMPONENTS = 64;
+	constexpr ComponentType MAX_COMPONENTS = 64;
 	constexpr EntityID MAX_ENTITIES = 10000;
 
 	using ComponentMask = std::bitset<MAX_COMPONENTS>;
 
 	class Entities {
 	public:
-		Entities() = default;
+		AXLE_TEST_API Entities();
 
 		/**
 		* Registers a component for later use in entities
@@ -157,6 +158,8 @@ namespace Axle {
 		/// This is used to keep track of which entity is being inserted into when
 		/// creating and inserting components in it with the 'WithComponent' method.
 		EntityID m_InsertingIntoIndex = 0;
+
+		std::priority_queue<EntityID, std::vector<EntityID>, std::greater<EntityID>> m_AvailableEntities;
 	};
 
 #ifdef AXLE_TESTING

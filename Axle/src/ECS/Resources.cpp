@@ -17,10 +17,7 @@ namespace Axle {
 	void Resources::Add(std::shared_ptr<T> resource) {
 		std::type_index id = std::type_index(typeid(T));
 
-		if (resource == nullptr) {
-			AX_CORE_ERROR("Cannot add a null resource to the resource manager.");
-			Panic("Cannot add a null resource to the resource manager.");
-		}
+		AX_ASSERT(resource != nullptr, "Cannot add a null resource of type {0} to the resource manager", id.name());
 
 		if (Contains<T>()) {
 			AX_CORE_WARN("Overwriting resource of type: {0} because it already exists in the resource manager.", typeid(T).name());
