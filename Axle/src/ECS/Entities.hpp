@@ -5,7 +5,8 @@
 #include "Core/Core.hpp"
 #include "Core/Types.hpp"
 #include "Core/Logger/Log.hpp"
-#include "Math/Mathf.hpp"
+#include "Core/Error/Panic.hpp"
+#include "ComponentArray.hpp"
 
 namespace Axle {
 	using EntityID = u64;
@@ -18,7 +19,7 @@ namespace Axle {
 
 	class Entities {
 	public:
-		AXLE_TEST_API Entities();
+		Entities();
 
 		/**
 		* Registers a component for later use in entities
@@ -32,7 +33,7 @@ namespace Axle {
 		*
 		* @returns A reference to the entities for immediate use
 		*/
-		AXLE_TEST_API Entities& CreateEntity();
+		Entities& CreateEntity();
 
 		/**
 		* Adds a component to the entity that is currently being created.
@@ -42,7 +43,7 @@ namespace Axle {
 		* @returns A reference to the entities class so that you can chain calls to this method.
 		*/
 		template<typename T>
-		Entities& WithComponent(T* component);
+		Entities& WithComponent(T component);
 
 		/**
 		* Adds a component to the entity with the given ID.
@@ -51,7 +52,7 @@ namespace Axle {
 		* @param component Pointer to the component to be added. The added pointer will be managed by this class.
 		*/
 		template<typename T>
-		void Add(EntityID id, T* component);
+		void Add(EntityID id, T component);
 
 		/**
 		* Deletes a component of type T from the entity with the given ID.
@@ -66,14 +67,14 @@ namespace Axle {
 		*
 		* @param id The ID of the entity to be deleted.
 		*/
-		AXLE_TEST_API void DeleteEntity(EntityID id);
+		void DeleteEntity(EntityID id);
 
 		/**
 		* Gets the id of the last created entity.
 		*
 		* @returns The ID of the last created entity.
 		*/
-		AXLE_TEST_API inline EntityID GetLastCreatedEntity() const noexcept {
+		inline EntityID GetLastCreatedEntity() const noexcept {
 			return m_InsertingIntoIndex;
 		}
 
@@ -84,8 +85,7 @@ namespace Axle {
 		*/
 		template<typename T>
 		inline bool Has(EntityID id) {
-			ComponentMask& mask = GetComponentMask<T>();
-			return (m_EntityMasks.at(id) & mask) == mask;
+			return GetComponentBit<T>(GetMask(id));
 		}
 
 		/**
@@ -108,42 +108,56 @@ namespace Axle {
 			return (Has<Ts>(id) || ...);
 		}
 
-#ifdef AXLE_TESTING
-		std::unordered_map<std::type_index, std::vector<std::shared_ptr<void>>>& GetComponentsTEST() {
-			return m_Components;
-		}
-
-		std::unordered_map<std::type_index, ComponentMask>& GetComponentMasksTEST() {
-			return m_ComponentMasks;
-		}
-
-		std::vector<ComponentMask>& GetEntityMasksTEST() {
-			return m_EntityMasks;
-		}
-#endif // AXLE_TESTING
-
 	private:
 		template<typename T>
-		inline ComponentMask& GetComponentMask() {
-			return m_ComponentMasks.at(std::type_index(typeid(T)));
+		ComponentType GetComponentType();
+
+		template<typename T>
+		void SetComponentBit(ComponentMask& mask, bool val) {
+			size_t bitPos = GetComponentType<T>();
+			mask.set(bitPos, val);
+		}
+
+		template<typename T>
+		bool GetComponentBit(ComponentMask& mask) {
+			size_t bitPos = GetComponentType<T>();
+			return mask[bitPos];
+		}
+
+		inline ComponentMask& GetMask(EntityID id) {
+			AX_ASSERT(m_LivingEntityCount < MAX_ENTITIES, "Entity {0} is out of bounce, the maximum id allowed is: {1}.", id, MAX_ENTITIES - 1);
+			return m_EntityMasks.at(id);
 		}
 
 		template<typename T>
 		inline bool IsComponentRegistered() {
-			return m_Components.find(std::type_index(typeid(T))) != m_Components.end();
+			return m_ComponentTypes.find(std::type_index(typeid(T)) != m_ComponentTypes.end();
 		}
 
-		/// A hasmap containing the components for every entity.
-		///
-		/// The type_index  is used to identify the type of the component, and the vector
-		/// contains the actual components.
-		std::unordered_map<std::type_index, std::vector<std::shared_ptr<void>>> m_Components;
+		template<typename T>
+		ComponentArray<T>& GetComponentArray() {
+			std::type_index id = std::type_index(typeid(T));
 
-		/// The bitmasks of every registered component
-		///
-		/// The bitmsk of every component is a bit shifted an adition than the previous component.
-		/// For example, the first component is `0001` and the second component is `0010`.
-		std::unordered_map<std::type_index, ComponentMask> m_ComponentMasks;
+			AX_ASSERT(IsComponentRegistered<T>(), "Component {0} has not been registered before use.", id.name());
+
+			return *(static_cast<ComponentArray<T>*>(m_ComponentArrays.at(id).get()));
+		}
+
+		// A hasmap containing the components for every entity.
+		//
+		// The type_index  is used to identify the type of the component, and the vector
+		// contains the actual components.
+		//std::unordered_map<std::type_index, std::vector<std::shared_ptr<void>>> m_Components;
+		std::unordered_map<std::type_index, std::unique_ptr<IComponentArray>> m_ComponentArrays;
+
+		ComponentType m_NextComponentType;
+
+		// The bitmasks of every registered component
+		//
+		// The bitmsk of every component is a bit shifted an adition than the previous component.
+		// For example, the first component is `0001` and the second component is `0010`.
+		//std::unordered_map<std::type_index, ComponentMask> m_ComponentMasks;
+		std::unordered_map<std::type_index, ComponentType> m_ComponentTypes;
 
 		/// A vector of bit masks for every entity.
 		///
@@ -151,7 +165,7 @@ namespace Axle {
 		/// entity.
 		///
 		/// For example, if the entity has the first and third registered component, the bit set will be `101`.
-		std::vector<ComponentMask> m_EntityMasks;
+		std::array<ComponentMask, MAX_ENTITIES> m_EntityMasks;
 
 		/// The index of the entity that is being inserted into.
 		///
@@ -160,21 +174,6 @@ namespace Axle {
 		EntityID m_InsertingIntoIndex = 0;
 
 		std::priority_queue<EntityID, std::vector<EntityID>, std::greater<EntityID>> m_AvailableEntities;
+		EntityID m_LivingEntityCount = 0;
 	};
-
-#ifdef AXLE_TESTING
-	struct Position {
-		f32 x;
-		f32 y;
-
-		Position(f32 _x, f32 _y) : x(_x), y(_y) {}
-	};
-
-	struct Velocity {
-		f32 x;
-		f32 y;
-
-		Velocity(f32 _x, f32 _y) : x(_x), y(_y) {}
-	};
-#endif // AXLE_TESTING
 }

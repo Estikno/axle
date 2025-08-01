@@ -7,6 +7,7 @@
 #include "Core/Error/Panic.hpp"
 
 #include "Entities.hpp"
+#include "ComponentArray.hpp"
 
 namespace Axle {
 	Entities::Entities() {
@@ -19,55 +20,48 @@ namespace Axle {
 	void Entities::RegisterComponent() {
 		std::type_index typeID = std::type_index(typeid(T));
 
-		if (m_Components.find(typeID) != m_Components.end()) {
+		if (m_ComponentTypes.find(typeID) != m_ComponentTypes.end()) {
 			AX_CORE_WARN("Component of type {0} is already registered.", typeID.name());
 			return;
 		}
 
-		ComponentMask newMask;
-		newMask.set(m_ComponentMasks.size());
+		m_ComponentTypes.insert({ typeID, m_NextComponentType });
+		m_ComponentArrays.insert({ typeID, std::make_unique<ComponentArray<T>>() });
 
-		m_Components.insert({ typeID, std::vector<std::shared_ptr<void>>(m_EntityMasks.size()) });
-		m_ComponentMasks.insert({ typeID, newMask });
+		m_NextComponentType++;
 	}
 
 	Entities& Entities::CreateEntity() {
-		for (size_t i = 0; i < m_EntityMasks.size(); i++) {
-			if (m_EntityMasks.at(i).none()) {
-				m_InsertingIntoIndex = i;
-				return *this;
-			}
-		}
+		AX_ASSERT(m_LivingEntityCount < MAX_ENTITIES, "Cannot create more entities than the maximum allowed: {0}.", MAX_ENTITIES);
 
-		for (auto& [_, vec] : m_Components) {
-			vec.push_back(nullptr);
-		}
+		// Take the smallest available entity ID
+		EntityID id = m_AvailableEntities.top();
+		m_AvailableEntities.pop();
 
-		m_EntityMasks.push_back(ComponentMask());
-		m_InsertingIntoIndex = m_EntityMasks.size() - 1;
+		m_InsertingIntoIndex = id;
+		m_LivingEntityCount++;
 
 		return *this;
 	}
 
 	template<typename T>
-	Entities& Entities::WithComponent(T* component) {
+	Entities& Entities::WithComponent(T component) {
 		Add<T>(m_InsertingIntoIndex, component);
 		return *this;
 	}
 
 	template<typename T>
-	void Entities::Add(EntityID id, T* component) {
+	void Entities::Add(EntityID id, T component) {
 		std::type_index typeID = std::type_index(typeid(T));
 
-		AX_ASSERT(component != nullptr, "Cannot add a null component of type {0} to entity {1}", typeID.name(), id);
 		AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeID.name());
-		AX_ASSERT(id < m_EntityMasks.size(), "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, m_EntityMasks.size() - 1);
+		AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
 
-		ComponentMask& mask = GetComponentMask<T>();
-		m_EntityMasks.at(id) |= mask;
+		ComponentArray<T>& array = GetComponentArray<T>();
+		array.InsertData(id, component);
 
-		std::vector<std::shared_ptr<void>>& components = m_Components.at(typeID);
-		components.at(id) = std::static_pointer_cast<void>(std::shared_ptr<T>(component));
+		ComponentMask& entityMask = GetMask(id);
+		SetComponentBit<T>(entityMask, true);
 	}
 
 	template<typename T>
@@ -75,39 +69,37 @@ namespace Axle {
 		std::type_index typeID = std::type_index(typeid(T));
 
 		AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeID.name());
-		AX_ASSERT(id < m_EntityMasks.size(), "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, m_EntityMasks.size() - 1);
+		AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
 
-		ComponentMask& mask = GetComponentMask<T>();
+		ComponentArray<T>& array = GetComponentArray<T>();
+		array.RemoveData(id);
 
-		if (Has<T>(id)) {
-			m_EntityMasks.at(id) ^= mask;
-		}
-		else {
-			AX_CORE_WARN("Tried deleting component {0} from entity {1} which does not have it.", typeID.name(), id);
-		}
+		ComponentMask& entityMask = GetMask(id);
+		SetComponentBit<T>(entityMask, false);
 	}
 
 	void Entities::DeleteEntity(EntityID id) {
-		AX_ASSERT(id < m_EntityMasks.size(), "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, m_EntityMasks.size() - 1);
+		AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_COMPONENTS - 1);
 
+		// Invalidate the mask of the entity
 		m_EntityMasks.at(id).reset();
+
+		// Put the destroyed ID back to the queue
+		m_AvailableEntities.push(id);
+		m_LivingEntityCount--;
+
+		for (auto const& [typeID, componentArray] : m_ComponentArrays) {
+			// Call the EntityDestroyed method of the component array
+			componentArray->EntityDestroyed(id);
+		}
 	}
 
-#ifdef AXLE_TESTING
-	template AXLE_TEST_API Entities& Entities::WithComponent<Velocity>(Velocity*);
-	template AXLE_TEST_API Entities& Entities::WithComponent<Position>(Position*);
+	template<typename T>
+	ComponentType Entities::GetComponentType() {
+		std::type_index id = std::type_index(typeid(T));
 
-	template AXLE_TEST_API void Entities::RegisterComponent<Position>();
-	template AXLE_TEST_API void Entities::Add<Position>(EntityID, Position*);
-	template AXLE_TEST_API void Entities::Remove<Position>(EntityID);
-	template AXLE_TEST_API bool Entities::Has<Position>(EntityID);
+		AX_ASSERT(m_ComponentTypes.find(id) != m_ComponentTypes.end(), "Component {0} not registered before use.", id.name());
 
-	template AXLE_TEST_API void Entities::RegisterComponent<Velocity>();
-	template AXLE_TEST_API void Entities::Add<Velocity>(EntityID, Velocity*);
-	template AXLE_TEST_API void Entities::Remove<Velocity>(EntityID);
-	template AXLE_TEST_API bool Entities::Has<Velocity>(EntityID);
-
-	template AXLE_TEST_API bool Entities::HasAll<Position, Velocity>(EntityID);
-	template AXLE_TEST_API bool Entities::HasAny<Position, Velocity>(EntityID);
-#endif // AXLE_TESTING
+		return m_ComponentTypes.at(id);
+	}
 }
