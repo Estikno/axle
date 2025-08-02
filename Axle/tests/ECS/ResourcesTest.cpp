@@ -21,10 +21,10 @@ TEST_CASE("Resources") {
 		*g = 9.81f;
 		res.Add<f32>(g);
 
-		REQUIRE(res.GetData().contains(std::type_index(typeid(f32))));
+		REQUIRE(res.GetDataTEST().contains(std::type_index(typeid(f32))));
 		CHECK(res.Contains<f32>());
 
-		f32* gravity = static_cast<f32*>(res.GetData().at(std::type_index(typeid(f32))).get());
+		f32* gravity = static_cast<f32*>(res.GetDataTEST().at(std::type_index(typeid(f32))).get());
 
 		REQUIRE_FALSE(gravity == nullptr);
 		CHECK(*gravity == doctest::Approx(9.81f));
@@ -86,7 +86,7 @@ TEST_CASE("Resources") {
 		}
 
 		f32* gravity = res.Get<f32>();
-		size_t size = res.GetData().size();
+		size_t size = res.GetDataTEST().size();
 
 		CHECK(gravity == nullptr);
 		CHECK(size == 0);
@@ -99,12 +99,12 @@ TEST_CASE("Resources") {
 
 			*g = 9.81f;
 
-			CHECK(res.GetData().empty());
+			CHECK(res.GetDataTEST().empty());
 
 			res.Add<f32>(g);
 			res.Add<i32>(iPtr);
 
-			CHECK(res.GetData().size() == 2);
+			CHECK(res.GetDataTEST().size() == 2);
 		}
 
 		REQUIRE(res.Contains<f32>());

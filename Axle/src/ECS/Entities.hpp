@@ -9,14 +9,6 @@
 #include "ComponentArray.hpp"
 
 namespace Axle {
-	using EntityID = u64;
-	using ComponentType = u8;
-
-	constexpr ComponentType MAX_COMPONENTS = 64;
-	constexpr EntityID MAX_ENTITIES = 10000;
-
-	using ComponentMask = std::bitset<MAX_COMPONENTS>;
-
 	class Entities {
 	public:
 		Entities();
@@ -38,7 +30,7 @@ namespace Axle {
 		/**
 		* Adds a component to the entity that is currently being created.
 		*
-		* @param component Pointer to the component to be added. The added pointer will be managed by this class.
+		* @param component Component to be added. 
 		*
 		* @returns A reference to the entities class so that you can chain calls to this method.
 		*/
@@ -49,7 +41,7 @@ namespace Axle {
 		* Adds a component to the entity with the given ID.
 		*
 		* @param id The ID of the entity to add the component to.
-		* @param component Pointer to the component to be added. The added pointer will be managed by this class.
+		* @param component Component to be added. 
 		*/
 		template<typename T>
 		void Add(EntityID id, T component);
@@ -80,6 +72,8 @@ namespace Axle {
 
 		/**
 		* Checks if the entity with the given ID has a component of type T.
+		* 
+		* @param id The ID of the entity to check.
 		*
 		* @returns True if the entity has the component, false otherwise.
 		*/
@@ -90,6 +84,8 @@ namespace Axle {
 
 		/**
 		* Checks if the entity with the given ID has all the components of the given types.
+		* 
+		* @param id The ID of the entity to check.
 		*
 		* @returns True if the entity has all the components, false otherwise.
 		*/
@@ -100,6 +96,8 @@ namespace Axle {
 
 		/**
 		* Checks if the entity with the given ID has at least one component of the given types.
+		* 
+		* @param id The ID of the entity to check.
 		*
 		* @returns True if the entity has at least one of the components, false otherwise.
 		*/
@@ -109,31 +107,66 @@ namespace Axle {
 		}
 
 	private:
+		/**
+		* Returns the type of a component that has been registered.
+		* 
+		* @returns The type of the component 
+		*/
 		template<typename T>
 		ComponentType GetComponentType();
 
+		/**
+		* Set the bit of a component in the component mask of an entity.
+		* 
+		* @param mask The component mask of the entity.
+		* @param val The value to set the bit to.
+		*/
 		template<typename T>
 		void SetComponentBit(ComponentMask& mask, bool val) {
 			size_t bitPos = GetComponentType<T>();
 			mask.set(bitPos, val);
 		}
 
+		/**
+		* Gets the bit of a component in the component mask of an entity.
+		* 
+		* @param mask The component mask of the entity.
+		* 
+		* @returns True if the component is enabled, false otherwise.
+		*/
 		template<typename T>
 		bool GetComponentBit(ComponentMask& mask) {
 			size_t bitPos = GetComponentType<T>();
 			return mask[bitPos];
 		}
 
+		/**
+		* Gets the component mask of an entity.
+		* 
+		* @param id The ID of the entity.
+		* 
+		* @returns A reference to the component mask of the entity.
+		*/
 		inline ComponentMask& GetMask(EntityID id) {
 			AX_ASSERT(m_LivingEntityCount < MAX_ENTITIES, "Entity {0} is out of bounce, the maximum id allowed is: {1}.", id, MAX_ENTITIES - 1);
 			return m_EntityMasks.at(id);
 		}
 
+		/**
+		* Checks if a component of type T has been registered.
+		* 
+		* @returns True if the component has been registered, false otherwise.
+		*/
 		template<typename T>
 		inline bool IsComponentRegistered() {
-			return m_ComponentTypes.find(std::type_index(typeid(T)) != m_ComponentTypes.end();
+			return m_ComponentTypes.find(std::type_index(typeid(T)) != m_ComponentTypes.end());
 		}
 
+		/**
+		* Gets the component array of a given type.
+		* 
+		* returns A reference to the component array of the given type.
+		*/
 		template<typename T>
 		ComponentArray<T>& GetComponentArray() {
 			std::type_index id = std::type_index(typeid(T));
@@ -143,23 +176,25 @@ namespace Axle {
 			return *(static_cast<ComponentArray<T>*>(m_ComponentArrays.at(id).get()));
 		}
 
-		// A hasmap containing the components for every entity.
-		//
-		// The type_index  is used to identify the type of the component, and the vector
-		// contains the actual components.
-		//std::unordered_map<std::type_index, std::vector<std::shared_ptr<void>>> m_Components;
+		template<typename T>
+		inline std::type_index GetTypeIndex() {
+			return std::type_index(typeid(T));
+		}
+
+		/// A hasmap containing the component arrays for every registered component type.
+		///
+		/// The type_index is used to identify the type of the component.
 		std::unordered_map<std::type_index, std::unique_ptr<IComponentArray>> m_ComponentArrays;
 
+		/// Stores the next component type to be registered.
 		ComponentType m_NextComponentType;
 
-		// The bitmasks of every registered component
-		//
-		// The bitmsk of every component is a bit shifted an adition than the previous component.
-		// For example, the first component is `0001` and the second component is `0010`.
-		//std::unordered_map<std::type_index, ComponentMask> m_ComponentMasks;
+		/// A hasmap containing the component types for every registered component.
+		/// 
+		/// TODO: There is room for performance improvements here, as this is a linear search at worst.
 		std::unordered_map<std::type_index, ComponentType> m_ComponentTypes;
 
-		/// A vector of bit masks for every entity.
+		/// An array of bit masks for every entity.
 		///
 		/// The bit mask is used to store which components are enabled for a given
 		/// entity.
@@ -173,7 +208,11 @@ namespace Axle {
 		/// creating and inserting components in it with the 'WithComponent' method.
 		EntityID m_InsertingIntoIndex = 0;
 
+		/// A priority queue of available entity IDs.
+		/// When creating an entity the EntityID assigned to it is retrieved from this.
 		std::priority_queue<EntityID, std::vector<EntityID>, std::greater<EntityID>> m_AvailableEntities;
+
+		/// The number of living entities in the ECS.
 		EntityID m_LivingEntityCount = 0;
 	};
 }

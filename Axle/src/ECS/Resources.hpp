@@ -70,7 +70,7 @@ namespace Axle {
 
 #ifdef AXLE_TESTING
 		/// This function is only available for testing purposes.
-		std::unordered_map<std::type_index, std::shared_ptr<void>>& GetData() {
+		std::unordered_map<std::type_index, std::shared_ptr<void>>& GetDataTEST() {
 			return m_Data;
 		}
 #endif // AXLE_TESTING

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "axpch.hpp"
+
 #include <cstdint>
 
 namespace Axle {
@@ -32,4 +34,13 @@ namespace Axle {
 
 	static_assert(sizeof(f32) == 4, "f32 is not 32 bits!");
 	static_assert(sizeof(f64) == 8, "f64 is not 64 bits!");
+
+	// ECS
+	using EntityID = u64;
+	using ComponentType = u8;
+
+	constexpr ComponentType MAX_COMPONENTS = 64;
+	constexpr EntityID MAX_ENTITIES = 10000;
+
+	using ComponentMask = std::bitset<MAX_COMPONENTS>;
 }

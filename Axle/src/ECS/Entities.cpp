@@ -58,7 +58,7 @@ namespace Axle {
 		AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
 
 		ComponentArray<T>& array = GetComponentArray<T>();
-		array.InsertData(id, component);
+		array.Add(id, component);
 
 		ComponentMask& entityMask = GetMask(id);
 		SetComponentBit<T>(entityMask, true);
@@ -72,7 +72,7 @@ namespace Axle {
 		AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
 
 		ComponentArray<T>& array = GetComponentArray<T>();
-		array.RemoveData(id);
+		array.Remove(id);
 
 		ComponentMask& entityMask = GetMask(id);
 		SetComponentBit<T>(entityMask, false);
@@ -81,17 +81,17 @@ namespace Axle {
 	void Entities::DeleteEntity(EntityID id) {
 		AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_COMPONENTS - 1);
 
+		for (auto const& [typeID, componentArray] : m_ComponentArrays) {
+			// Call the EntityDestroyed method of the component array
+			componentArray->EntityDestroyed(id);
+		}
+
 		// Invalidate the mask of the entity
 		m_EntityMasks.at(id).reset();
 
 		// Put the destroyed ID back to the queue
 		m_AvailableEntities.push(id);
 		m_LivingEntityCount--;
-
-		for (auto const& [typeID, componentArray] : m_ComponentArrays) {
-			// Call the EntityDestroyed method of the component array
-			componentArray->EntityDestroyed(id);
-		}
 	}
 
 	template<typename T>
