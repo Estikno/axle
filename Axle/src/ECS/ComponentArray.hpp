@@ -15,7 +15,7 @@ namespace Axle {
 	};
 
 	template<typename T>
-	class ComponentArray : public IComponentArray {
+	class AXLE_TEST_API ComponentArray : public IComponentArray {
 	public:
 		/**
 		* Adds a component of type T to the entity with the given ID.
@@ -68,7 +68,7 @@ namespace Axle {
 		* @retuns A reference to the component of type T 
 		*/
 		T& Get(EntityID id) {
-			AX_ASSERT(m_EntityToIndexMap.find(id) != m_EntityToIndexMap.end(), "Trying to retieve a non existent component of type: ", typeid(T).name());
+			AX_ASSERT(m_EntityToIndexMap.find(id) != m_EntityToIndexMap.end(), "Trying to retieve a non existent component of type: {0} ", typeid(T).name());
 
 			return m_ComponentArray.at(m_EntityToIndexMap.at(id));
 		}

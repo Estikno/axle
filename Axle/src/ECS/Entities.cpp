@@ -79,7 +79,7 @@ namespace Axle {
 	}
 
 	void Entities::DeleteEntity(EntityID id) {
-		AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_COMPONENTS - 1);
+		AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
 
 		for (auto const& [typeID, componentArray] : m_ComponentArrays) {
 			// Call the EntityDestroyed method of the component array
@@ -102,4 +102,22 @@ namespace Axle {
 
 		return m_ComponentTypes.at(id);
 	}
+
+#ifdef AXLE_TESTING
+	template AXLE_TEST_API void Entities::RegisterComponent<Position>();
+	template AXLE_TEST_API void Entities::RegisterComponent<Velocity>();
+	template AXLE_TEST_API Entities& Entities::WithComponent<Position>(Position);
+	template AXLE_TEST_API Entities& Entities::WithComponent<Velocity>(Velocity);
+	template AXLE_TEST_API void Entities::Add<Position>(EntityID, Position);
+	template AXLE_TEST_API void Entities::Add<Velocity>(EntityID, Velocity);
+	template AXLE_TEST_API void Entities::Remove<Position>(EntityID);
+	template AXLE_TEST_API void Entities::Remove<Velocity>(EntityID);
+	template AXLE_TEST_API bool Entities::Has<Position>(EntityID);
+	template AXLE_TEST_API bool Entities::Has<Velocity>(EntityID);
+	template AXLE_TEST_API bool Entities::HasAll<Position, Velocity>(EntityID);
+	template AXLE_TEST_API bool Entities::HasAny<Position, Velocity>(EntityID);
+	template AXLE_TEST_API class ComponentArray<Position>;
+	template AXLE_TEST_API class ComponentArray<Velocity>;
+#endif // AXLE_TESTING
+
 }

@@ -11,7 +11,7 @@
 namespace Axle {
 	class Entities {
 	public:
-		Entities();
+		AXLE_TEST_API Entities();
 
 		/**
 		* Registers a component for later use in entities
@@ -25,7 +25,7 @@ namespace Axle {
 		*
 		* @returns A reference to the entities for immediate use
 		*/
-		Entities& CreateEntity();
+		AXLE_TEST_API Entities& CreateEntity();
 
 		/**
 		* Adds a component to the entity that is currently being created.
@@ -59,7 +59,7 @@ namespace Axle {
 		*
 		* @param id The ID of the entity to be deleted.
 		*/
-		void DeleteEntity(EntityID id);
+		AXLE_TEST_API void DeleteEntity(EntityID id);
 
 		/**
 		* Gets the id of the last created entity.
@@ -105,6 +105,24 @@ namespace Axle {
 		inline bool HasAny(EntityID id) {
 			return (Has<Ts>(id) || ...);
 		}
+
+#ifdef AXLE_TESTING
+		inline std::unordered_map<std::type_index, std::unique_ptr<IComponentArray>>& GetComponentArraysTEST() {
+			return m_ComponentArrays;
+		}
+
+		inline std::array<ComponentMask, MAX_ENTITIES>& GetEntityMasksTEST() {
+			return m_EntityMasks;
+		}
+
+		inline std::unordered_map<std::type_index, ComponentType>& GetComponentTypesTEST() {
+			return m_ComponentTypes;
+		}
+
+		std::priority_queue<EntityID, std::vector<EntityID>, std::greater<EntityID>>& GetAvailableEntitiesTEST() {
+			return m_AvailableEntities;
+		}
+#endif // AXLE_TESTING
 
 	private:
 		/**
@@ -159,7 +177,7 @@ namespace Axle {
 		*/
 		template<typename T>
 		inline bool IsComponentRegistered() {
-			return m_ComponentTypes.find(std::type_index(typeid(T)) != m_ComponentTypes.end());
+			return m_ComponentTypes.find(std::type_index(typeid(T))) != m_ComponentTypes.end();
 		}
 
 		/**
@@ -187,7 +205,7 @@ namespace Axle {
 		std::unordered_map<std::type_index, std::unique_ptr<IComponentArray>> m_ComponentArrays;
 
 		/// Stores the next component type to be registered.
-		ComponentType m_NextComponentType;
+		ComponentType m_NextComponentType = 0;
 
 		/// A hasmap containing the component types for every registered component.
 		/// 
@@ -215,4 +233,16 @@ namespace Axle {
 		/// The number of living entities in the ECS.
 		EntityID m_LivingEntityCount = 0;
 	};
+
+#ifdef AXLE_TESTING
+	struct Position {
+		f32 x, y;
+		Position(f32 x = 0.0f, f32 y = 0.0f) : x(x), y(y) {}
+	};
+
+	struct Velocity {
+		f32 vx, vy;
+		Velocity(f32 vx = 0.0f, f32 vy = 0.0f) : vx(vx), vy(vy) {}
+	};
+#endif
 }
