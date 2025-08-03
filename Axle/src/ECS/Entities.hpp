@@ -62,6 +62,17 @@ namespace Axle {
 		AXLE_TEST_API void DeleteEntity(EntityID id);
 
 		/**
+		* Gets a reference to the component of type T from the entity with the given ID.
+		* Not efficient when using frequently, use with caution.
+		* 
+		* @param id The ID of the entity to get the component from.
+		* 
+		* @returns A reference to the component of type T.
+		*/
+		template<typename T>
+		T& Get(EntityID id);
+
+		/**
 		* Gets the id of the last created entity.
 		*
 		* @returns The ID of the last created entity.
@@ -107,16 +118,12 @@ namespace Axle {
 		}
 
 #ifdef AXLE_TESTING
-		inline std::unordered_map<std::type_index, std::unique_ptr<IComponentArray>>& GetComponentArraysTEST() {
+		inline std::unordered_map<ComponentType, std::unique_ptr<IComponentArray>>& GetComponentArraysTEST() {
 			return m_ComponentArrays;
 		}
 
 		inline std::array<ComponentMask, MAX_ENTITIES>& GetEntityMasksTEST() {
 			return m_EntityMasks;
-		}
-
-		inline std::unordered_map<std::type_index, ComponentType>& GetComponentTypesTEST() {
-			return m_ComponentTypes;
 		}
 
 		std::priority_queue<EntityID, std::vector<EntityID>, std::greater<EntityID>>& GetAvailableEntitiesTEST() {
@@ -131,7 +138,11 @@ namespace Axle {
 		* @returns The type of the component 
 		*/
 		template<typename T>
-		ComponentType GetComponentType();
+		inline ComponentType GetComponentType() {
+			static ComponentType typeID = s_NextComponentType++;
+			AX_ASSERT(typeID < MAX_COMPONENTS, "Too many components registered.");
+			return typeID;
+		}
 
 		/**
 		* Set the bit of a component in the component mask of an entity.
@@ -177,7 +188,7 @@ namespace Axle {
 		*/
 		template<typename T>
 		inline bool IsComponentRegistered() {
-			return m_ComponentTypes.find(std::type_index(typeid(T))) != m_ComponentTypes.end();
+			return m_ComponentArrays.find(GetComponentType<T>()) != m_ComponentArrays.end();
 		}
 
 		/**
@@ -187,30 +198,20 @@ namespace Axle {
 		*/
 		template<typename T>
 		ComponentArray<T>& GetComponentArray() {
-			std::type_index id = std::type_index(typeid(T));
+			ComponentType id = GetComponentType<T>();
 
-			AX_ASSERT(IsComponentRegistered<T>(), "Component {0} has not been registered before use.", id.name());
+			AX_ASSERT(IsComponentRegistered<T>(), "Component {0} has not been registered before use.", typeid(T).name());
 
 			return *(static_cast<ComponentArray<T>*>(m_ComponentArrays.at(id).get()));
-		}
-
-		template<typename T>
-		inline std::type_index GetTypeIndex() {
-			return std::type_index(typeid(T));
 		}
 
 		/// A hasmap containing the component arrays for every registered component type.
 		///
 		/// The type_index is used to identify the type of the component.
-		std::unordered_map<std::type_index, std::unique_ptr<IComponentArray>> m_ComponentArrays;
+		std::unordered_map<ComponentType, std::unique_ptr<IComponentArray>> m_ComponentArrays;
 
 		/// Stores the next component type to be registered.
-		ComponentType m_NextComponentType = 0;
-
-		/// A hasmap containing the component types for every registered component.
-		/// 
-		/// TODO: There is room for performance improvements here, as this is a linear search at worst.
-		std::unordered_map<std::type_index, ComponentType> m_ComponentTypes;
+		inline static ComponentType s_NextComponentType = 0;
 
 		/// An array of bit masks for every entity.
 		///

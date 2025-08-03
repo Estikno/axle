@@ -18,17 +18,15 @@ namespace Axle {
 
 	template<typename T>
 	void Entities::RegisterComponent() {
-		std::type_index typeID = std::type_index(typeid(T));
+		ComponentType typeID = GetComponentType<T>();
+		AX_ASSERT(typeID < MAX_COMPONENTS, "Too many components registered.");
 
-		if (m_ComponentTypes.find(typeID) != m_ComponentTypes.end()) {
-			AX_CORE_WARN("Component of type {0} is already registered.", typeID.name());
+		if (m_ComponentArrays.find(typeID) != m_ComponentArrays.end()) {
+			AX_CORE_WARN("Component of type {0} is already registered.", typeid(T).name());
 			return;
 		}
 
-		m_ComponentTypes.insert({ typeID, m_NextComponentType });
 		m_ComponentArrays.insert({ typeID, std::make_unique<ComponentArray<T>>() });
-
-		m_NextComponentType++;
 	}
 
 	Entities& Entities::CreateEntity() {
@@ -52,9 +50,7 @@ namespace Axle {
 
 	template<typename T>
 	void Entities::Add(EntityID id, T component) {
-		std::type_index typeID = std::type_index(typeid(T));
-
-		AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeID.name());
+		AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
 		AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
 
 		ComponentArray<T>& array = GetComponentArray<T>();
@@ -66,9 +62,7 @@ namespace Axle {
 
 	template<typename T>
 	void Entities::Remove(EntityID id) {
-		std::type_index typeID = std::type_index(typeid(T));
-
-		AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeID.name());
+		AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
 		AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
 
 		ComponentArray<T>& array = GetComponentArray<T>();
@@ -95,12 +89,11 @@ namespace Axle {
 	}
 
 	template<typename T>
-	ComponentType Entities::GetComponentType() {
-		std::type_index id = std::type_index(typeid(T));
+	T& Entities::Get(EntityID id) {
+		AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
+		AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
 
-		AX_ASSERT(m_ComponentTypes.find(id) != m_ComponentTypes.end(), "Component {0} not registered before use.", id.name());
-
-		return m_ComponentTypes.at(id);
+		return GetComponentArray<T>().Get(id);
 	}
 
 #ifdef AXLE_TESTING
@@ -118,6 +111,8 @@ namespace Axle {
 	template AXLE_TEST_API bool Entities::HasAny<Position, Velocity>(EntityID);
 	template AXLE_TEST_API class ComponentArray<Position>;
 	template AXLE_TEST_API class ComponentArray<Velocity>;
+	template AXLE_TEST_API Position& Entities::Get<Position>(EntityID);
+	template AXLE_TEST_API Velocity& Entities::Get<Velocity>(EntityID);
 #endif // AXLE_TESTING
 
 }
