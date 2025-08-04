@@ -275,11 +275,11 @@ namespace Axle {
         using FuncView = std::function<void(Components&...)>;
         using FuncViewID = std::function<void(EntityID, Components&...)>;
 
-        View(Entities* entities)
+        AXLE_TEST_API View(Entities* entities)
             : m_Entities(entities),
-              m_ComponentArrays(entities->GetComponentArrayPtr<Components>()...) {}
+              m_ComponentArrays(MakeArrayVec<Components...>(entities)) {}
 
-        void ForEach(const FuncView& func) {
+        AXLE_TEST_API void ForEach(const FuncView& func) {
             size_t index = GetSmallestComponentArrayIndex();
             std::vector<EntityID> entities = m_ComponentArrays.at(index)->EntityList();
 
@@ -290,7 +290,7 @@ namespace Axle {
             }
         }
 
-        void ForEach(const FuncViewID& func) {
+        AXLE_TEST_API void ForEach(const FuncViewID& func) {
             size_t index = GetSmallestComponentArrayIndex();
             std::vector<EntityID> entities = m_ComponentArrays.at(index)->EntityList();
 
@@ -317,6 +317,11 @@ namespace Axle {
             AX_ASSERT(smallest_size > 0, "No entities found with the required components.");
 
             return index;
+        }
+
+        template <typename... Cs>
+        static std::vector<IComponentArray*> MakeArrayVec(Entities* entities) {
+            return {static_cast<IComponentArray*>(entities->GetComponentArrayPtr<Cs>())...};
         }
 
         std::vector<IComponentArray*> m_ComponentArrays;

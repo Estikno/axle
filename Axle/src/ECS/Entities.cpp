@@ -125,6 +125,9 @@ namespace Axle {
 	template AXLE_TEST_API class ComponentArray<Velocity>;
 	template AXLE_TEST_API Position& Entities::Get<Position>(EntityID);
 	template AXLE_TEST_API Velocity& Entities::Get<Velocity>(EntityID);
+    template AXLE_TEST_API class View<Position, Velocity>;
+    template AXLE_TEST_API class View<Velocity>;
+    template AXLE_TEST_API class View<Position>;
 #endif // AXLE_TESTING
 
 } // namespace Axle
