@@ -12,6 +12,8 @@ namespace Axle {
 	public:
 		virtual ~IComponentArray() = default;
 		virtual void EntityDestroyed(EntityID id) = 0;
+        virtual size_t Size() const = 0;
+        virtual std::vector<EntityID> EntityList() = 0;
 	};
 
 	template<typename T>
@@ -65,7 +67,7 @@ namespace Axle {
 		* 
 		* @param id The ID of the entity to get the component from.
 		* 
-		* @retuns A reference to the component of type T 
+		* @returns A reference to the component of type T 
 		*/
 		T& Get(EntityID id) {
 			AX_ASSERT(m_EntityToIndexMap.find(id) != m_EntityToIndexMap.end(), "Trying to retieve a non existent component of type: {0} ", typeid(T).name());
@@ -83,6 +85,21 @@ namespace Axle {
 			if (m_EntityToIndexMap.find(id) != m_EntityToIndexMap.end()) {
 				Remove(id);
 			}
+		}
+
+		size_t Size() const override {
+			return m_Size;
+		}
+
+		std::vector<EntityID> EntityList() override {
+			std::vector<EntityID> entityList;
+			entityList.reserve(m_Size);
+
+			for(size_t i = 0; i < m_Size; i++) {
+				entityList.push_back(m_IndexToEntityMap.at(i));
+			}
+
+			return entityList;
 		}
 	private:
 		/// A packed array of components of type T

@@ -16,7 +16,7 @@ namespace Axle {
 		}
 	}
 
-	template<typename T>
+	template <typename T>
 	void Entities::RegisterComponent() {
 		ComponentType typeID = GetComponentType<T>();
 		AX_ASSERT(typeID < MAX_COMPONENTS, "Too many components registered.");
@@ -27,10 +27,14 @@ namespace Axle {
 		}
 
 		m_ComponentArrays.insert({ typeID, std::make_unique<ComponentArray<T>>() });
+
+		AX_CORE_TRACE("Component {0} has been registered.", typeid(T).name());
 	}
 
 	Entities& Entities::CreateEntity() {
-		AX_ASSERT(m_LivingEntityCount < MAX_ENTITIES, "Cannot create more entities than the maximum allowed: {0}.", MAX_ENTITIES);
+		AX_ASSERT(m_LivingEntityCount < MAX_ENTITIES,
+			"Cannot create more entities than the maximum allowed: {0}.",
+			MAX_ENTITIES);
 
 		// Take the smallest available entity ID
 		EntityID id = m_AvailableEntities.top();
@@ -40,15 +44,17 @@ namespace Axle {
 		m_LivingEntityCount++;
 
 		return *this;
+
+		AX_CORE_TRACE("Entity {0} has been created.", id);
 	}
 
-	template<typename T>
+	template <typename T>
 	Entities& Entities::WithComponent(T component) {
 		Add<T>(m_InsertingIntoIndex, component);
 		return *this;
 	}
 
-	template<typename T>
+	template <typename T>
 	void Entities::Add(EntityID id, T component) {
 		AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
 		AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
@@ -58,9 +64,11 @@ namespace Axle {
 
 		ComponentMask& entityMask = GetMask(id);
 		SetComponentBit<T>(entityMask, true);
+
+		AX_CORE_TRACE("Component {0} has been added to entity {1}.", typeid(T).name(), id);
 	}
 
-	template<typename T>
+	template <typename T>
 	void Entities::Remove(EntityID id) {
 		AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
 		AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
@@ -70,6 +78,8 @@ namespace Axle {
 
 		ComponentMask& entityMask = GetMask(id);
 		SetComponentBit<T>(entityMask, false);
+
+		AX_CORE_TRACE("Component {0} has been removed from entity {1}.", typeid(T).name(), id);
 	}
 
 	void Entities::DeleteEntity(EntityID id) {
@@ -86,9 +96,11 @@ namespace Axle {
 		// Put the destroyed ID back to the queue
 		m_AvailableEntities.push(id);
 		m_LivingEntityCount--;
+		
+		AX_CORE_TRACE("Entity {0} has been deleted.", id);
 	}
 
-	template<typename T>
+	template <typename T>
 	T& Entities::Get(EntityID id) {
 		AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
 		AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
@@ -115,4 +127,4 @@ namespace Axle {
 	template AXLE_TEST_API Velocity& Entities::Get<Velocity>(EntityID);
 #endif // AXLE_TESTING
 
-}
+} // namespace Axle
