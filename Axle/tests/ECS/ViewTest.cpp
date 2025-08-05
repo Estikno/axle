@@ -1,6 +1,5 @@
 #include <doctest.h>
 
-#include <any>
 #include <typeindex>
 #include <typeinfo>
 #include <memory>
@@ -12,7 +11,7 @@
 
 using namespace Axle;
 
-TEST_CASE("ECS - View tests") {
+TEST_CASE("Ecs View tests") {
     Log::Init();
     Entities entities;
 

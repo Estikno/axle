@@ -4,7 +4,7 @@
 #include "EventHandler.hpp"
 #include "../Logger/Log.hpp"
 #include "Event.hpp"
-#include "../../Other/ObserverPattern/Observer.hpp"
+#include "../../Other/Helpers/Observer.hpp"
 
 namespace Axle {
 	std::unique_ptr<EventHandler> EventHandler::m_EventHandler;

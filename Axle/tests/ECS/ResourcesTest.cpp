@@ -1,6 +1,5 @@
 #include <doctest.h>
 
-#include <any>
 #include <typeindex>
 #include <typeinfo>
 #include <memory>

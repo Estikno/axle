@@ -5,7 +5,7 @@
 
 #include "../Core.hpp"
 #include "Event.hpp"
-#include "../../Other/ObserverPattern/Observer.hpp"
+#include "../../Other/Helpers/Observer.hpp"
 
 namespace Axle {
 	/**
