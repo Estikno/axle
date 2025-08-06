@@ -11,12 +11,15 @@ namespace Axle {
         virtual ~ISparseSet() = default;
         virtual void RemoveNoPanic(size_t id) = 0;
         virtual size_t Size() const = 0;
-        virtual std::vector<size_t> EntityList() = 0;
+        virtual std::vector<size_t> GetList() = 0;
+        virtual bool Has(size_t id) const = 0;
     };
 
-    template <typename T, u64 N>
+    template <typename T, size_t N>
     class SparseSet : public ISparseSet {
     public:
+        static constexpr size_t InvalidIndex = std::numeric_limits<size_t>::max();
+
         /**
          * Adds an element of type T to the sparse set with the given ID.
          *
@@ -63,6 +66,7 @@ namespace Axle {
          */
         void Clear() {
             m_Size = 0;
+            m_Sparse.fill(InvalidIndex);
         }
 
         /**
@@ -72,9 +76,9 @@ namespace Axle {
          *
          * @returns A reference to the element of type T
          */
-        T& Get(size_t id) {
+        T& Get(size_t id) const {
             AX_ASSERT(Contains(id),
-                      "Trying to retieve a non-existent element of type: {0} from index {1}",
+                      "Trying to retrieve a non-existent element of type: {0} from index {1}",
                       typeid(T).name(),
                       id);
 
@@ -82,7 +86,7 @@ namespace Axle {
         }
 
         /**
-         * Same a Remove but it doesn't panic. If the request is erroeneous it simply
+         * Same as Remove but it doesn't panic. If the request is erroneous it simply
          * ignores it.
          *
          * Although it may seem better to always call this method it's still recommended to deal with
@@ -129,8 +133,9 @@ namespace Axle {
          *
          * @returns True if it has an element, False otherwise
          */
-        bool Contains(size_t id) const {
-            return m_Sparse.at(id) >= 0 && m_Sparse.at(id) < m_Size && m_DenseToSparse.at(m_Sparse.at(id)) == id;
+        bool Has(size_t id) const override {
+            size_t denseIdx = m_Sparse.at(id);
+            return denseIdx != InvalidIndex && denseIdx < m_Size && m_DenseToSparse.at(denseIdx) == id;
         }
 
     private:
@@ -141,7 +146,11 @@ namespace Axle {
         std::array<size_t, N> m_DenseToSparse{};
 
         /// Handy array to convert from indexes to dense indexes
-        std::array<size_t, N> m_Sparse{};
+        std::array<size_t, N> m_Sparse = [] {
+            std::array<size_t, N> arr;
+            arr.fill(InvalidIndex);
+            return arr;
+        }();
 
         /// Total size of valid entries in the array
         size_t m_Size = 0;
