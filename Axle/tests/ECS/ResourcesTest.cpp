@@ -6,7 +6,6 @@
 
 #include "Core/Types.hpp"
 #include "ECS/Resources.hpp"
-#include "Math/Mathf.hpp"
 #include "Core/Logger/Log.hpp"
 
 using namespace Axle;

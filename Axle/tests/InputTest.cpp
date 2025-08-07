@@ -1,6 +1,5 @@
 #include <doctest.h>
-
-#include "Math/Mathf.hpp"
+#include <glm/vec2.hpp>
 
 #include "Core/Input/Input.hpp"
 #include "Core/Events/Event.hpp"
@@ -23,7 +22,7 @@ void TestMouseButtonEvents(Event* event) {
 void TestMouseWheelEvents(Event* event) {
 	CHECK_FALSE(event == nullptr);
 	CHECK(event->GetEventCategory() == Axle::EventCategory::Input);
-	CHECK(Mathf::Approximately(event->GetContext().f32_values[0], 1.0f));
+	CHECK(event->GetContext().f32_values[0] == doctest::Approx(1.0f));
 }
 
 TEST_CASE("Input system key handling") {
@@ -118,20 +117,20 @@ TEST_CASE("Mouse position handling") {
 	Input::SimulateReset();
 	EventHandler::Init();
 
-	Vector2 testPosition(100.0f, 200.0f);
+	glm::vec2 testPosition(100.0f, 200.0f);
 	Input::SimulateMousePosition(testPosition);
 
 	SUBCASE("Get Mouse Position") {
-		Vector2 mousePos = Input::GetMousePosition();
+		glm::vec2 mousePos = Input::GetMousePosition();
 
 		CHECK(mousePos == testPosition);
 	}
 
 	SUBCASE("Set Mouse Position") {
-		Vector2 newPosition(300.0f, 400.0f);
+		glm::vec2 newPosition(300.0f, 400.0f);
 
 		Input::SimulateMousePosition(newPosition);
-		Vector2 mousePos = Input::GetMousePosition();
+		glm::vec2 mousePos = Input::GetMousePosition();
 
 		CHECK(mousePos == newPosition);
 	}
