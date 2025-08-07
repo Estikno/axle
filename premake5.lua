@@ -11,6 +11,7 @@ IncludeDir["GLFW"] = "Axle/vendor/GLFW/include"
 IncludeDir["Glad"] = "Axle/vendor/Glad/include"
 IncludeDir["Doctest"] = "Axle/vendor/doctest/doctest"
 IncludeDir["Spdlog"] = "Axle/vendor/spdlog/include"
+IncludeDir["glm"] = "Axle/vendor/glm"
 
 project "Glad"
 	location "Axle/vendor/Glad"
@@ -129,7 +130,8 @@ project "Axle"
         "%{prj.name}/src",
 		"%{IncludeDir.Spdlog}",
 		"%{IncludeDir.GLFW}",
-        "%{IncludeDir.Glad}"
+        "%{IncludeDir.Glad}",
+		"%{IncludeDir.glm}"
     }
 
     -- buildoptions { "/utf-8" }
@@ -194,7 +196,8 @@ project "Sandbox"
 		"%{IncludeDir.Spdlog}",
 		"Axle/src", 
 		"%{IncludeDir.GLFW}",
-        "%{IncludeDir.Glad}" 
+        "%{IncludeDir.Glad}",
+		"%{IncludeDir.glm}"
 	}
 
     links { "Axle" }
@@ -251,6 +254,8 @@ project "Tests"
         "Axle/src",
         "%{IncludeDir.Spdlog}",
 		"%{IncludeDir.GLFW}",
+		"%{IncludeDir.Glad}",
+		"%{IncludeDir.glm}"
     }
 
     links { "Axle" }

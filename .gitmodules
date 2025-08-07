@@ -7,3 +7,6 @@
 [submodule "Axle/vendor/GLFW"]
 	path = Axle/vendor/GLFW
 	url = https://github.com/glfw/glfw
+[submodule "Axle/vendor/glm"]
+	path = Axle/vendor/glm
+	url = https://github.com/g-truc/glm
