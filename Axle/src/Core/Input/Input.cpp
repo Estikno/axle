@@ -4,126 +4,140 @@
 #include "Input.hpp"
 #include "../Logger/Log.hpp"
 #include "../Events/EventHandler.hpp"
-#include "Math/Math_Types.hpp"
+
+#include <glm/vec2.hpp>
 
 namespace Axle {
-	InputState Input::s_InputState;
+    InputState Input::s_InputState;
 
-	void Input::Update() {
-		s_InputState.keyboard_previous = s_InputState.keyboard_current;
-		s_InputState.mouse_previous = s_InputState.mouse_current;
-	}
+    void Input::Update() {
+        s_InputState.keyboard_previous = s_InputState.keyboard_current;
+        s_InputState.mouse_previous = s_InputState.mouse_current;
+    }
 
-	void Input::SetKey(Keys key, bool pressed) {
-		// Only handles if the state of the key has changed
-		if (s_InputState.keyboard_current.keys[static_cast<i32>(key)] != pressed) {
-			// Update internal state
-			s_InputState.keyboard_current.keys[static_cast<i32>(key)] = pressed;
-		}
+    void Input::SetKey(Keys key, bool pressed) {
+        // Only handles if the state of the key has changed
+        if (s_InputState.keyboard_current.keys[static_cast<i32>(key)] != pressed) {
+            // Update internal state
+            s_InputState.keyboard_current.keys[static_cast<i32>(key)] = pressed;
+        }
 
-		// Fire off an event informing of the change in state
-		Event* event;
+        // Fire off an event informing of the change in state
+        Event* event;
 
-		if (Input::GetKeyDown(key)) event = new Event(EventType::KeyPressed, EventCategory::Input);
-		else if (Input::GetKeyUp(key)) event = new Event(EventType::KeyReleased, EventCategory::Input);
-		else event = new Event(EventType::KeyIsPressed, EventCategory::Input);
-		
-		event->GetContext().u16_values[0] = static_cast<u16>(key);
+        if (Input::GetKeyDown(key))
+            event = new Event(EventType::KeyPressed, EventCategory::Input);
+        else if (Input::GetKeyUp(key))
+            event = new Event(EventType::KeyReleased, EventCategory::Input);
+        else
+            event = new Event(EventType::KeyIsPressed, EventCategory::Input);
 
-		AX_ADD_EVENT(event);
-	}
+        event->GetContext().u16_values[0] = static_cast<u16>(key);
 
-	void Input::SetMouseButton(MouseButtons button, bool pressed) {
-		// Only handles if the state of the key has changed
-		if (s_InputState.mouse_current.buttons[static_cast<i32>(button)] != pressed) {
-			// Update internal state
-			s_InputState.mouse_current.buttons[static_cast<i32>(button)] = pressed;
-		}
+        AX_ADD_EVENT(event);
+    }
 
-		// Fire off an event informing of the change in state
-		Event* event;
+    void Input::SetMouseButton(MouseButtons button, bool pressed) {
+        // Only handles if the state of the key has changed
+        if (s_InputState.mouse_current.buttons[static_cast<i32>(button)] != pressed) {
+            // Update internal state
+            s_InputState.mouse_current.buttons[static_cast<i32>(button)] = pressed;
+        }
 
-		if (Input::GetMouseButtonDown(button)) event = new Event(EventType::MouseButtonPressed, EventCategory::Input);
-		else if (Input::GetMouseButtonUp(button)) event = new Event(EventType::MouseButtonReleased, EventCategory::Input);
-		else event = new Event(EventType::MouseButtonIsPressed, EventCategory::Input);
+        // Fire off an event informing of the change in state
+        Event* event;
 
-		event->GetContext().u16_values[0] = static_cast<u16>(button);
+        if (Input::GetMouseButtonDown(button))
+            event = new Event(EventType::MouseButtonPressed, EventCategory::Input);
+        else if (Input::GetMouseButtonUp(button))
+            event = new Event(EventType::MouseButtonReleased, EventCategory::Input);
+        else
+            event = new Event(EventType::MouseButtonIsPressed, EventCategory::Input);
 
-		AX_ADD_EVENT(event);
-	}
+        event->GetContext().u16_values[0] = static_cast<u16>(button);
 
-	void Input::SetMousePosition(const Vector2 &position) {
-		// Only handles if the state of the key has changed
-		if (s_InputState.mouse_current.position == position) return;
+        AX_ADD_EVENT(event);
+    }
 
-		// Update internal state
-		s_InputState.mouse_current.position = position;
+    void Input::SetMousePosition(const glm::vec2& position) {
+        // Only handles if the state of the key has changed
+        if (s_InputState.mouse_current.position == position)
+            return;
 
-		// Fire off an event informing of the change in state
-		Event* event = new Event(EventType::MouseMoved, EventCategory::Input);
+        // Update internal state
+        s_InputState.mouse_current.position = position;
 
-		event->GetContext().u16_values[0] = static_cast<u16>(position.x);
-		event->GetContext().u16_values[1] = static_cast<u16>(position.y);
+        // Fire off an event informing of the change in state
+        Event* event = new Event(EventType::MouseMoved, EventCategory::Input);
 
-		AX_ADD_EVENT(event);
-	}
+        event->GetContext().u16_values[0] = static_cast<u16>(position.x);
+        event->GetContext().u16_values[1] = static_cast<u16>(position.y);
 
-	void Input::SetMouseWheel(f32 delta) {
-		// Fire off an event informing of the change in state
-		Event* event = new Event(EventType::MouseScrolled, EventCategory::Input);
+        AX_ADD_EVENT(event);
+    }
 
-		event->GetContext().f32_values[0] = delta;
+    void Input::SetMouseWheel(f32 delta) {
+        // Fire off an event informing of the change in state
+        Event* event = new Event(EventType::MouseScrolled, EventCategory::Input);
 
-		AX_ADD_EVENT(event);
-	}
+        event->GetContext().f32_values[0] = delta;
 
-	bool Input::GetKeyDown(Keys key) {
-		return s_InputState.keyboard_current.keys[static_cast<i32>(key)] && !s_InputState.keyboard_previous.keys[static_cast<i32>(key)];
-	}
+        AX_ADD_EVENT(event);
+    }
 
-	bool Input::GetKeyUp(Keys key) {
-		return !s_InputState.keyboard_current.keys[static_cast<i32>(key)] && s_InputState.keyboard_previous.keys[static_cast<i32>(key)];
-	}
+    bool Input::GetKeyDown(Keys key) {
+        return s_InputState.keyboard_current.keys[static_cast<i32>(key)] &&
+               !s_InputState.keyboard_previous.keys[static_cast<i32>(key)];
+    }
 
-	bool Input::GetKey(Keys key) {
-		return s_InputState.keyboard_current.keys[static_cast<i32>(key)] && s_InputState.keyboard_previous.keys[static_cast<i32>(key)];
-	}
+    bool Input::GetKeyUp(Keys key) {
+        return !s_InputState.keyboard_current.keys[static_cast<i32>(key)] &&
+               s_InputState.keyboard_previous.keys[static_cast<i32>(key)];
+    }
 
-	bool Input::GetMouseButtonDown(MouseButtons button) {
-		return s_InputState.mouse_current.buttons[static_cast<i32>(button)] && !s_InputState.mouse_previous.buttons[static_cast<i32>(button)];
-	}
+    bool Input::GetKey(Keys key) {
+        return s_InputState.keyboard_current.keys[static_cast<i32>(key)] &&
+               s_InputState.keyboard_previous.keys[static_cast<i32>(key)];
+    }
 
-	bool Input::GetMouseButtonUp(MouseButtons button) {
-		return !s_InputState.mouse_current.buttons[static_cast<i32>(button)] && s_InputState.mouse_previous.buttons[static_cast<i32>(button)];
-	}
+    bool Input::GetMouseButtonDown(MouseButtons button) {
+        return s_InputState.mouse_current.buttons[static_cast<i32>(button)] &&
+               !s_InputState.mouse_previous.buttons[static_cast<i32>(button)];
+    }
 
-	bool Input::GetMouseButton(MouseButtons button) {
-		return s_InputState.mouse_current.buttons[static_cast<i32>(button)] && s_InputState.mouse_previous.buttons[static_cast<i32>(button)];
-	}
+    bool Input::GetMouseButtonUp(MouseButtons button) {
+        return !s_InputState.mouse_current.buttons[static_cast<i32>(button)] &&
+               s_InputState.mouse_previous.buttons[static_cast<i32>(button)];
+    }
 
-	Vector2 Input::GetMousePosition() {
-		return s_InputState.mouse_current.position;
-	}
+    bool Input::GetMouseButton(MouseButtons button) {
+        return s_InputState.mouse_current.buttons[static_cast<i32>(button)] &&
+               s_InputState.mouse_previous.buttons[static_cast<i32>(button)];
+    }
+
+    glm::vec2 Input::GetMousePosition() {
+        return s_InputState.mouse_current.position;
+    }
 
 #ifdef AXLE_TESTING
-	void Input::SimulateKeyState(Keys key, bool pressed) {
-		SetKey(key, pressed);
-	}
-	void Input::SimulateMouseButtonState(MouseButtons button, bool pressed) {
-		SetMouseButton(button, pressed);
-	}
-	void Input::SimulateMousePosition(const Vector2 &position) {
-		SetMousePosition(position);
-	}
-	void Input::SimulateMouseWheel(f32 delta) {
-		SetMouseWheel(delta);
-	}
-	void Input::SimulateUpdate() {
-		Update();
-	}
-	void Input::SimulateReset() {
-		s_InputState = InputState();
-	}
+    void Input::SimulateKeyState(Keys key, bool pressed) {
+        SetKey(key, pressed);
+    }
+    void Input::SimulateMouseButtonState(MouseButtons button, bool pressed) {
+        SetMouseButton(button, pressed);
+    }
+    void Input::SimulateMousePosition(const glm::vec2& position) {
+        SetMousePosition(position);
+    }
+    void Input::SimulateMouseWheel(f32 delta) {
+        SetMouseWheel(delta);
+    }
+    void Input::SimulateUpdate() {
+        Update();
+    }
+    void Input::SimulateReset() {
+        s_InputState = InputState();
+    }
 #endif // AXLE_TESTING
 
-}
+} // namespace Axle

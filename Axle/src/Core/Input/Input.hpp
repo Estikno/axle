@@ -4,8 +4,9 @@
 #include "../Types.hpp"
 
 #include "Core/Core.hpp"
-#include "Math/Math_Types.hpp"
 #include "InputState.hpp"
+
+#include <glm/vec2.hpp>
 
 namespace Axle {
     class Input {
@@ -77,7 +78,7 @@ namespace Axle {
         * 
 		* @returns The current mouse position in screen coordinates.
         */
-		AXLE_API static Vector2 GetMousePosition();
+		AXLE_API static glm::vec2 GetMousePosition();
 
 		// Modify the keys state. This should only be called by the event system and should not be available to the end user.
 
@@ -106,7 +107,7 @@ namespace Axle {
         * 
 		* @param position The new mouse position in screen coordinates.
         */
-		static void SetMousePosition(const Vector2 &position);
+		static void SetMousePosition(const glm::vec2& position);
 
         /**
 		* Sets the mouse wheel delta.
@@ -125,7 +126,7 @@ namespace Axle {
 #ifdef AXLE_TESTING
 		AXLE_TEST_API static void SimulateKeyState(Keys key, bool pressed);
 		AXLE_TEST_API static void SimulateMouseButtonState(MouseButtons button, bool pressed);
-		AXLE_TEST_API static void SimulateMousePosition(const Vector2& position);
+		AXLE_TEST_API static void SimulateMousePosition(const glm::vec2& position);
 		AXLE_TEST_API static void SimulateMouseWheel(f32 delta);
 		AXLE_TEST_API static void SimulateUpdate();
         AXLE_TEST_API static void SimulateReset();

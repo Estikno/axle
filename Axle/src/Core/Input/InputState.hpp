@@ -1,12 +1,12 @@
 #pragma once
 
 #include "axpch.hpp"
-#include "../Types.hpp"
 
+#include "../Types.hpp"
 #include "Core/Core.hpp"
-#include "Math/Math_Types.hpp"
 
 #include <GLFW/glfw3.h>
+#include <glm/vec2.hpp>
 
 namespace Axle {
 	enum class MouseButtons {
@@ -158,7 +158,7 @@ namespace Axle {
 	};
 
 	struct MouseState {
-		Vector2 position;
+		glm::vec2 position;
 		bool buttons[static_cast<i32>(MouseButtons::BUTTON_MAX_BUTTONS)];
 	};
 

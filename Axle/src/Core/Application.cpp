@@ -6,7 +6,6 @@
 #include "Logger/Log.hpp"
 #include "Input/Input.hpp"
 #include "Input/InputCallbacks.hpp"
-#include "Math/Math_Types.hpp"
 #include "Error/Panic.hpp"
 
 #include <GLFW/glfw3.h>

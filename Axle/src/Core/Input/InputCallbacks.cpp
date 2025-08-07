@@ -5,6 +5,7 @@
 #include "../Logger/Log.hpp"
 
 #include <GLFW/glfw3.h>
+#include <glm/vec2.hpp>	
 
 namespace Axle {
 	void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -30,7 +31,7 @@ namespace Axle {
 	}
 
 	void CursorPositionCallback(GLFWwindow* window, double xpos, double ypos) {
-		Vector2 position(static_cast<f32>(xpos), static_cast<f32>(ypos));
+		glm::vec2 position(static_cast<f32>(xpos), static_cast<f32>(ypos));
 		Input::SetMousePosition(position);
 	}
 
