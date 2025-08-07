@@ -7,7 +7,6 @@
 #include "Core/Error/Panic.hpp"
 
 #include "Entities.hpp"
-#include "ComponentArray.hpp"
 #include "Other/Helpers/SparseSet.hpp"
 
 namespace Axle {
@@ -27,7 +26,7 @@ namespace Axle {
 			return;
 		}
 
-		m_ComponentArrays.insert({ typeID, std::make_unique<ComponentArray<T>>() });
+		m_ComponentArrays.insert({ typeID, std::make_unique<SparseSet<T>>() });
 
 		AX_CORE_TRACE("Component {0} has been registered.", typeid(T).name());
 	}
@@ -60,7 +59,7 @@ namespace Axle {
 		AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
 		AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
 
-		ComponentArray<T>& array = GetComponentArray<T>();
+		SparseSet<T>& array = GetComponentArray<T>();
 		array.Add(id, component);
 
 		ComponentMask& entityMask = GetMask(id);
@@ -74,7 +73,7 @@ namespace Axle {
 		AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
 		AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
 
-		ComponentArray<T>& array = GetComponentArray<T>();
+		SparseSet<T>& array = GetComponentArray<T>();
 		array.Remove(id);
 
 		ComponentMask& entityMask = GetMask(id);
@@ -87,8 +86,9 @@ namespace Axle {
 		AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
 
 		for (auto const& [typeID, componentArray] : m_ComponentArrays) {
-			// Call the EntityDestroyed method of the component array
-			componentArray->EntityDestroyed(id);
+            // Notify the sparse sets that the entity has been destroyed
+			// Call with no panic because we don't care if it fails and does nothing
+			componentArray->RemoveNoPanic(id);
 		}
 
 		// Invalidate the mask of the entity
@@ -122,13 +122,13 @@ namespace Axle {
 	template AXLE_TEST_API bool Entities::Has<Velocity>(EntityID);
 	template AXLE_TEST_API bool Entities::HasAll<Position, Velocity>(EntityID);
 	template AXLE_TEST_API bool Entities::HasAny<Position, Velocity>(EntityID);
-	template AXLE_TEST_API class ComponentArray<Position>;
-	template AXLE_TEST_API class ComponentArray<Velocity>;
 	template AXLE_TEST_API Position& Entities::Get<Position>(EntityID);
 	template AXLE_TEST_API Velocity& Entities::Get<Velocity>(EntityID);
     template AXLE_TEST_API class View<Position, Velocity>;
     template AXLE_TEST_API class View<Velocity>;
     template AXLE_TEST_API class View<Position>;
+    template AXLE_TEST_API class SparseSet<Position>;
+    template AXLE_TEST_API class SparseSet<Velocity>;
 #endif // AXLE_TESTING
 
 } // namespace Axle

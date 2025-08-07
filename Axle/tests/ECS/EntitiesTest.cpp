@@ -54,7 +54,7 @@ TEST_CASE("Entities ECS Test") {
 
 		CHECK(entities.GetEntityMasksTEST().at(entities.GetLastCreatedEntity()).to_ullong() == 3);
 
-		ComponentArray<Position>* p = static_cast<ComponentArray<Position>*>(entities.GetComponentArraysTEST().at(0).get());
+		SparseSet<Position>* p = static_cast<SparseSet<Position>*>(entities.GetComponentArraysTEST().at(0).get());
 
 		CHECK(p->Get(0).x == doctest::Approx(1.0f));
 		CHECK(p->Get(0).y == doctest::Approx(2.0f));
@@ -110,7 +110,7 @@ TEST_CASE("Entities ECS Test") {
 
 		entities.Add<Position>(0, Position(3.0f, 4.0f));
 
-		ComponentArray<Position>* p = static_cast<ComponentArray<Position>*>(entities.GetComponentArraysTEST().at(0).get());
+		SparseSet<Position>* p = static_cast<SparseSet<Position>*>(entities.GetComponentArraysTEST().at(0).get());
 
 		CHECK(p->Get(0).x == doctest::Approx(3.0f));
 		CHECK(p->Get(0).y == doctest::Approx(4.0f));
@@ -161,7 +161,7 @@ TEST_CASE("Entities ECS Test") {
 		CHECK(entities.GetLastCreatedEntity() == 2);
 		CHECK(entities.GetEntityMasksTEST().at(0).to_ullong() == 2);
 
-		ComponentArray<Velocity>* v = static_cast<ComponentArray<Velocity>*>(entities.GetComponentArraysTEST().at(1).get());
+		SparseSet<Velocity>* v = static_cast<SparseSet<Velocity>*>(entities.GetComponentArraysTEST().at(1).get());
 
 		CHECK(v->Get(0).vx == doctest::Approx(2.0f));
 		CHECK(v->Get(0).vy == doctest::Approx(2.0f));

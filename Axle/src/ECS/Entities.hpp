@@ -6,7 +6,7 @@
 #include "Core/Types.hpp"
 #include "Core/Logger/Log.hpp"
 #include "Core/Error/Panic.hpp"
-#include "ComponentArray.hpp"
+#include "Other/Helpers/SparseSet.hpp"
 
 namespace Axle {
     class Entities {
@@ -118,7 +118,7 @@ namespace Axle {
         }
 
 #ifdef AXLE_TESTING
-        inline std::unordered_map<ComponentType, std::unique_ptr<IComponentArray>>& GetComponentArraysTEST() {
+        inline std::unordered_map<ComponentType, std::unique_ptr<ISparseSet>>& GetComponentArraysTEST() {
             return m_ComponentArrays;
         }
 
@@ -215,13 +215,13 @@ namespace Axle {
          * @returns A reference to the component array of the given type.
          */
         template <typename T>
-        ComponentArray<T>& GetComponentArray() {
+        SparseSet<T>& GetComponentArray() {
             ComponentType id = GetComponentType<T>();
 
             AX_ASSERT(
                 IsComponentRegistered<T>(), "Component {0} has not been registered before use.", typeid(T).name());
 
-            return *(static_cast<ComponentArray<T>*>(m_ComponentArrays.at(id).get()));
+            return *(static_cast<SparseSet<T>*>(m_ComponentArrays.at(id).get()));
         }
 
         /**
@@ -230,19 +230,17 @@ namespace Axle {
          * @returns A pointer to the component array of the given type.
          */
         template <typename T>
-        ComponentArray<T>* GetComponentArrayPtr() {
+        SparseSet<T>* GetComponentArrayPtr() {
             ComponentType id = GetComponentType<T>();
 
             AX_ASSERT(
                 IsComponentRegistered<T>(), "Component {0} has not been registered before use.", typeid(T).name());
 
-            return static_cast<ComponentArray<T>*>(m_ComponentArrays.at(id).get());
+            return static_cast<SparseSet<T>*>(m_ComponentArrays.at(id).get());
         }
 
         /// A hasmap containing the component arrays for every registered component type.
-        ///
-        /// The type_index is used to identify the type of the component.
-        std::unordered_map<ComponentType, std::unique_ptr<IComponentArray>> m_ComponentArrays;
+        std::unordered_map<ComponentType, std::unique_ptr<ISparseSet>> m_ComponentArrays;
 
         /// Stores the next component type to be registered.
         inline static ComponentType s_NextComponentType = 0;
@@ -281,7 +279,7 @@ namespace Axle {
 
         AXLE_TEST_API void ForEach(const FuncView& func) {
             size_t index = GetSmallestComponentArrayIndex();
-            std::vector<EntityID> entities = m_ComponentArrays.at(index)->EntityList();
+            std::vector<EntityID> entities = m_ComponentArrays.at(index)->GetList();
 
             for (const EntityID& entity : entities) {
                 if (m_Entities->HasAll<Components...>(entity)) {
@@ -292,7 +290,7 @@ namespace Axle {
 
         AXLE_TEST_API void ForEach(const FuncViewID& func) {
             size_t index = GetSmallestComponentArrayIndex();
-            std::vector<EntityID> entities = m_ComponentArrays.at(index)->EntityList();
+            std::vector<EntityID> entities = m_ComponentArrays.at(index)->GetList();
 
             for (const EntityID& entity : entities) {
                 if (m_Entities->HasAll<Components...>(entity)) {
@@ -320,11 +318,11 @@ namespace Axle {
         }
 
         template <typename... Cs>
-        static std::vector<IComponentArray*> MakeArrayVec(Entities* entities) {
-            return {static_cast<IComponentArray*>(entities->GetComponentArrayPtr<Cs>())...};
+        static std::vector<ISparseSet*> MakeArrayVec(Entities* entities) {
+            return {static_cast<ISparseSet*>(entities->GetComponentArrayPtr<Cs>())...};
         }
 
-        std::vector<IComponentArray*> m_ComponentArrays;
+        std::vector<ISparseSet*> m_ComponentArrays;
         Entities* m_Entities;
     };
 

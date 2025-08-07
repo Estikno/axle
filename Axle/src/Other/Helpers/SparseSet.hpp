@@ -4,6 +4,7 @@
 
 #include "Core/Types.hpp"
 #include "Core/Error/Panic.hpp"
+#include "Core/Core.hpp"
 
 namespace Axle {
     class ISparseSet {
@@ -16,7 +17,7 @@ namespace Axle {
     };
 
     template <typename T>
-    class SparseSet : public ISparseSet {
+    class AXLE_TEST_API SparseSet : public ISparseSet {
     public:
         static constexpr size_t InvalidIndex = std::numeric_limits<size_t>::max();
 
