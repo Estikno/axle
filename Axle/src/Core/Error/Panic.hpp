@@ -41,7 +41,7 @@ namespace Axle::Error {
 }
 
 namespace Axle {
-	[[noreturn]] inline void Panic(Error::PanicDynamicStringView s) noexcept {
+	[[noreturn]]  inline void Panic(Error::PanicDynamicStringView s) noexcept {
 		auto msg =
 			std::format("{}:{} Panic: {}\n", s.loc.file_name(), s.loc.line(), s.s);
 		Error::PanicImpl(msg.c_str());

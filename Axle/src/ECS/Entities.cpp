@@ -8,6 +8,7 @@
 
 #include "Entities.hpp"
 #include "ComponentArray.hpp"
+#include "Other/Helpers/SparseSet.hpp"
 
 namespace Axle {
 	Entities::Entities() {

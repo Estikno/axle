@@ -15,10 +15,17 @@ namespace Axle {
         virtual bool Has(size_t id) const = 0;
     };
 
-    template <typename T, size_t N>
+    template <typename T>
     class SparseSet : public ISparseSet {
     public:
         static constexpr size_t InvalidIndex = std::numeric_limits<size_t>::max();
+
+        SparseSet() {
+            // Some arbitraty size values to avoid frequent reallocations
+            m_Dense.reserve(1000);
+            m_DenseToSparse.reserve(1000);
+            m_Sparse.reserve(1000);
+        }
 
         /**
          * Adds an element of type T to the sparse set with the given ID.
@@ -26,15 +33,20 @@ namespace Axle {
          * @param id The index to add the element to.
          * @param component The element to be added.
          */
-        void Add(size_t id, T component) {
-            AX_ASSERT(id < N, "Index {0} is out of bounds for SparseSet with size {1}.", id, N);
-            AX_ASSERT(!Contains(id), "Can't add an element that already exists.");
+        template <typename U>
+        void Add(size_t id, U&& component) {
+            // AX_ASSERT(id < m_Sparse.size(), "Index {0} is out of bounds for SparseSet with size {1}.", id, N);
+            static_assert(std::is_same_v<T, std::decay_t<U>>,
+                          "Trying to add a component of incorrect type to SparseSet");
+            AX_ASSERT(!Has(id), "Can't add an element that already exists.");
 
-            m_Sparse.at(id) = m_Size;
-            m_DenseToSparse.at(m_Size) = id;
-            m_Dense.at(m_Size) = component;
+            if (id >= m_Sparse.size()) {
+                m_Sparse.resize(id + 1, InvalidIndex);
+            }
 
-            m_Size++;
+            m_Sparse.at(id) = m_Dense.size();
+            m_DenseToSparse.push_back(id);
+            m_Dense.push_back(std::forward<U>(component));
         }
 
         /**
@@ -43,30 +55,36 @@ namespace Axle {
          * @param id The index to remove the element from
          */
         void Remove(size_t id) {
-            AX_ASSERT(id < N, "Index {0} is out of bounds for SparseSet with size {1}.", id, N);
-            AX_ASSERT(Contains(id),
-                      "Trying to remove a non-existent element of type {0} from index {1}",
-                      typeid(T).name(),
-                      id);
+            AX_ASSERT(id < m_Sparse.size(), "Index {0} is out of bounds in the SparseSet", id);
+            AX_ASSERT(
+                Has(id), "Trying to remove a non-existent element of type {0} from index {1}", typeid(T).name(), id);
 
             // Swap the back of the dense array with the element to be deleted
             size_t deletedIndex = m_Sparse.at(id);
-            std::swap(m_Dense.at(deletedIndex), m_Dense.at(m_Size - 1));
 
-            // Update the sparse array to reflect the change
-            size_t entityOfLastElement = m_DenseToSparse.at(m_Size - 1);
-            std::swap(m_Sparse.at(entityOfLastElement), m_Sparse.at(id));
-            std::swap(m_DenseToSparse.at(deletedIndex), m_DenseToSparse.at(m_Size - 1));
+            if (deletedIndex != m_Dense.size() - 1) {
+                std::swap(m_Dense.at(deletedIndex), m_Dense.back());
 
-            m_Size--;
+                // Update the sparse array to reflect the change
+                // We don't use swap here because when adding another element to the deleted
+                // id we will have to rewrite the values either way so preserving old ones is useless
+                size_t sparseIdxOfLastElement = m_DenseToSparse.at(m_Dense.size() - 1);
+                m_Sparse.at(sparseIdxOfLastElement) = deletedIndex;
+                m_DenseToSparse.at(deletedIndex) = sparseIdxOfLastElement;
+            }
+
+            m_Dense.pop_back();
+            m_DenseToSparse.pop_back();
+            m_Sparse.at(id) = InvalidIndex;
         }
 
         /**
          * Clears the sparse set
          */
         void Clear() {
-            m_Size = 0;
-            m_Sparse.fill(InvalidIndex);
+            m_Dense.clear();
+            m_DenseToSparse.clear();
+            std::fill(m_Sparse.begin(), m_Sparse.end(), InvalidIndex);
         }
 
         /**
@@ -76,11 +94,9 @@ namespace Axle {
          *
          * @returns A reference to the element of type T
          */
-        T& Get(size_t id) const {
-            AX_ASSERT(Contains(id),
-                      "Trying to retrieve a non-existent element of type: {0} from index {1}",
-                      typeid(T).name(),
-                      id);
+        T& Get(size_t id) {
+            AX_ASSERT(
+                Has(id), "Trying to retrieve a non-existent element of type: {0} from index {1}", typeid(T).name(), id);
 
             return m_Dense.at(m_Sparse.at(id));
         }
@@ -95,7 +111,7 @@ namespace Axle {
          * @param id The index to remove the element from
          */
         void RemoveNoPanic(size_t id) override {
-            if (Contains(id) && id < N) {
+            if (Has(id)) {
                 Remove(id);
             }
         }
@@ -106,7 +122,7 @@ namespace Axle {
          * @returns The size of the inserted elements.
          */
         size_t Size() const override {
-            return m_Size;
+            return m_Dense.size();
         }
 
         /**
@@ -116,14 +132,7 @@ namespace Axle {
          * @returns A vector of indexes which are certain to have an element assigned
          */
         std::vector<size_t> GetList() override {
-            std::vector<size_t> list;
-            list.reserve(m_Size);
-
-            for (size_t i = 0; i < m_Size; i++) {
-                list.push_back(m_DenseToSparse.at(i));
-            }
-
-            return list;
+            return m_DenseToSparse;
         }
 
         /**
@@ -134,26 +143,23 @@ namespace Axle {
          * @returns True if it has an element, False otherwise
          */
         bool Has(size_t id) const override {
+            if (id >= m_Sparse.size()) {
+                return false; // Out of bounds
+            }
+
             size_t denseIdx = m_Sparse.at(id);
-            return denseIdx != InvalidIndex && denseIdx < m_Size && m_DenseToSparse.at(denseIdx) == id;
+            return denseIdx != InvalidIndex && denseIdx < m_Dense.size() && m_DenseToSparse.at(denseIdx) == id;
         }
 
     private:
         /// A dense array of elements of type T
-        std::array<T, N> m_Dense{};
+        std::vector<T> m_Dense{};
 
-        /// Handy array to convert from dense indexes to sparse indexes
-        std::array<size_t, N> m_DenseToSparse{};
+        /// Handy array to convert dense indexes to sparse indexes
+        std::vector<size_t> m_DenseToSparse{};
 
-        /// Handy array to convert from indexes to dense indexes
-        std::array<size_t, N> m_Sparse = [] {
-            std::array<size_t, N> arr;
-            arr.fill(InvalidIndex);
-            return arr;
-        }();
-
-        /// Total size of valid entries in the array
-        size_t m_Size = 0;
+        /// Handy array to convert indexes to dense indexes
+        std::vector<size_t> m_Sparse{};
     };
 
 } // namespace Axle
