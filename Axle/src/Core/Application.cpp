@@ -11,50 +11,50 @@
 #include <GLFW/glfw3.h>
 
 namespace Axle {
-	void ErrorCallback(int error, const char* description) {
-		AX_CORE_ERROR("GLFW Error ({0}): {1}", error, description);
-	}
+    void ErrorCallback(int error, const char* description) {
+        AX_CORE_ERROR("GLFW Error ({0}): {1}", error, description);
+    }
 
-	Application::Application() {
-		AX_CORE_TRACE("Starting the engine...");
+    Application::Application() {
+        AX_CORE_TRACE("Starting the engine...");
 
-		if (!glfwInit()) {
-			AX_PANIC("Failed to initialize GLFW");
-		}
+        if (!glfwInit()) {
+            AX_PANIC("Failed to initialize GLFW");
+        }
 
-		glfwSetErrorCallback(ErrorCallback);
+        glfwSetErrorCallback(ErrorCallback);
 
-		m_window = glfwCreateWindow(1280, 720, "Axle Engine", nullptr, nullptr);
+        m_window = glfwCreateWindow(1280, 720, "Axle Engine", nullptr, nullptr);
 
-		if (!m_window) {
-			glfwTerminate();
+        if (!m_window) {
+            glfwTerminate();
 
-			AX_PANIC("Failed to create GLFW window");
-		}
+            AX_PANIC("Failed to create GLFW window");
+        }
 
-		glfwSetKeyCallback(m_window, KeyCallback);
-		glfwSetCursorPosCallback(m_window, CursorPositionCallback);
-		glfwSetMouseButtonCallback(m_window, MouseButtonCallback);
-		glfwSetScrollCallback(m_window, ScrollCallback);
+        glfwSetKeyCallback(m_window, KeyCallback);
+        glfwSetCursorPosCallback(m_window, CursorPositionCallback);
+        glfwSetMouseButtonCallback(m_window, MouseButtonCallback);
+        glfwSetScrollCallback(m_window, ScrollCallback);
 
-		glfwMakeContextCurrent(m_window);
-		glfwSwapInterval(1);
-	}
+        glfwMakeContextCurrent(m_window);
+        glfwSwapInterval(1);
+    }
 
-	Application::~Application() {
-		AX_CORE_TRACE("Stopping the engine...");
+    Application::~Application() {
+        AX_CORE_TRACE("Stopping the engine...");
 
-		glfwDestroyWindow(m_window);
-		glfwTerminate();
-	}
+        glfwDestroyWindow(m_window);
+        glfwTerminate();
+    }
 
-	void Application::Run() {
-		while (!glfwWindowShouldClose(m_window)) {
+    void Application::Run() {
+        while (!glfwWindowShouldClose(m_window)) {
 
-			// NOTE: Input state updating should be performed at the end of each frame.
-			// The input is recorded in between the frame but the update happens at the end.
-			Input::Update();
-			glfwPollEvents();
-		}
-	}
-}
+            // NOTE: Input state updating should be performed at the end of each frame.
+            // The input is recorded in between the frame but the update happens at the end.
+            Input::Update();
+            glfwPollEvents();
+        }
+    }
+} // namespace Axle

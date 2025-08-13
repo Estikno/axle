@@ -11,110 +11,108 @@
 using namespace Axle;
 
 TEST_CASE("Resources") {
-	Resources res;
-	Log::Init();
+    Resources res;
+    Log::Init();
 
-	SUBCASE("Add resource") {
-		f32* g = new f32;
-		*g = 9.81f;
-		res.Add<f32>(g);
+    SUBCASE("Add resource") {
+        f32* g = new f32;
+        *g = 9.81f;
+        res.Add<f32>(g);
 
-		REQUIRE(res.GetDataTEST().contains(std::type_index(typeid(f32))));
-		CHECK(res.Contains<f32>());
+        REQUIRE(res.GetDataTEST().contains(std::type_index(typeid(f32))));
+        CHECK(res.Contains<f32>());
 
-		f32* gravity = static_cast<f32*>(res.GetDataTEST().at(std::type_index(typeid(f32))).get());
+        f32* gravity = static_cast<f32*>(res.GetDataTEST().at(std::type_index(typeid(f32))).get());
 
-		REQUIRE_FALSE(gravity == nullptr);
-		CHECK(*gravity == doctest::Approx(9.81f));
-	}
+        REQUIRE_FALSE(gravity == nullptr);
+        CHECK(*gravity == doctest::Approx(9.81f));
+    }
 
-	SUBCASE("Get resource") {
-		f32* g = new f32;
-		*g = 9.81f;
-		res.Add<f32>(g);
+    SUBCASE("Get resource") {
+        f32* g = new f32;
+        *g = 9.81f;
+        res.Add<f32>(g);
 
-		f32* gravity = res.Get<f32>();
+        f32* gravity = res.Get<f32>();
 
-		REQUIRE_FALSE(gravity == nullptr);
-		CHECK(*gravity == doctest::Approx(9.81f));
-	}
+        REQUIRE_FALSE(gravity == nullptr);
+        CHECK(*gravity == doctest::Approx(9.81f));
+    }
 
-	SUBCASE("Get resource on another context") {
-		{
-			f32* g = new f32;
-			*g = 9.81f;
-			res.Add<f32>(g);
-		}
+    SUBCASE("Get resource on another context") {
+        {
+            f32* g = new f32;
+            *g = 9.81f;
+            res.Add<f32>(g);
+        }
 
-		f32* gravity = res.Get<f32>();
+        f32* gravity = res.Get<f32>();
 
-		REQUIRE_FALSE(gravity == nullptr);
-		CHECK(*gravity == doctest::Approx(9.81f));
-	}
+        REQUIRE_FALSE(gravity == nullptr);
+        CHECK(*gravity == doctest::Approx(9.81f));
+    }
 
-	SUBCASE("Modify resource") {
-		{
-			f32* g = new f32;
-			*g = 9.81f;
-			res.Add<f32>(g);
-		}
+    SUBCASE("Modify resource") {
+        {
+            f32* g = new f32;
+            *g = 9.81f;
+            res.Add<f32>(g);
+        }
 
-		{
-			f32* gravity = res.Get<f32>();
+        {
+            f32* gravity = res.Get<f32>();
 
-			*gravity = 10.0f;
-		}
+            *gravity = 10.0f;
+        }
 
 
-		f32* gravity = res.Get<f32>();
+        f32* gravity = res.Get<f32>();
 
-		REQUIRE_FALSE(gravity == nullptr);
-		CHECK(*gravity == doctest::Approx(10.0f));
-	}
+        REQUIRE_FALSE(gravity == nullptr);
+        CHECK(*gravity == doctest::Approx(10.0f));
+    }
 
-	SUBCASE("Remove resource") {
-		{
-			f32* g = new f32;
-			*g = 9.81f;
-			res.Add<f32>(g);
-		}
+    SUBCASE("Remove resource") {
+        {
+            f32* g = new f32;
+            *g = 9.81f;
+            res.Add<f32>(g);
+        }
 
-		{
-			res.Remove<f32>();
-		}
+        { res.Remove<f32>(); }
 
-		f32* gravity = res.Get<f32>();
-		size_t size = res.GetDataTEST().size();
+        f32* gravity = res.Get<f32>();
+        size_t size = res.GetDataTEST().size();
 
-		CHECK(gravity == nullptr);
-		CHECK(size == 0);
-	}
+        CHECK(gravity == nullptr);
+        CHECK(size == 0);
+    }
 
-	SUBCASE("Add multiple resources") {
-		{
-			f32* g = new f32;
-			std::shared_ptr<i32> iPtr = std::make_shared<i32>(42);
+    SUBCASE("Add multiple resources") {
+        {
+            f32* g = new f32;
+            std::shared_ptr<i32> iPtr = std::make_shared<i32>(42);
 
-			*g = 9.81f;
+            *g = 9.81f;
 
-			CHECK(res.GetDataTEST().empty());
+            CHECK(res.GetDataTEST().empty());
 
-			res.Add<f32>(g);
-			res.Add<i32>(iPtr);
+            res.Add<f32>(g);
+            res.Add<i32>(iPtr);
 
-			CHECK(res.GetDataTEST().size() == 2);
-		}
+            CHECK(res.GetDataTEST().size() == 2);
+        }
 
-		REQUIRE(res.Contains<f32>());
-		REQUIRE(res.Contains<i32>());
+        REQUIRE(res.Contains<f32>());
+        REQUIRE(res.Contains<i32>());
 
-		f32* gravity = res.Get<f32>();
-		i32* integer = res.Get<i32>();
+        f32* gravity = res.Get<f32>();
+        i32* integer = res.Get<i32>();
 
-		REQUIRE_FALSE(gravity == nullptr);
-		REQUIRE_FALSE(integer == nullptr);
+        REQUIRE_FALSE(gravity == nullptr);
+        REQUIRE_FALSE(integer == nullptr);
 
-		CHECK(*gravity == doctest::Approx(9.81f));
-		CHECK(*integer == 42);
-	}
+        CHECK(*gravity == doctest::Approx(9.81f));
+        CHECK(*integer == 42);
+    }
 }

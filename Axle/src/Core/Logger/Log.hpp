@@ -6,44 +6,44 @@
 #include "spdlog/spdlog.h"
 
 namespace Axle {
-	class AXLE_API Log {
-	public:
-		/**
-		* Initializes the logger and its singletons
-		*
-		* Important: This has to be called before using the macros
-		* 
-		* It is safe to call multiple times, it simply displays a warning after the first call.
-		*/
-		static void Init();
+    class AXLE_API Log {
+    public:
+        /**
+         * Initializes the logger and its singletons
+         *
+         * Important: This has to be called before using the macros
+         *
+         * It is safe to call multiple times, it simply displays a warning after the first call.
+         */
+        static void Init();
 
-		/**
-		* Gets the core logger singleton
-		* This function should only be used by the macro
-		* 
-		* @returns Returns a reference to the Core logger
-		*/
-		inline static std::shared_ptr<spdlog::logger>& GetCoreLogger() {
-			return s_CoreLogger;
-		}
-		
-		/**
-		* Gets the client logger singleton
-		* This function should only be used by the macro
-		*
-		* @returns Returns a reference to the client logger
-		*/
-		inline static std::shared_ptr<spdlog::logger>& GetClientLogger() {
-			return s_ClientLogger;
-		}
+        /**
+         * Gets the core logger singleton
+         * This function should only be used by the macro
+         *
+         * @returns Returns a reference to the Core logger
+         */
+        inline static std::shared_ptr<spdlog::logger>& GetCoreLogger() {
+            return s_CoreLogger;
+        }
 
-	private:
-		/// Core logger singleton
-		static std::shared_ptr<spdlog::logger> s_CoreLogger;
-		/// Client logger singleton
-		static std::shared_ptr<spdlog::logger> s_ClientLogger;
-	};
-}
+        /**
+         * Gets the client logger singleton
+         * This function should only be used by the macro
+         *
+         * @returns Returns a reference to the client logger
+         */
+        inline static std::shared_ptr<spdlog::logger>& GetClientLogger() {
+            return s_ClientLogger;
+        }
+
+    private:
+        /// Core logger singleton
+        static std::shared_ptr<spdlog::logger> s_CoreLogger;
+        /// Client logger singleton
+        static std::shared_ptr<spdlog::logger> s_ClientLogger;
+    };
+} // namespace Axle
 
 // Core log macros
 #define AX_CORE_TRACE(...) ::Axle::Log::GetCoreLogger()->trace(__VA_ARGS__)

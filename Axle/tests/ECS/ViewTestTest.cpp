@@ -44,7 +44,6 @@ TEST_CASE("Ecs View tests") {
                 CHECK(vel.vx == doctest::Approx(2.0f));
                 CHECK(vel.vy == doctest::Approx(3.0f));
             });
-
         }
     }
 }

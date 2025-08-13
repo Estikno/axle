@@ -10,7 +10,7 @@ namespace Axle {
     void ErrorCallback(int error, const char* description);
 
     class AXLE_API Application {
-      public:
+    public:
         Application();
         virtual ~Application();
 
@@ -21,5 +21,5 @@ namespace Axle {
     };
 
     // To be defined in client
-    Application *CreateApplication();
+    Application* CreateApplication();
 } // namespace Axle

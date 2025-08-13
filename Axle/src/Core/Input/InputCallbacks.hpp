@@ -9,4 +9,4 @@ namespace Axle {
     void CursorPositionCallback(GLFWwindow* window, double xpos, double ypos);
     void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
     void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
-}
+} // namespace Axle

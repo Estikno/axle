@@ -1,4 +1,5 @@
 #include <doctest.h>
+#include <cassert>
 
 #include <unordered_map>
 #include <chrono>
@@ -15,9 +16,9 @@ public:
 
     SparseSet() {
         // Some arbitraty size values to avoid frequent reallocations
-        m_Dense.reserve(1000);
-        m_DenseToSparse.reserve(1000);
-        m_Sparse.reserve(1000);
+        m_Dense.reserve(10000);
+        m_DenseToSparse.reserve(10000);
+        m_Sparse.reserve(10000);
     }
 
     /**
@@ -30,7 +31,7 @@ public:
     void Add(size_t id, U&& component) {
         // AX_ASSERT(id < m_Sparse.size(), "Index {0} is out of bounds for SparseSet with size {1}.", id, N);
         static_assert(std::is_same_v<T, std::decay_t<U>>, "Trying to add a component of incorrect type to SparseSet");
-        assert(!Has(id), "Can't add an element that already exists.");
+        assert(!Has(id) && "Can't add an element that already exists.");
 
         if (id >= m_Sparse.size()) {
             m_Sparse.resize(id + 1, InvalidIndex);
@@ -47,8 +48,8 @@ public:
      * @param id The index to remove the element from
      */
     void Remove(size_t id) {
-        assert(id < m_Sparse.size(), "Index {0} is out of bounds in the SparseSet", id);
-        assert(Has(id), "Trying to remove a non-existent element of type {0} from index {1}", typeid(T).name(), id);
+        assert(id < m_Sparse.size() && "Index {0} is out of bounds in the SparseSet");
+        assert(Has(id) && "Trying to remove a non-existent element of type {0} from index {1}");
 
         // Swap the back of the dense array with the element to be deleted
         size_t deletedIndex = m_Sparse.at(id);
@@ -86,8 +87,7 @@ public:
      * @returns A reference to the element of type T
      */
     T& Get(size_t id) {
-        assert(
-            Has(id), "Trying to retrieve a non-existent element of type: {0} from index {1}", typeid(T).name(), id);
+        assert(Has(id) && "Trying to retrieve a non-existent element of type: {0} from index {1}");
 
         return m_Dense.at(m_Sparse.at(id));
     }
@@ -155,13 +155,15 @@ private:
 
 struct Position {
     f32 x, y;
-    Position(f32 x = 0.0f, f32 y = 0.0f) : x(x), y(y) {}
+    Position(f32 x = 0.0f, f32 y = 0.0f)
+        : x(x),
+          y(y) {}
     bool operator==(const Position& other) const {
         return x == other.x && y == other.y;
     }
 };
 
-constexpr size_t EntityCount = 100000;
+constexpr size_t EntityCount = 1000000;
 
 using Clock = std::chrono::high_resolution_clock;
 
@@ -207,10 +209,14 @@ TEST_CASE("Benchmark: SparseSet vs unordered_map") {
 
     SUBCASE("unordered_map") {
         std::unordered_map<size_t, Position> map;
+        std::unordered_map<size_t, size_t> entity_index;
+        std::unordered_map<size_t, size_t> index_entity;
 
         auto start = Clock::now();
         for (size_t i = 0; i < EntityCount; ++i) {
             map[i] = Position((f32) i, (f32) (i * 2));
+            entity_index[i] = i;
+            index_entity[i] = i;
         }
         auto end = Clock::now();
 
@@ -220,7 +226,7 @@ TEST_CASE("Benchmark: SparseSet vs unordered_map") {
 
         start = Clock::now();
         for (size_t i = 0; i < EntityCount; ++i) {
-            volatile Position& c = map.at(i);
+            volatile Position& c = map.at(entity_index[i]);
         }
         end = Clock::now();
 
@@ -231,6 +237,8 @@ TEST_CASE("Benchmark: SparseSet vs unordered_map") {
         start = Clock::now();
         for (size_t i = 0; i < EntityCount; ++i) {
             map.erase(i);
+            entity_index.erase(i);
+            index_entity.erase(i);
         }
         end = Clock::now();
 

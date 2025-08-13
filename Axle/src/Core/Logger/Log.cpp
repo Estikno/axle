@@ -16,7 +16,8 @@ namespace Axle {
         }
 
         // Custom pattern
-        // Se for more information: https://github.com/gabime/spdlog/wiki/Custom-formatting#customizing-format-using-set_pattern
+        // Se for more information:
+        // https://github.com/gabime/spdlog/wiki/Custom-formatting#customizing-format-using-set_pattern
         spdlog::set_pattern("%^[%T] %n: %v%$");
 
         // Creates two multithread safe loggers
@@ -28,4 +29,4 @@ namespace Axle {
 
         AX_CORE_TRACE("Logger initialized...");
     }
-} 
+} // namespace Axle

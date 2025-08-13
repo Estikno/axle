@@ -10,120 +10,120 @@
 #include "Other/Helpers/SparseSet.hpp"
 
 namespace Axle {
-	Entities::Entities() {
-		for (EntityID entity = 0; entity < MAX_ENTITIES; entity++) {
-			m_AvailableEntities.push(entity);
-		}
-	}
+    Entities::Entities() {
+        for (EntityID entity = 0; entity < MAX_ENTITIES; entity++) {
+            m_AvailableEntities.push(entity);
+        }
+    }
 
-	template <typename T>
-	void Entities::RegisterComponent() {
-		ComponentType typeID = GetComponentType<T>();
-		AX_ASSERT(typeID < MAX_COMPONENTS, "Too many components registered.");
+    template <typename T>
+    void Entities::RegisterComponent() {
+        ComponentType typeID = GetComponentType<T>();
+        AX_ASSERT(typeID < MAX_COMPONENTS, "Too many components registered.");
 
-		if (m_ComponentArrays.find(typeID) != m_ComponentArrays.end()) {
-			AX_CORE_WARN("Component of type {0} is already registered.", typeid(T).name());
-			return;
-		}
+        if (m_ComponentArrays.find(typeID) != m_ComponentArrays.end()) {
+            AX_CORE_WARN("Component of type {0} is already registered.", typeid(T).name());
+            return;
+        }
 
-		m_ComponentArrays.insert({ typeID, std::make_unique<SparseSet<T>>() });
+        m_ComponentArrays.insert({typeID, std::make_unique<SparseSet<T>>()});
 
-		AX_CORE_TRACE("Component {0} has been registered.", typeid(T).name());
-	}
+        AX_CORE_TRACE("Component {0} has been registered.", typeid(T).name());
+    }
 
-	Entities& Entities::CreateEntity() {
-		AX_ASSERT(m_LivingEntityCount < MAX_ENTITIES,
-			"Cannot create more entities than the maximum allowed: {0}.",
-			MAX_ENTITIES);
+    Entities& Entities::CreateEntity() {
+        AX_ASSERT(m_LivingEntityCount < MAX_ENTITIES,
+                  "Cannot create more entities than the maximum allowed: {0}.",
+                  MAX_ENTITIES);
 
-		// Take the smallest available entity ID
-		EntityID id = m_AvailableEntities.top();
-		m_AvailableEntities.pop();
+        // Take the smallest available entity ID
+        EntityID id = m_AvailableEntities.top();
+        m_AvailableEntities.pop();
 
-		m_InsertingIntoIndex = id;
-		m_LivingEntityCount++;
+        m_InsertingIntoIndex = id;
+        m_LivingEntityCount++;
 
-		return *this;
+        return *this;
 
-		AX_CORE_TRACE("Entity {0} has been created.", id);
-	}
+        AX_CORE_TRACE("Entity {0} has been created.", id);
+    }
 
-	template <typename T>
-	Entities& Entities::WithComponent(T component) {
-		Add<T>(m_InsertingIntoIndex, component);
-		return *this;
-	}
+    template <typename T>
+    Entities& Entities::WithComponent(T component) {
+        Add<T>(m_InsertingIntoIndex, component);
+        return *this;
+    }
 
-	template <typename T>
-	void Entities::Add(EntityID id, T component) {
-		AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
-		AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
+    template <typename T>
+    void Entities::Add(EntityID id, T component) {
+        AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
+        AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
 
-		SparseSet<T>& array = GetComponentArray<T>();
-		array.Add(id, component);
+        SparseSet<T>& array = GetComponentArray<T>();
+        array.Add(id, component);
 
-		ComponentMask& entityMask = GetMask(id);
-		SetComponentBit<T>(entityMask, true);
+        ComponentMask& entityMask = GetMask(id);
+        SetComponentBit<T>(entityMask, true);
 
-		AX_CORE_TRACE("Component {0} has been added to entity {1}.", typeid(T).name(), id);
-	}
+        AX_CORE_TRACE("Component {0} has been added to entity {1}.", typeid(T).name(), id);
+    }
 
-	template <typename T>
-	void Entities::Remove(EntityID id) {
-		AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
-		AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
+    template <typename T>
+    void Entities::Remove(EntityID id) {
+        AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
+        AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
 
-		SparseSet<T>& array = GetComponentArray<T>();
-		array.Remove(id);
+        SparseSet<T>& array = GetComponentArray<T>();
+        array.Remove(id);
 
-		ComponentMask& entityMask = GetMask(id);
-		SetComponentBit<T>(entityMask, false);
+        ComponentMask& entityMask = GetMask(id);
+        SetComponentBit<T>(entityMask, false);
 
-		AX_CORE_TRACE("Component {0} has been removed from entity {1}.", typeid(T).name(), id);
-	}
+        AX_CORE_TRACE("Component {0} has been removed from entity {1}.", typeid(T).name(), id);
+    }
 
-	void Entities::DeleteEntity(EntityID id) {
-		AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
+    void Entities::DeleteEntity(EntityID id) {
+        AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
 
-		for (auto const& [typeID, componentArray] : m_ComponentArrays) {
+        for (auto const& [typeID, componentArray] : m_ComponentArrays) {
             // Notify the sparse sets that the entity has been destroyed
-			// Call with no panic because we don't care if it fails and does nothing
-			componentArray->RemoveNoPanic(id);
-		}
+            // Call with no panic because we don't care if it fails and does nothing
+            componentArray->RemoveNoPanic(id);
+        }
 
-		// Invalidate the mask of the entity
-		m_EntityMasks.at(id).reset();
+        // Invalidate the mask of the entity
+        m_EntityMasks.at(id).reset();
 
-		// Put the destroyed ID back to the queue
-		m_AvailableEntities.push(id);
-		m_LivingEntityCount--;
-		
-		AX_CORE_TRACE("Entity {0} has been deleted.", id);
-	}
+        // Put the destroyed ID back to the queue
+        m_AvailableEntities.push(id);
+        m_LivingEntityCount--;
 
-	template <typename T>
-	T& Entities::Get(EntityID id) {
-		AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
-		AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
+        AX_CORE_TRACE("Entity {0} has been deleted.", id);
+    }
 
-		return GetComponentArray<T>().Get(id);
-	}
+    template <typename T>
+    T& Entities::Get(EntityID id) {
+        AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
+        AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
+
+        return GetComponentArray<T>().Get(id);
+    }
 
 #ifdef AXLE_TESTING
-	template AXLE_TEST_API void Entities::RegisterComponent<Position>();
-	template AXLE_TEST_API void Entities::RegisterComponent<Velocity>();
-	template AXLE_TEST_API Entities& Entities::WithComponent<Position>(Position);
-	template AXLE_TEST_API Entities& Entities::WithComponent<Velocity>(Velocity);
-	template AXLE_TEST_API void Entities::Add<Position>(EntityID, Position);
-	template AXLE_TEST_API void Entities::Add<Velocity>(EntityID, Velocity);
-	template AXLE_TEST_API void Entities::Remove<Position>(EntityID);
-	template AXLE_TEST_API void Entities::Remove<Velocity>(EntityID);
-	template AXLE_TEST_API bool Entities::Has<Position>(EntityID);
-	template AXLE_TEST_API bool Entities::Has<Velocity>(EntityID);
-	template AXLE_TEST_API bool Entities::HasAll<Position, Velocity>(EntityID);
-	template AXLE_TEST_API bool Entities::HasAny<Position, Velocity>(EntityID);
-	template AXLE_TEST_API Position& Entities::Get<Position>(EntityID);
-	template AXLE_TEST_API Velocity& Entities::Get<Velocity>(EntityID);
+    template AXLE_TEST_API void Entities::RegisterComponent<Position>();
+    template AXLE_TEST_API void Entities::RegisterComponent<Velocity>();
+    template AXLE_TEST_API Entities& Entities::WithComponent<Position>(Position);
+    template AXLE_TEST_API Entities& Entities::WithComponent<Velocity>(Velocity);
+    template AXLE_TEST_API void Entities::Add<Position>(EntityID, Position);
+    template AXLE_TEST_API void Entities::Add<Velocity>(EntityID, Velocity);
+    template AXLE_TEST_API void Entities::Remove<Position>(EntityID);
+    template AXLE_TEST_API void Entities::Remove<Velocity>(EntityID);
+    template AXLE_TEST_API bool Entities::Has<Position>(EntityID);
+    template AXLE_TEST_API bool Entities::Has<Velocity>(EntityID);
+    template AXLE_TEST_API bool Entities::HasAll<Position, Velocity>(EntityID);
+    template AXLE_TEST_API bool Entities::HasAny<Position, Velocity>(EntityID);
+    template AXLE_TEST_API Position& Entities::Get<Position>(EntityID);
+    template AXLE_TEST_API Velocity& Entities::Get<Velocity>(EntityID);
     template AXLE_TEST_API class View<Position, Velocity>;
     template AXLE_TEST_API class View<Velocity>;
     template AXLE_TEST_API class View<Position>;

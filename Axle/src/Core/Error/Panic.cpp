@@ -6,8 +6,8 @@
 #include <cstdlib>
 
 namespace Axle::Error {
-	[[noreturn]] void PanicImpl(const char* s) noexcept {
-		std::fputs(s, stderr);
-		std::abort();
-	}
-}
+    [[noreturn]] void PanicImpl(const char* s) noexcept {
+        std::fputs(s, stderr);
+        std::abort();
+    }
+} // namespace Axle::Error
