@@ -22,7 +22,7 @@ void TestMouseButtonEvents(Event* event) {
 void TestMouseWheelEvents(Event* event) {
     CHECK_FALSE(event == nullptr);
     CHECK(event->GetEventCategory() == Axle::EventCategory::Input);
-    CHECK(event->GetContext().f32_values[0] == doctest::Approx(1.0f));
+    CHECK(event->GetContext().f32_values[0] == doctest::Approx(1.0));
 }
 
 TEST_CASE("Input system key handling") {
@@ -43,12 +43,16 @@ TEST_CASE("Input system key handling") {
         CHECK(Input::GetKeyDown(Keys::A));
         CHECK_FALSE(Input::GetKey(Keys::A));
         CHECK_FALSE(Input::GetKeyUp(Keys::A));
+
+        EventHandler::GetInstance().ProcessEvents();
     }
 
     SUBCASE("Key Up") {
         Input::SimulateKeyState(Keys::A, true);
+        EventHandler::GetInstance().ProcessEvents();
         Input::SimulateUpdate();
         Input::SimulateKeyState(Keys::A, false);
+        EventHandler::GetInstance().ProcessEvents();
 
         CHECK(Input::GetKeyUp(Keys::A));
         CHECK_FALSE(Input::GetKeyDown(Keys::A));
@@ -57,11 +61,13 @@ TEST_CASE("Input system key handling") {
 
     SUBCASE("Key Is Pressed") {
         Input::SimulateKeyState(Keys::A, true);
+        EventHandler::GetInstance().ProcessEvents();
 
         CHECK_FALSE(Input::GetKey(Keys::A));
 
         Input::SimulateUpdate();
         Input::SimulateKeyState(Keys::A, true);
+        EventHandler::GetInstance().ProcessEvents();
 
         CHECK(Input::GetKey(Keys::A));
         CHECK_FALSE(Input::GetKeyUp(Keys::A));
@@ -84,6 +90,7 @@ TEST_CASE("Input system mouse button handling") {
 
     SUBCASE("Mouse button Down") {
         Input::SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, true);
+        EventHandler::GetInstance().ProcessEvents();
 
         CHECK(Input::GetMouseButtonDown(MouseButtons::BUTTON_LEFT));
         CHECK_FALSE(Input::GetMouseButtonUp(MouseButtons::BUTTON_LEFT));
@@ -92,8 +99,10 @@ TEST_CASE("Input system mouse button handling") {
 
     SUBCASE("Mouse button Up") {
         Input::SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, true);
+        EventHandler::GetInstance().ProcessEvents();
         Input::SimulateUpdate();
         Input::SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, false);
+        EventHandler::GetInstance().ProcessEvents();
 
         CHECK(Input::GetMouseButtonUp(MouseButtons::BUTTON_LEFT));
         CHECK_FALSE(Input::GetMouseButtonDown(MouseButtons::BUTTON_LEFT));
@@ -102,11 +111,13 @@ TEST_CASE("Input system mouse button handling") {
 
     SUBCASE("Mouse button Is Pressed") {
         Input::SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, true);
+        EventHandler::GetInstance().ProcessEvents();
 
         CHECK_FALSE(Input::GetMouseButton(MouseButtons::BUTTON_LEFT));
 
         Input::SimulateUpdate();
         Input::SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, true);
+        EventHandler::GetInstance().ProcessEvents();
 
         CHECK_FALSE(Input::GetMouseButtonUp(MouseButtons::BUTTON_LEFT));
         CHECK_FALSE(Input::GetMouseButtonDown(MouseButtons::BUTTON_LEFT));
@@ -142,7 +153,9 @@ TEST_CASE("Mouse wheel handling") {
     EventHandler::Init();
 
     Subscription sub_1 =
-        EventHandler::GetInstance().Subscribe(TestMouseWheelEvents, EventType::None, EventCategory::Input);
+        EventHandler::GetInstance().Subscribe(TestMouseWheelEvents, EventType::MouseScrolled, EventCategory::Input);
 
     Input::SimulateMouseWheel(1.0f);
+    Input::SimulateUpdate();
+    EventHandler::GetInstance().ProcessEvents();
 }

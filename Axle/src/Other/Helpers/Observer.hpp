@@ -72,7 +72,7 @@ namespace Axle {
         /// Pointer back to the Subject
         Subject<Args...>* m_subject;
         /// Unique ID of the subscription
-        i32 m_id;
+        size_t m_id;
         /// Whether already unsubscribed
         bool m_unsubscribed = false;
     };
@@ -119,13 +119,13 @@ namespace Axle {
          *
          * Called internally by Subscription when unsubscribing
          */
-        virtual void Unsubscribe(i32 id) {
+        virtual void Unsubscribe(size_t id) {
             m_handlers.erase(id);
         }
 
         /// Active handlers mapped by their ID
-        std::unordered_map<i32, HandlerType> m_handlers;
+        std::unordered_map<size_t, HandlerType> m_handlers;
         /// Next unique ID for new subscriptions
-        i32 m_nextId = 0;
+        size_t m_nextId = 0;
     };
 } // namespace Axle

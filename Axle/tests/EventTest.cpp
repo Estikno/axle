@@ -72,13 +72,15 @@ TEST_CASE("EventHandler") {
 
     SUBCASE("EventHandler AddEvent") {
         Subscription sub_1 = instance.Subscribe(TestFunction_Render, EventType::AppRender, EventCategory::Render);
-        Subscription sub_2 = instance.Subscribe(TestFunction_Tick, EventType::AppTick, EventCategory::Window);
+        Subscription sub_2 = instance.Subscribe(TestFunction_Tick, EventType::AppTick, EventCategory::Render);
 
         Event* event_1 = new Event(EventType::AppRender, EventCategory::Render);
         Event* event_2 = new Event(EventType::AppTick, EventCategory::Render);
 
         CHECK_NOTHROW(AX_ADD_EVENT(event_1));
         CHECK_NOTHROW(AX_ADD_EVENT(event_2));
+
+        instance.ProcessEvents();
     }
 
     SUBCASE("EventHandler with inherited events") {
@@ -87,6 +89,8 @@ TEST_CASE("EventHandler") {
         newEvent* event_1 = new newEvent(EventType::AppUpdate, EventCategory::Input);
 
         CHECK_NOTHROW(AX_ADD_EVENT(event_1));
+
+        instance.ProcessEvents();
     }
 
     SUBCASE("EventHandler receiving events of a whole group") {
@@ -95,6 +99,8 @@ TEST_CASE("EventHandler") {
         Event* event_1 = new Event(EventType::KeyPressed, EventCategory::Input);
 
         CHECK_NOTHROW(AX_ADD_EVENT(event_1));
+
+        instance.ProcessEvents();
     }
 
     SUBCASE("Event containing custom data") {
@@ -104,6 +110,8 @@ TEST_CASE("EventHandler") {
         event_1->GetContext().u16_values[0] = 12;
 
         CHECK_NOTHROW(AX_ADD_EVENT(event_1));
+
+        instance.ProcessEvents();
     }
 
     SUBCASE("Event containing complex custom data") {
@@ -115,5 +123,7 @@ TEST_CASE("EventHandler") {
         event_1->GetContext().custom_data = pdata;
 
         CHECK_NOTHROW(AX_ADD_EVENT(event_1));
+
+        instance.ProcessEvents();
     }
 }

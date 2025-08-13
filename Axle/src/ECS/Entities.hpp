@@ -273,6 +273,9 @@ namespace Axle {
         using FuncView = std::function<void(Components&...)>;
         using FuncViewID = std::function<void(EntityID, Components&...)>;
 
+        AXLE_TEST_API View(Entities& entities)
+            : View(&entities) {} // delegates to pointer version
+
         AXLE_TEST_API View(Entities* entities)
             : m_Entities(entities),
               m_ComponentArrays(MakeArrayVec<Components...>(entities)) {}

@@ -21,6 +21,10 @@ namespace Axle {
      */
     class AXLE_API EventHandler : public Subject<Event*> {
     public:
+        EventHandler(const EventHandler&) = delete;
+        EventHandler& operator=(const EventHandler&) = delete;
+        EventHandler() = default;
+
         /**
          * Initializes the event handler and its singleton
          *
@@ -63,6 +67,15 @@ namespace Axle {
          */
         Subscription<Event*> Subscribe(const HandlerType& handler, EventType type, EventCategory category);
 
+        /**
+         * Processes all the events in the queue and notifies the subscribers.
+         *
+         * This method should be called every frame to ensure that all events are processed.
+         *
+         * It is safe to call this method multiple times per frame, but it is recommended to call it only once.
+         */
+        void ProcessEvents();
+
     protected:
         /**
          * Deletes the handler type from the hashmap related to the given id.
@@ -71,7 +84,7 @@ namespace Axle {
          *
          * @param id Id to delete
          */
-        void Unsubscribe(i32 id) override;
+        void Unsubscribe(size_t id) override;
 
         /**
          * The notify method is called internally and it notifies the suscribers about the new event that has arrived.
@@ -87,12 +100,9 @@ namespace Axle {
         /// The singleton of the event handler class
         static std::unique_ptr<EventHandler> m_EventHandler;
         /// A map that stores the type and category of event each handler wants (by the id)
-        std::unordered_map<i32, std::pair<EventCategory, EventType>> m_HandlersType;
+        std::unordered_map<size_t, std::pair<EventCategory, EventType>> m_HandlersType;
 
-        /// /// A map that stores the events by EventType
-        /// std::unordered_map<EventType, std::vector<std::shared_ptr<Event>>> m_EventsType;
-        /// /// A map that stores the events by EventCategory
-        /// std::unordered_map<EventCategory, std::vector<std::shared_ptr<Event>>> m_EventsCategory;
+        std::vector<std::unique_ptr<Event>> m_EventQueue;
     };
 } // namespace Axle
 

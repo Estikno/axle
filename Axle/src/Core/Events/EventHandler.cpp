@@ -21,22 +21,8 @@ namespace Axle {
     }
 
     void EventHandler::AddEvent(Event* event) {
-        // This will only work if everything is synchronous, if not it might
-        // lead to a double delete or use after delete
-        std::unique_ptr<Event> p_event(event);
-
-        // ERROR: Because of storing events and never deleting them they get
-        // deleted automatically way after the logger has been cleaned so when trying
-        // to deviler the massage that the event has been deleted the logger no longer
-        // exists and the core is dumped
-
-        // m_EventsType[event->GetEventType()].push_back(p_event);
-        // m_EventsCategory[event->GetEventCategory()].push_back(p_event);
-
+        m_EventQueue.push_back(std::unique_ptr<Event>(event));
         AX_CORE_INFO("Added a new event of type: {}", (i32) (event->GetEventType()));
-
-        Notify(event);
-        // The event pointer gets deleted here by the unique_ptr
     }
 
     Subscription<Event*> EventHandler::Subscribe(const HandlerType& handler, EventType type, EventCategory category) {
@@ -44,20 +30,32 @@ namespace Axle {
         return Subject<Event*>::Subscribe(handler);
     }
 
-    void EventHandler::Unsubscribe(i32 id) {
+    void EventHandler::Unsubscribe(size_t id) {
         m_HandlersType.erase(id);
         Subject<Event*>::Unsubscribe(id);
     }
 
     void EventHandler::Notify(Event* event) {
         for (auto& [id, handler] : m_handlers) {
-            if (m_HandlersType[id].first != event->GetEventCategory()) {
-                continue;
-            }
+            auto it = m_HandlersType.find(id);
+            if (it == m_HandlersType.end())
+                continue; // Skip if the handler is not registered
 
-            if (m_HandlersType[id].second == EventType::None || m_HandlersType[id].second == event->GetEventType()) {
+            auto& [category, type] = it->second;
+
+            if (category != event->GetEventCategory())
+                continue;
+
+            if (type == EventType::None || type == event->GetEventType())
                 handler(event);
-            }
         }
+    }
+
+    void EventHandler::ProcessEvents() {
+        for (auto& event : m_EventQueue) {
+            Notify(event.get());
+        }
+        
+        m_EventQueue.clear();
     }
 } // namespace Axle
