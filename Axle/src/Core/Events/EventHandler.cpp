@@ -55,7 +55,11 @@ namespace Axle {
         for (auto& event : m_EventQueue) {
             Notify(event.get());
         }
-        
+
+        m_EventQueue.clear();
+    }
+
+    void EventHandler::DestroyEvents() {
         m_EventQueue.clear();
     }
 } // namespace Axle

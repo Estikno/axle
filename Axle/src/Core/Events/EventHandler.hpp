@@ -76,6 +76,8 @@ namespace Axle {
          */
         void ProcessEvents();
 
+        void DestroyEvents();
+
     protected:
         /**
          * Deletes the handler type from the hashmap related to the given id.

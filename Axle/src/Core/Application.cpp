@@ -9,6 +9,7 @@
 #include "Error/Panic.hpp"
 
 #include <GLFW/glfw3.h>
+#include "Core/Events/EventHandler.hpp"
 
 namespace Axle {
     void ErrorCallback(int error, const char* description) {
@@ -42,6 +43,9 @@ namespace Axle {
     }
 
     Application::~Application() {
+        // Destroy all remaining events
+        EventHandler::GetInstance().DestroyEvents();
+
         AX_CORE_TRACE("Stopping the engine...");
 
         glfwDestroyWindow(m_window);
