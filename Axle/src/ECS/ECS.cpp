@@ -6,18 +6,18 @@
 #include "Core/Logger/Log.hpp"
 #include "Core/Error/Panic.hpp"
 
-#include "Entities.hpp"
+#include "ECS.hpp"
 #include "Other/Helpers/SparseSet.hpp"
 
 namespace Axle {
-    Entities::Entities() {
+    ECS::ECS() {
         for (EntityID entity = 0; entity < MAX_ENTITIES; entity++) {
             m_AvailableEntities.push(entity);
         }
     }
 
     template <typename T>
-    void Entities::RegisterComponent() {
+    void ECS::RegisterComponent() {
         ComponentType typeID = GetComponentType<T>();
         AX_ASSERT(typeID < MAX_COMPONENTS, "Too many components registered.");
 
@@ -31,7 +31,7 @@ namespace Axle {
         AX_CORE_TRACE("Component {0} has been registered.", typeid(T).name());
     }
 
-    Entities& Entities::CreateEntity() {
+    ECS& ECS::CreateEntity() {
         AX_ASSERT(m_LivingEntityCount < MAX_ENTITIES,
                   "Cannot create more entities than the maximum allowed: {0}.",
                   MAX_ENTITIES);
@@ -49,13 +49,13 @@ namespace Axle {
     }
 
     template <typename T>
-    Entities& Entities::WithComponent(T component) {
+    ECS& ECS::WithComponent(T component) {
         Add<T>(m_InsertingIntoIndex, component);
         return *this;
     }
 
     template <typename T>
-    void Entities::Add(EntityID id, T component) {
+    void ECS::Add(EntityID id, T component) {
         AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
         AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
 
@@ -69,7 +69,7 @@ namespace Axle {
     }
 
     template <typename T>
-    void Entities::Remove(EntityID id) {
+    void ECS::Remove(EntityID id) {
         AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
         AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
 
@@ -82,7 +82,7 @@ namespace Axle {
         AX_CORE_TRACE("Component {0} has been removed from entity {1}.", typeid(T).name(), id);
     }
 
-    void Entities::DeleteEntity(EntityID id) {
+    void ECS::DeleteEntity(EntityID id) {
         AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
 
         for (auto const& [typeID, componentArray] : m_ComponentArrays) {
@@ -102,7 +102,7 @@ namespace Axle {
     }
 
     template <typename T>
-    T& Entities::Get(EntityID id) {
+    T& ECS::Get(EntityID id) {
         AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
         AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
 
@@ -110,20 +110,20 @@ namespace Axle {
     }
 
 #ifdef AXLE_TESTING
-    template AXLE_TEST_API void Entities::RegisterComponent<Position>();
-    template AXLE_TEST_API void Entities::RegisterComponent<Velocity>();
-    template AXLE_TEST_API Entities& Entities::WithComponent<Position>(Position);
-    template AXLE_TEST_API Entities& Entities::WithComponent<Velocity>(Velocity);
-    template AXLE_TEST_API void Entities::Add<Position>(EntityID, Position);
-    template AXLE_TEST_API void Entities::Add<Velocity>(EntityID, Velocity);
-    template AXLE_TEST_API void Entities::Remove<Position>(EntityID);
-    template AXLE_TEST_API void Entities::Remove<Velocity>(EntityID);
-    template AXLE_TEST_API bool Entities::Has<Position>(EntityID);
-    template AXLE_TEST_API bool Entities::Has<Velocity>(EntityID);
-    template AXLE_TEST_API bool Entities::HasAll<Position, Velocity>(EntityID);
-    template AXLE_TEST_API bool Entities::HasAny<Position, Velocity>(EntityID);
-    template AXLE_TEST_API Position& Entities::Get<Position>(EntityID);
-    template AXLE_TEST_API Velocity& Entities::Get<Velocity>(EntityID);
+    template AXLE_TEST_API void ECS::RegisterComponent<Position>();
+    template AXLE_TEST_API void ECS::RegisterComponent<Velocity>();
+    template AXLE_TEST_API ECS& ECS::WithComponent<Position>(Position);
+    template AXLE_TEST_API ECS& ECS::WithComponent<Velocity>(Velocity);
+    template AXLE_TEST_API void ECS::Add<Position>(EntityID, Position);
+    template AXLE_TEST_API void ECS::Add<Velocity>(EntityID, Velocity);
+    template AXLE_TEST_API void ECS::Remove<Position>(EntityID);
+    template AXLE_TEST_API void ECS::Remove<Velocity>(EntityID);
+    template AXLE_TEST_API bool ECS::Has<Position>(EntityID);
+    template AXLE_TEST_API bool ECS::Has<Velocity>(EntityID);
+    template AXLE_TEST_API bool ECS::HasAll<Position, Velocity>(EntityID);
+    template AXLE_TEST_API bool ECS::HasAny<Position, Velocity>(EntityID);
+    template AXLE_TEST_API Position& ECS::Get<Position>(EntityID);
+    template AXLE_TEST_API Velocity& ECS::Get<Velocity>(EntityID);
     template AXLE_TEST_API class View<Position, Velocity>;
     template AXLE_TEST_API class View<Velocity>;
     template AXLE_TEST_API class View<Position>;

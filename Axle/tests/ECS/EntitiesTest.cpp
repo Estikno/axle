@@ -8,14 +8,14 @@
 #include <bitset>
 
 #include "Core/Types.hpp"
-#include "ECS/Entities.hpp"
+#include "ECS/ECS.hpp"
 #include "Core/Logger/Log.hpp"
 
 using namespace Axle;
 
 TEST_CASE("Entities ECS Test") {
     Log::Init();
-    Entities entities;
+    ECS entities;
 
     SUBCASE("Register a component") {
         std::type_index typeID = std::type_index(typeid(Position));

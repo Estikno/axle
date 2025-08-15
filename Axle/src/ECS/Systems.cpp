@@ -7,11 +7,11 @@
 #include "Core/Error/Panic.hpp"
 
 #include "Systems.hpp"
-#include "Entities.hpp"
+#include "ECS.hpp"
 
 namespace Axle {
-    void Systems::Update(Entities& entities) {
-        for (std::function<void(Entities&)>& system : m_Systems) {
+    void Systems::Update(ECS& entities) {
+        for (std::function<void(ECS&)>& system : m_Systems) {
             system(entities);
         }
     }

@@ -9,9 +9,9 @@
 #include "Other/Helpers/SparseSet.hpp"
 
 namespace Axle {
-    class Entities {
+    class ECS {
     public:
-        AXLE_TEST_API Entities();
+        AXLE_TEST_API ECS();
 
         /**
          * Registers a component for later use in entities
@@ -25,7 +25,7 @@ namespace Axle {
          *
          * @returns A reference to the entities for immediate use
          */
-        AXLE_TEST_API Entities& CreateEntity();
+        AXLE_TEST_API ECS& CreateEntity();
 
         /**
          * Adds a component to the entity that is currently being created.
@@ -35,7 +35,7 @@ namespace Axle {
          * @returns A reference to the entities class so that you can chain calls to this method.
          */
         template <typename T>
-        Entities& WithComponent(T component);
+        ECS& WithComponent(T component);
 
         /**
          * Adds a component to the entity with the given ID.
@@ -270,36 +270,58 @@ namespace Axle {
     template <typename... Components>
     class View {
     public:
-        using FuncView = std::function<void(Components&...)>;
-        using FuncViewID = std::function<void(EntityID, Components&...)>;
-
-        AXLE_TEST_API View(Entities& entities)
+        AXLE_TEST_API View(ECS& entities)
             : View(&entities) {} // delegates to pointer version
 
-        AXLE_TEST_API View(Entities* entities)
+        AXLE_TEST_API View(ECS* entities)
             : m_Entities(entities),
               m_ComponentArrays(MakeArrayVec<Components...>(entities)) {}
 
-        AXLE_TEST_API void ForEach(const FuncView& func) {
-            size_t index = GetSmallestComponentArrayIndex();
-            std::vector<EntityID> entities = m_ComponentArrays.at(index)->GetList();
+        /**
+         * Gets all entities that have all the specified components and their components.
+         * 
+         * @returns A pair containing a vector of EntityIDs and a vector of tuples with the components.
+        */
+        AXLE_TEST_API std::pair<std::vector<EntityID>, std::vector<std::tuple<Components&...>>> GetAll() {
+            std::vector<EntityID> entities = GetEntities();
+            std::vector<std::tuple<Components&...>> components;
 
             for (const EntityID& entity : entities) {
                 if (m_Entities->HasAll<Components...>(entity)) {
-                    func(m_Entities->Get<Components>(entity)...);
+                    components.emplace_back(m_Entities->Get<Components>(entity)...);
                 }
             }
+
+            return {std::move(entities), std::move(components)};
         }
 
-        AXLE_TEST_API void ForEach(const FuncViewID& func) {
-            size_t index = GetSmallestComponentArrayIndex();
-            std::vector<EntityID> entities = m_ComponentArrays.at(index)->GetList();
+        /**
+         * Only gets the components of the entities that have all the specified components.
+         * 
+         * @returns A vector of tuples with the components of the entities that have all the specified components.
+        */
+        AXLE_TEST_API std::vector<std::tuple<Components&...>> GetComponents() {
+            std::vector<EntityID> entities = GetEntities();
+
+            std::vector<std::tuple<Components&...>> components;
 
             for (const EntityID& entity : entities) {
                 if (m_Entities->HasAll<Components...>(entity)) {
-                    func(entity, m_Entities->Get<Components>(entity)...);
+                    components.emplace_back(m_Entities->Get<Components>(entity)...);
                 }
             }
+
+            return components;
+        }
+
+        /**
+         * Only gets the entities that have all the specified components.
+         * 
+         * @returns A vector of EntityIDs that have all the specified components.
+        */
+        AXLE_TEST_API std::vector<EntityID> GetEntities() {
+            size_t index = GetSmallestComponentArrayIndex();
+            return m_ComponentArrays.at(index)->GetList();
         }
 
     private:
@@ -321,12 +343,12 @@ namespace Axle {
         }
 
         template <typename... Cs>
-        static std::vector<ISparseSet*> MakeArrayVec(Entities* entities) {
+        static std::vector<ISparseSet*> MakeArrayVec(ECS* entities) {
             return {static_cast<ISparseSet*>(entities->GetComponentArrayPtr<Cs>())...};
         }
 
         std::vector<ISparseSet*> m_ComponentArrays;
-        Entities* m_Entities;
+        ECS* m_Entities;
     };
 
 #ifdef AXLE_TESTING

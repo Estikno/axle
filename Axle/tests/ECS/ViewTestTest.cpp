@@ -5,14 +5,14 @@
 #include <memory>
 
 #include "Core/Types.hpp"
-#include "ECS/Entities.hpp"
+#include "ECS/ECS.hpp"
 #include "Core/Logger/Log.hpp"
 
 using namespace Axle;
 
 TEST_CASE("Ecs View tests") {
     Log::Init();
-    Entities entities;
+    ECS entities;
 
     SUBCASE("Retrieve components") {
         entities.RegisterComponent<Position>();
@@ -27,23 +27,23 @@ TEST_CASE("Ecs View tests") {
 
         View<Position, Velocity> view(&entities);
 
-        view.ForEach([](Position& pos, Velocity& vel) {
-            CHECK(pos.x == doctest::Approx(2.0f));
-            CHECK(pos.y == doctest::Approx(3.0f));
-            CHECK(vel.vx == doctest::Approx(2.0f));
-            CHECK(vel.vy == doctest::Approx(3.0f));
-        });
+        for (auto& components : view.GetComponents()) {
+            CHECK(std::get<0>(components).x == doctest::Approx(2.0f));
+            CHECK(std::get<0>(components).y == doctest::Approx(3.0f));
+            CHECK(std::get<1>(components).vx == doctest::Approx(2.0f));
+            CHECK(std::get<1>(components).vy == doctest::Approx(3.0f));
+        }
 
         {
             // Retrieve a second time with no problem
             View<Position, Velocity> view(&entities);
 
-            view.ForEach([](Position& pos, Velocity& vel) {
-                CHECK(pos.x == doctest::Approx(2.0f));
-                CHECK(pos.y == doctest::Approx(3.0f));
-                CHECK(vel.vx == doctest::Approx(2.0f));
-                CHECK(vel.vy == doctest::Approx(3.0f));
-            });
+            for (auto& components : view.GetComponents()) {
+                CHECK(std::get<0>(components).x == doctest::Approx(2.0f));
+                CHECK(std::get<0>(components).y == doctest::Approx(3.0f));
+                CHECK(std::get<1>(components).vx == doctest::Approx(2.0f));
+                CHECK(std::get<1>(components).vy == doctest::Approx(3.0f));
+            }
         }
     }
 }

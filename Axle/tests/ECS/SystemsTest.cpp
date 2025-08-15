@@ -6,9 +6,10 @@
 #include <unordered_map>
 #include <vector>
 #include <bitset>
+#include <tuple>
 
 #include "Core/Types.hpp"
-#include "ECS/Entities.hpp"
+#include "ECS/ECS.hpp"
 #include "Core/Logger/Log.hpp"
 #include "ECS/Systems.hpp"
 
@@ -16,7 +17,7 @@ using namespace Axle;
 
 TEST_CASE("ECS - Systems") {
     Log::Init();
-    Entities entities;
+    ECS entities;
     Systems systems;
 
     entities.RegisterComponent<Position>();
@@ -35,15 +36,15 @@ TEST_CASE("ECS - Systems") {
         systems.Update(entities);
 
         View<Position> view(&entities);
+        std::vector<std::tuple<Position&>> components = view.GetComponents();
 
-        u8 index = 0;
-        view.ForEach([&](Position& pos) {
-            if (index == 2) {
-                CHECK(pos.x == doctest::Approx(6.0f));
-                CHECK(pos.y == doctest::Approx(6.0f));
+        for (size_t i = 0; i < components.size(); ++i) {
+            if (i == 2) {
+                // The third entity with only Position
+                CHECK(std::get<0>(components[i]).x == doctest::Approx(6.0f));
+                CHECK(std::get<0>(components[i]).y == doctest::Approx(6.0f));
             }
-            index++;
-        });
+        }
     }
 
     SUBCASE("Simulate loop") {
@@ -57,15 +58,15 @@ TEST_CASE("ECS - Systems") {
         }
 
         View<Position> view(&entities);
+        std::vector<std::tuple<Position&>> components = view.GetComponents();
 
-        u8 index = 0;
-        view.ForEach([&](Position& pos) {
-            if (index == 2) {
-                CHECK(pos.x == doctest::Approx(15.0f));
-                CHECK(pos.y == doctest::Approx(15.0f));
+        for (size_t i = 0; i < components.size(); ++i) {
+            if (i == 2) {
+                // The third entity with only Position
+                CHECK(std::get<0>(components[i]).x == doctest::Approx(15.0f));
+                CHECK(std::get<0>(components[i]).y == doctest::Approx(15.0f));
             }
-            index++;
-        });
+        }
     }
 
     SUBCASE("More systems") {
@@ -88,33 +89,34 @@ TEST_CASE("ECS - Systems") {
         }
 
         View<Position, Velocity> view(&entities);
+        std::vector<std::tuple<Position&, Velocity&>> components = view.GetComponents();
 
-        view.ForEach([&](EntityID id, Position& pos, Velocity& vel) {
-            if (id == 0) {
+        for (size_t i = 0; i < components.size(); ++i) {
+            if (i == 0) {
                 // Even thought if we calculate the final position with UARM it should be: 60.0f,
                 // because we are using Semi-implicit Euler, the final position will have an error and will be 65.0f
-                CHECK(pos.x == doctest::Approx(65.0f));
-                CHECK(pos.y == doctest::Approx(65.0f));
-                CHECK(vel.vx == doctest::Approx(11.0f));
-                CHECK(vel.vy == doctest::Approx(11.0f));
-            } else if (id == 1) {
+                CHECK(std::get<0>(components[i]).x == doctest::Approx(65.0f));
+                CHECK(std::get<0>(components[i]).y == doctest::Approx(65.0f));
+                CHECK(std::get<1>(components[i]).vx == doctest::Approx(11.0f));
+                CHECK(std::get<1>(components[i]).vy == doctest::Approx(11.0f));
+            } else if (i == 1) {
                 // Here happens the same, the final position will have an error and will be 75.0f instad of 70.0f
-                CHECK(pos.x == doctest::Approx(75.0f));
-                CHECK(pos.y == doctest::Approx(55.0f));
-                CHECK(vel.vx == doctest::Approx(12.0f));
-                CHECK(vel.vy == doctest::Approx(10.0f));
+                CHECK(std::get<0>(components[i]).x == doctest::Approx(75.0f));
+                CHECK(std::get<0>(components[i]).y == doctest::Approx(55.0f));
+                CHECK(std::get<1>(components[i]).vx == doctest::Approx(12.0f));
+                CHECK(std::get<1>(components[i]).vy == doctest::Approx(10.0f));
             }
-        });
+        }
 
         // Check that the third entity with only Position was not modifie
         View<Position> view_2(&entities);
+        std::vector<std::tuple<Position&>> components_2 = view_2.GetComponents();
 
-        u8 thirdIndex = 2;
-        view_2.ForEach([&](EntityID id, Position& pos) {
-            if (id == thirdIndex) {
-                CHECK(pos.x == doctest::Approx(5.0f));
-                CHECK(pos.y == doctest::Approx(5.0f));
+        for (size_t i = 0; i < components.size(); ++i) {
+            if (i == 2) {
+                CHECK(std::get<0>(components_2[i]).x == doctest::Approx(5.0f));
+                CHECK(std::get<0>(components_2[i]).y == doctest::Approx(5.0f));
             }
-        });
+        }
     }
 }
