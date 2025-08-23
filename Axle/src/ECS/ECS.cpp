@@ -7,7 +7,7 @@
 #include "Core/Error/Panic.hpp"
 
 #include "ECS.hpp"
-#include "Other/Helpers/SparseSet.hpp"
+#include "Other/CustomTypes/SparseSet.hpp"
 
 namespace Axle {
     ECS::ECS() {

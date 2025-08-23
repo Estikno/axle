@@ -6,7 +6,7 @@
 #include "Core/Types.hpp"
 #include "Core/Logger/Log.hpp"
 #include "Core/Error/Panic.hpp"
-#include "Other/Helpers/SparseSet.hpp"
+#include "Other/CustomTypes/SparseSet.hpp"
 
 namespace Axle {
     class ECS {
@@ -279,9 +279,9 @@ namespace Axle {
 
         /**
          * Gets all entities that have all the specified components and their components.
-         * 
+         *
          * @returns A pair containing a vector of EntityIDs and a vector of tuples with the components.
-        */
+         */
         AXLE_TEST_API std::pair<std::vector<EntityID>, std::vector<std::tuple<Components&...>>> GetAll() {
             std::vector<EntityID> entities = GetEntities();
             std::vector<std::tuple<Components&...>> components;
@@ -297,9 +297,9 @@ namespace Axle {
 
         /**
          * Only gets the components of the entities that have all the specified components.
-         * 
+         *
          * @returns A vector of tuples with the components of the entities that have all the specified components.
-        */
+         */
         AXLE_TEST_API std::vector<std::tuple<Components&...>> GetComponents() {
             std::vector<EntityID> entities = GetEntities();
 
@@ -316,9 +316,9 @@ namespace Axle {
 
         /**
          * Only gets the entities that have all the specified components.
-         * 
+         *
          * @returns A vector of EntityIDs that have all the specified components.
-        */
+         */
         AXLE_TEST_API std::vector<EntityID> GetEntities() {
             size_t index = GetSmallestComponentArrayIndex();
             return m_ComponentArrays.at(index)->GetList();

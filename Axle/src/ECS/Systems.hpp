@@ -6,14 +6,13 @@
 #include "Core/Core.hpp"
 #include "Core/Logger/Log.hpp"
 #include "Core/Error/Panic.hpp"
-#include "Other/Helpers/SparseSet.hpp"
+#include "Other/CustomTypes/SparseSet.hpp"
 
 #include "ECS.hpp"
 
 namespace Axle {
     class AXLE_TEST_API Systems {
     public:
-
         void Update(ECS& entities);
 
         template <typename... Components, typename Func>
