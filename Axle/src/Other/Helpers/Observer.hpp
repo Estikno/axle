@@ -85,7 +85,7 @@ namespace Axle {
     class Subject {
     public:
         /// The type of function the subject accepts
-        using HandlerType = std::function<void(Args...)>;
+        using HandlerType = std::function<void(Args*...)>;
 
         /**
          * Subscribe a new handler to this Subject.
@@ -104,7 +104,7 @@ namespace Axle {
         /**
          * Notify all subscribed handlers with provided arguments
          */
-        virtual void Notify(Args... args) {
+        virtual void Notify(Args*... args) {
             for (auto& [id, handler] : m_handlers) {
                 handler(args...);
             }

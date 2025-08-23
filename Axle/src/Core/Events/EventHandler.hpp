@@ -19,7 +19,7 @@ namespace Axle {
      * TODO: Right now there is no buffer or multi thread safety. Every incoming event is handled and notified right
      * away. This needs to be changed.
      */
-    class AXLE_API EventHandler : public Subject<Event*> {
+    class AXLE_API EventHandler : public Subject<Event> {
     public:
         EventHandler(const EventHandler&) = delete;
         EventHandler& operator=(const EventHandler&) = delete;
@@ -51,7 +51,7 @@ namespace Axle {
          * @param event A pointer to the event added. This pointer will be entirely handled by this class, DO NOT DELETE
          * IT YOURSELF.
          */
-        void AddEvent(Event* event);
+        void AddEvent(Event event);
 
         /**
          * Subscribes a handler (function) to the event system.
@@ -65,7 +65,7 @@ namespace Axle {
          * @returns A subscription object that has to be kept on scope. As if it's not the handler will be unsubscribed
          * automatically. This object can also be used to manage the subscription.
          */
-        Subscription<Event*> Subscribe(const HandlerType& handler, EventType type, EventCategory category);
+        Subscription<Event> Subscribe(const HandlerType& handler, EventType type, EventCategory category);
 
         /**
          * Processes all the events in the queue and notifies the subscribers.
@@ -76,6 +76,9 @@ namespace Axle {
          */
         void ProcessEvents();
 
+        /**
+         * Destroys all the events in the queue without notifying the subscribers
+         * */
         void DestroyEvents();
 
     protected:
@@ -92,9 +95,6 @@ namespace Axle {
          * The notify method is called internally and it notifies the suscribers about the new event that has arrived.
          *
          * Only notifies suscribers that are interested in the type of the event.
-         *
-         * TODO: Right now all the events stored are never removed or checked if they have been handled. This needs to
-         * be added in the future.
          */
         void Notify(Event* event) override;
 
@@ -104,7 +104,7 @@ namespace Axle {
         /// A map that stores the type and category of event each handler wants (by the id)
         std::unordered_map<size_t, std::pair<EventCategory, EventType>> m_HandlersType;
 
-        std::vector<std::unique_ptr<Event>> m_EventQueue;
+        std::vector<Event> m_EventQueue;
     };
 } // namespace Axle
 

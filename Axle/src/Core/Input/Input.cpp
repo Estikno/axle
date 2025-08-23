@@ -6,6 +6,7 @@
 #include "../Events/EventHandler.hpp"
 
 #include <glm/vec2.hpp>
+#include "Core/Events/Event.hpp"
 
 namespace Axle {
     InputState Input::s_InputState;
@@ -23,16 +24,16 @@ namespace Axle {
         }
 
         // Fire off an event informing of the change in state
-        Event* event;
+        Event event(EventType::KeyPressed, EventCategory::Input);
 
         if (Input::GetKeyDown(key))
-            event = new Event(EventType::KeyPressed, EventCategory::Input);
+            event = Event(EventType::KeyPressed, EventCategory::Input);
         else if (Input::GetKeyUp(key))
-            event = new Event(EventType::KeyReleased, EventCategory::Input);
+            event = Event(EventType::KeyReleased, EventCategory::Input);
         else
-            event = new Event(EventType::KeyIsPressed, EventCategory::Input);
+            event = Event(EventType::KeyIsPressed, EventCategory::Input);
 
-        event->GetContext().u16_values[0] = static_cast<u16>(key);
+        event.GetContext().u16_values[0] = static_cast<u16>(key);
 
         AX_ADD_EVENT(event);
     }
@@ -45,16 +46,16 @@ namespace Axle {
         }
 
         // Fire off an event informing of the change in state
-        Event* event;
+        Event event(EventType::MouseButtonPressed, EventCategory::Input);
 
         if (Input::GetMouseButtonDown(button))
-            event = new Event(EventType::MouseButtonPressed, EventCategory::Input);
+            event = Event(EventType::MouseButtonPressed, EventCategory::Input);
         else if (Input::GetMouseButtonUp(button))
-            event = new Event(EventType::MouseButtonReleased, EventCategory::Input);
+            event = Event(EventType::MouseButtonReleased, EventCategory::Input);
         else
-            event = new Event(EventType::MouseButtonIsPressed, EventCategory::Input);
+            event = Event(EventType::MouseButtonIsPressed, EventCategory::Input);
 
-        event->GetContext().u16_values[0] = static_cast<u16>(button);
+        event.GetContext().u16_values[0] = static_cast<u16>(button);
 
         AX_ADD_EVENT(event);
     }
@@ -68,19 +69,19 @@ namespace Axle {
         s_InputState.mouse_current.position = position;
 
         // Fire off an event informing of the change in state
-        Event* event = new Event(EventType::MouseMoved, EventCategory::Input);
+        Event event(EventType::MouseMoved, EventCategory::Input);
 
-        event->GetContext().u16_values[0] = static_cast<u16>(position.x);
-        event->GetContext().u16_values[1] = static_cast<u16>(position.y);
+        event.GetContext().u16_values[0] = static_cast<u16>(position.x);
+        event.GetContext().u16_values[1] = static_cast<u16>(position.y);
 
         AX_ADD_EVENT(event);
     }
 
     void Input::SetMouseWheel(f32 delta) {
         // Fire off an event informing of the change in state
-        Event* event = new Event(EventType::MouseScrolled, EventCategory::Input);
+        Event event(EventType::MouseScrolled, EventCategory::Input);
 
-        event->GetContext().f32_values[0] = delta;
+        event.GetContext().f32_values[0] = delta;
 
         AX_ADD_EVENT(event);
     }

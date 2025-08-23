@@ -74,8 +74,8 @@ TEST_CASE("EventHandler") {
         Subscription sub_1 = instance.Subscribe(TestFunction_Render, EventType::AppRender, EventCategory::Render);
         Subscription sub_2 = instance.Subscribe(TestFunction_Tick, EventType::AppTick, EventCategory::Render);
 
-        Event* event_1 = new Event(EventType::AppRender, EventCategory::Render);
-        Event* event_2 = new Event(EventType::AppTick, EventCategory::Render);
+        Event event_1(EventType::AppRender, EventCategory::Render);
+        Event event_2(EventType::AppTick, EventCategory::Render);
 
         CHECK_NOTHROW(AX_ADD_EVENT(event_1));
         CHECK_NOTHROW(AX_ADD_EVENT(event_2));
@@ -86,7 +86,7 @@ TEST_CASE("EventHandler") {
     SUBCASE("EventHandler with inherited events") {
         Subscription sub_1 = instance.Subscribe(TestFunction_Input, EventType::AppUpdate, EventCategory::Window);
 
-        newEvent* event_1 = new newEvent(EventType::AppUpdate, EventCategory::Input);
+        newEvent event_1(EventType::AppUpdate, EventCategory::Input);
 
         CHECK_NOTHROW(AX_ADD_EVENT(event_1));
 
@@ -96,7 +96,7 @@ TEST_CASE("EventHandler") {
     SUBCASE("EventHandler receiving events of a whole group") {
         Subscription sub_1 = instance.Subscribe(TestFunction_AllInput, EventType::None, EventCategory::Input);
 
-        Event* event_1 = new Event(EventType::KeyPressed, EventCategory::Input);
+        Event event_1(EventType::KeyPressed, EventCategory::Input);
 
         CHECK_NOTHROW(AX_ADD_EVENT(event_1));
 
@@ -106,8 +106,8 @@ TEST_CASE("EventHandler") {
     SUBCASE("Event containing custom data") {
         Subscription sub_1 = instance.Subscribe(TestFunction_AllInput_With_Data, EventType::None, EventCategory::Input);
 
-        Event* event_1 = new Event(EventType::KeyPressed, EventCategory::Input);
-        event_1->GetContext().u16_values[0] = 12;
+        Event event_1(EventType::KeyPressed, EventCategory::Input);
+        event_1.GetContext().u16_values[0] = 12;
 
         CHECK_NOTHROW(AX_ADD_EVENT(event_1));
 
@@ -119,8 +119,8 @@ TEST_CASE("EventHandler") {
 
         PlayerData* pdata = new PlayerData{12, 100.0f};
 
-        Event* event_1 = new Event(EventType::KeyPressed, EventCategory::Input);
-        event_1->GetContext().custom_data = pdata;
+        Event event_1(EventType::KeyPressed, EventCategory::Input);
+        event_1.GetContext().custom_data = pdata;
 
         CHECK_NOTHROW(AX_ADD_EVENT(event_1));
 
