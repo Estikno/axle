@@ -1,11 +1,13 @@
-// Expected implementation by Alexandrescu's --> https://www.youtube.com/watch?v=kaI4R0Ng4E8
-// Current time: 53:06
+// This implementation is heavily inspired by Alexandrescu's and by Rust's Result type
+// Video explaining the concept: https://www.youtube.com/watch?v=kaI4R0Ng4E8
 
 #pragma once
 
-#include "axpch.hpp"
 #include <exception>
 #include <stdexcept>
+#include <sys/stat.h>
+
+#include "axpch.hpp"
 
 #include "Core/Types.hpp"
 #include "Core/Error/Panic.hpp"
@@ -58,11 +60,13 @@ namespace Axle {
                 m_Exception.~exception_ptr();
         }
 
-        // We don't create a special constructor for exceptions because it could lead to ambiguos behavior and
-        // be surprising for the user.
-        // Constructors usually mean "I’m initializing with a value of type T".
-        // Exceptions aren’t a value of T, they’re an alternative state. So having a special constructor for exceptions
-        // can be surprising for the reader.
+        /**
+         * Creates an Expected from an exception object
+         *
+         * @param exception The exception object
+         *
+         * @returns An Expected of type T whith an exception
+         * */
         template <typename E>
         static Expected<T> FromException(const E& exception) {
             // The static type of the exception should be the same as the runtime type
@@ -72,6 +76,13 @@ namespace Axle {
             return FromException(std::exception_ptr(exception));
         }
 
+        /**
+         * Creates an Expected from an exception pointer
+         *
+         * @param p The exception pointer
+         *
+         * @returns An Expected of type T whith an exception
+         * */
         static Expected<T> FromException(std::exception_ptr p) {
             Expected<T> result;
             result.m_HasVal = false;
@@ -79,10 +90,21 @@ namespace Axle {
             return result;
         }
 
+        /**
+         * Creates an Expected from the current exception
+         *
+         * If there is no current exception, the behavior is undefined.
+         *
+         * @returns An Expected of type T whith an exception
+         * */
         static Expected<T> FromException() {
             return FromException(std::current_exception());
         }
 
+        /**
+         * Swaps the contents of this Expected with another one.
+         * It handles all the possible cases.
+         * */
         void Swap(Expected& rhs) {
             // The first Expected has a value
             if (m_HasVal) {
@@ -100,7 +122,7 @@ namespace Axle {
             } else {
                 if (rhs.m_HasVal) {
                     // We repeat the process but inverting the order
-                    // This is a way of avoiding repetitions
+                    // This is a way of avoiding repetitions by using recursion
                     rhs.Swap(*this);
                 } else {
                     // Swap the exceptions
@@ -110,23 +132,46 @@ namespace Axle {
             }
         }
 
+        /**
+         * Determines if the Expected contains a valid value
+         *
+         * @returns true if it contains a valid value, false if it contains an exception
+         * */
         bool IsValid() const {
             return m_HasVal;
         }
 
-        T& Get() {
+        /**
+         * Unwraps the value contained in the Expected.
+         * If the Expected contains an exception, it is rethrown.
+         *
+         * @returns A reference to the T value contained in the Expected if there is no exception
+         * */
+        T& Unwrap() {
             if (!m_HasVal)
                 std::rethrow_exception(m_Exception);
             return m_Value;
         }
 
-        const T& Get() const {
+        /**
+         * Unwraps the value contained in the Expected.
+         * If the Expected contains an exception, it is rethrown.
+         *
+         * @returns A reference to the T value contained in the Expected if there is no exception
+         * */
+        const T& Unwrap() const {
             if (!m_HasVal)
                 std::rethrow_exception(m_Exception);
             return m_Value;
         }
 
-        // This is exctremely slow
+        /**
+         * Checks if the given exception type is the one contained in the Expected.
+         * This process is expensive because it requires rethrowing the exception and catching it.
+         * So it shouldn't be used in performance critical paths.
+         *
+         * @returns true if the exception type matches, false otherwise
+         * */
         template <typename E>
         bool HasException() const {
             try {
@@ -136,6 +181,20 @@ namespace Axle {
                 return true;
             } catch (...) {}
             return false;
+        }
+
+        /**
+         * Static helper to create an Expected from a function that may throw.
+         *
+         * @returns An Expected of type T containing either the return value of the function or the exception
+         * */
+        template <typename F>
+        static Expected FromCode(F func) {
+            try {
+                return Expected(func());
+            } catch (...) {
+                return FromException();
+            }
         }
 
     private:
