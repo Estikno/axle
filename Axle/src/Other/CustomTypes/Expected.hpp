@@ -1,5 +1,7 @@
 // This implementation is heavily inspired by Alexandrescu's and by Rust's Result type
 // Video explaining the concept: https://www.youtube.com/watch?v=kaI4R0Ng4E8
+// Until I start using C++23, I can't use std::expected because it's not available yet,
+// so this will be my custom implementation
 
 #pragma once
 

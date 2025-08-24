@@ -4,6 +4,7 @@
 
 #include <GLFW/glfw3.h>
 
+// Callback functions for input handling regarding GLFW
 namespace Axle {
     void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
     void CursorPositionCallback(GLFWwindow* window, double xpos, double ypos);

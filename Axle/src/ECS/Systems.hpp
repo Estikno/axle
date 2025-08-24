@@ -13,10 +13,22 @@
 namespace Axle {
     class AXLE_TEST_API Systems {
     public:
+        /**
+         * Excecutes all the systems added to the systems manager.
+         * */
         void Update(ECS& entities);
 
+        /**
+         * Adds a system to the systems manager. The system can simply be a lambda function.
+         *
+         * The function must take at least a refernce to the components it wants to operate on. And optionally
+         * the EntityID of the current entity that is modifying, this paramenter should go before the components.
+         * */
         template <typename... Components, typename Func>
         void Add(Func&& func) {
+            // We create a wrapper around each function so that we can call it with the ECS reference
+            // This simplifies the storing process.
+
             // Detects if the lambda has an EntityID parameter or not
             if constexpr (std::is_invocable_v<Func, EntityID, Components&...>) {
                 // The case: lambda with EntityID
@@ -43,6 +55,7 @@ namespace Axle {
         }
 
     private:
+        /// A vector to store all the system wrappers to the real functions
         std::vector<std::function<void(ECS&)>> m_Systems;
     };
 } // namespace Axle

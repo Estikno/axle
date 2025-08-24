@@ -37,6 +37,7 @@ namespace Axle {
         template <typename T>
         ECS& WithComponent(T component);
 
+        // TODO: Optmize the way components are stored. Because now we double copy them.
         /**
          * Adds a component to the entity with the given ID.
          *
@@ -342,6 +343,9 @@ namespace Axle {
             return index;
         }
 
+        /**
+         * Simple function to initialize the vector of component arrays.
+         * */
         template <typename... Cs>
         static std::vector<ISparseSet*> MakeArrayVec(ECS* entities) {
             return {static_cast<ISparseSet*>(entities->GetComponentArrayPtr<Cs>())...};
