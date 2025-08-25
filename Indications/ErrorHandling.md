@@ -1,4 +1,4 @@
-# 🛠 Error Handling Guide for the Engine
+# 🛠 Error Handling Guide
 
 In this engine, we use four main mechanisms to handle errors and unexpected conditions: `AX_PANIC`, `AX_ASSERT`, `AX_ENSURE` and `Expected<T>`. Each has a clear purpose and helps maintain code safety and robustness.
 
@@ -89,7 +89,6 @@ AX_ENSURE(IsComponentRegistered<T>(), "Component {0} is used before being regist
 Expected<f32> div = Divide(30.0f, 0.0f);
 if (!div.IsValid()) {
     // The user has attempted to divide by zero
-    // ... blah blah ...
 }
 ```
 
@@ -97,7 +96,6 @@ if (!div.IsValid()) {
 Expected<Entity&> entity = GetEntityById(id);
 if(!entity.IsValid()){
     // The user has incorrectly requested a non-existent entity
-    // ... blah blah ...
 }
 ```
 
