@@ -5,8 +5,10 @@
 #include "Core/Core.hpp"
 #include "Core/Types.hpp"
 #include "Core/Logger/Log.hpp"
-#include "Core/Error/Panic.hpp"
 #include "Other/CustomTypes/SparseSet.hpp"
+
+#include "Core/Error/Panic.hpp"
+#include "Other/CustomTypes/Expected.hpp"
 
 namespace Axle {
     class ECS {
@@ -85,13 +87,22 @@ namespace Axle {
         /**
          * Checks if the entity with the given ID has a component of type T.
          *
+         * Important: Right now if an incorrect entity ID is passed, this will return false.
+         * For example, if you pass an entity ID that is out of bounds, this will also return false.
+         *
          * @param id The ID of the entity to check.
          *
          * @returns True if the entity has the component, false otherwise.
          */
         template <typename T>
         inline bool Has(EntityID id) {
-            return GetComponentBit<T>(GetMask(id));
+            Expected<std::reference_wrapper<ComponentMask>> mask = GetMask(id);
+
+            if (!mask.IsValid()) {
+                return false;
+            }
+
+            return GetComponentBit<T>(mask.Unwrap().get());
         }
 
         /**
@@ -144,7 +155,7 @@ namespace Axle {
         template <typename T>
         inline ComponentType GetComponentType() {
             static ComponentType typeID = s_NextComponentType++;
-            AX_ASSERT(typeID < MAX_COMPONENTS, "Too many components registered.");
+            AX_ENSURE(typeID < MAX_COMPONENTS, "Too many components registered. The maximum is {0}.", MAX_COMPONENTS);
             return typeID;
         }
 
@@ -156,6 +167,9 @@ namespace Axle {
          */
         template <typename T>
         void SetComponentBit(ComponentMask& mask, bool val = true) {
+            AX_ENSURE(
+                IsComponentRegistered<T>(), "Component {0} has not been registered before use.", typeid(T).name());
+
             size_t bitPos = GetComponentType<T>();
             mask.set(bitPos, val);
         }
@@ -169,7 +183,12 @@ namespace Axle {
          */
         template <typename T>
         bool GetComponentBit(const ComponentMask& mask) {
+            AX_ENSURE(
+                IsComponentRegistered<T>(), "Component {0} has not been registered before use.", typeid(T).name());
+
             size_t bitPos = GetComponentType<T>();
+            // It will never cause undefined behavior because we ensure that the component is registered,
+            // and when a component is registered, its type ID is always less than MAX_COMPONENTS.
             return mask[bitPos];
         }
 
@@ -192,12 +211,17 @@ namespace Axle {
          *
          * @returns A reference to the component mask of the entity.
          */
-        inline ComponentMask& GetMask(EntityID id) {
-            AX_ASSERT(m_LivingEntityCount < MAX_ENTITIES,
-                      "Entity {0} is out of bounce, the maximum id allowed is: {1}.",
-                      id,
-                      MAX_ENTITIES - 1);
-            return m_EntityMasks.at(id);
+        inline Expected<std::reference_wrapper<ComponentMask>> GetMask(EntityID id) {
+            // AX_ASSERT(id < MAX_ENTITIES,
+            //           "Entity {0} is out of bounce, the maximum id allowed is: {1}.",
+            //           id,
+            //           MAX_ENTITIES - 1);
+            if (id >= MAX_ENTITIES) {
+                return Expected<std::reference_wrapper<ComponentMask>>::FromException(
+                    std::out_of_range("EntityID is out of range"));
+            }
+
+            return std::ref(m_EntityMasks.at(id));
         }
 
         /**
@@ -219,7 +243,7 @@ namespace Axle {
         SparseSet<T>& GetComponentArray() {
             ComponentType id = GetComponentType<T>();
 
-            AX_ASSERT(
+            AX_ENSURE(
                 IsComponentRegistered<T>(), "Component {0} has not been registered before use.", typeid(T).name());
 
             return *(static_cast<SparseSet<T>*>(m_ComponentArrays.at(id).get()));
@@ -234,13 +258,15 @@ namespace Axle {
         SparseSet<T>* GetComponentArrayPtr() {
             ComponentType id = GetComponentType<T>();
 
-            AX_ASSERT(
+            AX_ENSURE(
                 IsComponentRegistered<T>(), "Component {0} has not been registered before use.", typeid(T).name());
 
             return static_cast<SparseSet<T>*>(m_ComponentArrays.at(id).get());
         }
 
         /// A hasmap containing the component arrays for every registered component type.
+        /// TODO: Because ComponentType is just a number, we could use a vector instead of a hashmap. Or an array given
+        /// that we now the maximum number of components at compile time.
         std::unordered_map<ComponentType, std::unique_ptr<ISparseSet>> m_ComponentArrays;
 
         /// Stores the next component type to be registered.
@@ -338,7 +364,9 @@ namespace Axle {
                 }
             }
 
-            AX_ASSERT(smallest_size > 0, "No entities found with the required components.");
+            AX_ASSERT(
+                smallest_size != std::numeric_limits<size_t>::max(),
+                "(ONLY IN DEBUG) This always has to return a valid index. There might have been an instantiation of a View with 0 components.");
 
             return index;
         }

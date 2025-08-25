@@ -15,3 +15,5 @@
 #include <unordered_map>
 #include <typeindex>
 #include <typeinfo>
+#include <limits>
+#include <stdexcept>

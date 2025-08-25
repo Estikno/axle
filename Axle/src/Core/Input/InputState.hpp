@@ -7,6 +7,7 @@
 
 #include <GLFW/glfw3.h>
 #include <glm/vec2.hpp>
+#include <sys/stat.h>
 
 // Key codes taken from microsoft virtual key codes
 // https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes

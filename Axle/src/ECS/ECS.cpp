@@ -11,7 +11,7 @@
 
 namespace Axle {
     ECS::ECS() {
-        for (EntityID entity = 0; entity < MAX_ENTITIES; entity++) {
+        for (EntityID entity = 0; entity < MAX_ENTITIES; ++entity) {
             m_AvailableEntities.push(entity);
         }
     }
@@ -19,7 +19,7 @@ namespace Axle {
     template <typename T>
     void ECS::RegisterComponent() {
         ComponentType typeID = GetComponentType<T>();
-        AX_ASSERT(typeID < MAX_COMPONENTS, "Too many components registered.");
+        AX_ENSURE(typeID < MAX_COMPONENTS, "Too many components registered. The maximum is {0}.", MAX_COMPONENTS);
 
         if (m_ComponentArrays.find(typeID) != m_ComponentArrays.end()) {
             AX_CORE_WARN("Component of type {0} is already registered.", typeid(T).name());
@@ -32,7 +32,7 @@ namespace Axle {
     }
 
     ECS& ECS::CreateEntity() {
-        AX_ASSERT(m_LivingEntityCount < MAX_ENTITIES,
+        AX_ENSURE(m_LivingEntityCount < MAX_ENTITIES,
                   "Cannot create more entities than the maximum allowed: {0}.",
                   MAX_ENTITIES);
 
