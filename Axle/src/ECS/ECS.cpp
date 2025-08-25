@@ -56,13 +56,20 @@ namespace Axle {
 
     template <typename T>
     void ECS::Add(EntityID id, T component) {
-        AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
+        AX_ENSURE(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
         AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
+
+        if (id >= MAX_ENTITIES) {
+            AX_CORE_WARN(
+                "Component {0} hasn't been added to entity {1} because the ID is out of bounds.", typeid(T).name(), id);
+            return;
+        }
 
         SparseSet<T>& array = GetComponentArray<T>();
         array.Add(id, component);
 
-        ComponentMask& entityMask = GetMask(id);
+        // We can safely unwrap here because we already checked the bounds of the entity ID
+        ComponentMask& entityMask = GetMask(id).Unwrap().get();
         SetComponentBit<T>(entityMask, true);
 
         AX_CORE_TRACE("Component {0} has been added to entity {1}.", typeid(T).name(), id);
