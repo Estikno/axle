@@ -118,3 +118,9 @@ if(!entity.IsValid()){
 - `AX_ASSERT` protects the **engine developer**.
 - `AX_ENSURE` protects the **engine user**.
 - `Expected<T>` handles **normal runtime errors**.
+
+---
+
+**Why not simply use exceptions?** The answer is performance and control. Exceptions can introduce overhead and complexity, especially in performance-critical applications like game engines. By using these mechanisms, we maintain clear control over error handling while ensuring the engine remains robust and efficient.
+Most of the time when using exceptions you may only need to now if the code worked or not, so using catch in those situations is overkill and inefficient.
+If you still want to use exceptions you can achieve it partially by always unwrapping *Expected<T>*, which rethrows the inner exception if exists. But please remember that this is not the intended use of the *Unwrap* implementation.
