@@ -9,6 +9,8 @@
 
 #include "Core/Error/Panic.hpp"
 #include "Other/CustomTypes/Expected.hpp"
+#include <functional>
+#include <stdexcept>
 
 namespace Axle {
     class ECS {
@@ -73,7 +75,7 @@ namespace Axle {
          * @returns A reference to the component of type T.
          */
         template <typename T>
-        T& Get(EntityID id);
+        Expected<std::reference_wrapper<T&>> Get(EntityID id);
 
         /**
          * Gets the id of the last created entity.
@@ -87,8 +89,8 @@ namespace Axle {
         /**
          * Checks if the entity with the given ID has a component of type T.
          *
-         * Important: Right now if an incorrect entity ID is passed, this will return false.
-         * For example, if you pass an entity ID that is out of bounds, this will also return false.
+         * Important: Right now if an incorrect entity ID is passed (id out of bounce or not living entity), this will
+         * return false. For example, if you pass an entity ID that is out of bounds, this will also return false.
          *
          * @param id The ID of the entity to check.
          *
@@ -96,6 +98,9 @@ namespace Axle {
          */
         template <typename T>
         inline bool Has(EntityID id) {
+            AX_ENSURE(
+                IsComponentRegistered<T>(), "Component {0} has not been registered before use.", typeid(T).name());
+
             Expected<std::reference_wrapper<ComponentMask>> mask = GetMask(id);
 
             if (!mask.IsValid()) {
@@ -221,6 +226,11 @@ namespace Axle {
                     std::out_of_range("EntityID is out of range"));
             }
 
+            if (!m_LivingEntities.at(id)) {
+                return Expected<std::reference_wrapper<ComponentMask>>::FromException(
+                    std::invalid_argument("Entity is not alive"));
+            }
+
             return std::ref(m_EntityMasks.at(id));
         }
 
@@ -231,6 +241,8 @@ namespace Axle {
          */
         template <typename T>
         inline bool IsComponentRegistered() {
+            // NOTE: If a component has not been registered, its type ID will be registered for later use even if it's
+            // not desired
             return m_ComponentArrays.find(GetComponentType<T>()) != m_ComponentArrays.end();
         }
 
@@ -279,6 +291,9 @@ namespace Axle {
         ///
         /// For example, if the entity has the first and third registered component, the bit set will be `101`.
         std::array<ComponentMask, MAX_ENTITIES> m_EntityMasks;
+
+        /// An array that keeps track of which entities are alive and which are not.
+        std::array<bool, MAX_ENTITIES> m_LivingEntities;
 
         /// The index of the entity that is being inserted into.
         ///

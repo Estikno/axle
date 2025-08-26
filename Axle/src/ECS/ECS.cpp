@@ -5,9 +5,11 @@
 #include "Core/Types.hpp"
 #include "Core/Logger/Log.hpp"
 #include "Core/Error/Panic.hpp"
+#include "Other/CustomTypes/Expected.hpp"
 
 #include "ECS.hpp"
 #include "Other/CustomTypes/SparseSet.hpp"
+#include <functional>
 
 namespace Axle {
     ECS::ECS() {
@@ -40,6 +42,8 @@ namespace Axle {
         EntityID id = m_AvailableEntities.top();
         m_AvailableEntities.pop();
 
+        m_LivingEntities.at(id) = true;
+
         m_InsertingIntoIndex = id;
         m_LivingEntityCount++;
 
@@ -58,10 +62,17 @@ namespace Axle {
     void ECS::Add(EntityID id, T component) {
         AX_ENSURE(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
         AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
+        AX_ASSERT(m_LivingEntities.at(id), "Entity ID {0} is not alive.", id);
 
         if (id >= MAX_ENTITIES) {
             AX_CORE_WARN(
                 "Component {0} hasn't been added to entity {1} because the ID is out of bounds.", typeid(T).name(), id);
+            return;
+        }
+
+        if (!m_LivingEntities.at(id)) {
+            AX_CORE_WARN(
+                "Component {0} hasn't been added to entity {1} because the entity is not alive.", typeid(T).name(), id);
             return;
         }
 
@@ -77,13 +88,29 @@ namespace Axle {
 
     template <typename T>
     void ECS::Remove(EntityID id) {
-        AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
+        AX_ENSURE(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
         AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
+        AX_ASSERT(m_LivingEntities.at(id), "Entity ID {0} is not alive.", id);
+
+        if (id >= MAX_ENTITIES) {
+            AX_CORE_WARN("Component {0} hasn't been removed from entity {1} because the ID is out of bounds.",
+                         typeid(T).name(),
+                         id);
+            return;
+        }
+
+        if (!m_LivingEntities.at(id)) {
+            AX_CORE_WARN("Component {0} hasn't been removed from entity {1} because the entity is not alive.",
+                         typeid(T).name(),
+                         id);
+            return;
+        }
 
         SparseSet<T>& array = GetComponentArray<T>();
         array.Remove(id);
 
-        ComponentMask& entityMask = GetMask(id);
+        // We can safely unwrap here because we already checked the bounds of the entity ID
+        ComponentMask& entityMask = GetMask(id).Unwrap().get();
         SetComponentBit<T>(entityMask, false);
 
         AX_CORE_TRACE("Component {0} has been removed from entity {1}.", typeid(T).name(), id);
@@ -91,6 +118,17 @@ namespace Axle {
 
     void ECS::DeleteEntity(EntityID id) {
         AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
+        AX_ASSERT(m_LivingEntities.at(id), "Entity ID {0} is not alive.", id);
+
+        if (id >= MAX_ENTITIES) {
+            AX_CORE_WARN("Entity {0} hasn't been removed it's out of bounds.", id);
+            return;
+        }
+
+        if (!m_LivingEntities.at(id)) {
+            AX_CORE_WARN("Entity {0} hasn't been removed because the entity is not alive.", id);
+            return;
+        }
 
         for (auto const& [typeID, componentArray] : m_ComponentArrays) {
             // Notify the sparse sets that the entity has been destroyed
@@ -101,7 +139,9 @@ namespace Axle {
         // Invalidate the mask of the entity
         m_EntityMasks.at(id).reset();
 
-        // Put the destroyed ID back to the queue
+        m_LivingEntities.at(id) = false;
+
+        // Put the destroyed ID back to the queue for future use
         m_AvailableEntities.push(id);
         m_LivingEntityCount--;
 
@@ -109,11 +149,20 @@ namespace Axle {
     }
 
     template <typename T>
-    T& ECS::Get(EntityID id) {
-        AX_ASSERT(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
+    Expected<std::reference_wrapper<T&>> ECS::Get(EntityID id) {
+        AX_ENSURE(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
         AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
+        AX_ASSERT(m_LivingEntities.at(id), "Entity ID {0} is not alive.", id);
 
-        return GetComponentArray<T>().Get(id);
+        if (id >= MAX_ENTITIES) {
+            return Expected<std::reference_wrapper<T>>::FromException(std::out_of_range("EntityID is out of range"));
+        }
+
+        if (!m_LivingEntities.at(id)) {
+            return Expected<std::reference_wrapper<T>>::FromException(std::invalid_argument("Entity is not alive"));
+        }
+
+        return std::ref(GetComponentArray<T>().Get(id));
     }
 
 #ifdef AXLE_TESTING
