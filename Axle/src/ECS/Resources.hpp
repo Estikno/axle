@@ -5,6 +5,7 @@
 #include "Core/Core.hpp"
 #include "Core/Types.hpp"
 #include "Core/Logger/Log.hpp"
+#include "Other/CustomTypes/Expected.hpp"
 
 namespace Axle {
     class Resources {
@@ -42,7 +43,7 @@ namespace Axle {
          * @returns Pointer to the resource of type T if it exists, otherwise nullptr.
          */
         template <typename T>
-        T* Get();
+        Expected<T*> Get();
 
         /**
          * Gets a shared pointer to a resource of type T from the resource manager.
@@ -52,7 +53,7 @@ namespace Axle {
          * @returns Shared pointer to the resource of type T if it exists, otherwise nullptr.
          */
         template <typename T>
-        std::shared_ptr<T> GetShared();
+        Expected<std::shared_ptr<T>> GetShared();
 
         /**
          * Removes a resource of type T from the resource manager.

@@ -4,6 +4,7 @@
 #include "Core/Types.hpp"
 #include "Core/Logger/Log.hpp"
 #include "Core/Error/Panic.hpp"
+#include "Other/CustomTypes/Expected.hpp"
 
 #include "Resources.hpp"
 
@@ -17,11 +18,11 @@ namespace Axle {
     void Resources::Add(std::shared_ptr<T> resource) {
         std::type_index id = std::type_index(typeid(T));
 
-        AX_ASSERT(resource != nullptr, "Cannot add a null resource of type {0} to the resource manager", id.name());
+        AX_ENSURE(resource != nullptr, "Cannot add a null resource of type {0} to the resource manager", id.name());
 
         if (Contains<T>()) {
             AX_CORE_WARN("Overwriting resource of type: {0} because it already exists in the resource manager.",
-                         typeid(T).name());
+                         id.name());
             m_Data.erase(id);
         }
 
@@ -29,25 +30,27 @@ namespace Axle {
     }
 
     template <typename T>
-    T* Resources::Get() {
+    Expected<T*> Resources::Get() {
         auto it = m_Data.find(std::type_index(typeid(T)));
 
         if (it != m_Data.end()) {
-            return static_cast<T*>(it->second.get());
+            return Expected<T*>::FromException(std::invalid_argument(
+                "Resource of type " + std::string(typeid(T).name()) + " does not exist in the resource manager."));
         }
 
-        return nullptr;
+        return static_cast<T*>(it->second.get());
     }
 
     template <typename T>
-    std::shared_ptr<T> Resources::GetShared() {
+    Expected<std::shared_ptr<T>> Resources::GetShared() {
         auto it = m_Data.find(std::type_index(typeid(T)));
 
         if (it != m_Data.end()) {
-            return std::static_pointer_cast<T>(it->second);
+            return Expected<std::shared_ptr<T>>::FromException(std::invalid_argument(
+                "Resource of type " + std::string(typeid(T).name()) + " does not exist in the resource manager."));
         }
 
-        return nullptr;
+        return std::static_pointer_cast<T>(it->second);
     }
 
     template <typename T>

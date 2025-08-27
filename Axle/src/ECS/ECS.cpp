@@ -9,7 +9,6 @@
 
 #include "ECS.hpp"
 #include "Other/CustomTypes/SparseSet.hpp"
-#include <functional>
 
 namespace Axle {
     ECS::ECS() {
