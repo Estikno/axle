@@ -16,7 +16,7 @@ namespace Axle {
 
         void Run();
 
-    protected:
+    private:
         GLFWwindow* m_window = nullptr;
     };
 

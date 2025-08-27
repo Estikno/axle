@@ -161,7 +161,7 @@ namespace Axle {
             return Expected<std::reference_wrapper<T>>::FromException(std::invalid_argument("Entity is not alive"));
         }
 
-        return std::ref(GetComponentArray<T>().Get(id));
+        return GetComponentArray<T>().Get(id);
     }
 
 #ifdef AXLE_TESTING

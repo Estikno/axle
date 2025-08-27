@@ -2,9 +2,11 @@
 
 #include "axpch.hpp"
 
+#include "Core/Core.hpp"
+#include "Core/Logger/Log.hpp"
 #include "Core/Types.hpp"
 #include "Core/Error/Panic.hpp"
-#include "Core/Core.hpp"
+#include "Other/CustomTypes/Expected.hpp"
 
 namespace Axle {
     class ISparseSet {
@@ -39,7 +41,7 @@ namespace Axle {
             // AX_ASSERT(id < m_Sparse.size(), "Index {0} is out of bounds for SparseSet with size {1}.", id, N);
             static_assert(std::is_same_v<T, std::decay_t<U>>,
                           "Trying to add a component of incorrect type to SparseSet");
-            AX_ASSERT(!Has(id), "Can't add an element that already exists.");
+            AX_ENSURE(!Has(id), "Can't add an element that already exists.");
 
             if (id >= m_Sparse.size()) {
                 m_Sparse.resize(id + 1, InvalidIndex);
@@ -57,8 +59,13 @@ namespace Axle {
          */
         void Remove(size_t id) {
             AX_ASSERT(id < m_Sparse.size(), "Index {0} is out of bounds in the SparseSet", id);
-            AX_ASSERT(
+            AX_ENSURE(
                 Has(id), "Trying to remove a non-existent element of type {0} from index {1}", typeid(T).name(), id);
+
+            if (id >= m_Sparse.size()) {
+                AX_CORE_WARN("Trying to remove element {0} from an out of bounce index {1}", typeid(T).name(), id);
+                return;
+            }
 
             // Swap the back of the dense array with the element to be deleted
             size_t deletedIndex = m_Sparse.at(id);
@@ -95,11 +102,17 @@ namespace Axle {
          *
          * @returns A reference to the element of type T
          */
-        T& Get(size_t id) {
+        Expected<std::reference_wrapper<T&>> Get(size_t id) {
             AX_ASSERT(
                 Has(id), "Trying to retrieve a non-existent element of type: {0} from index {1}", typeid(T).name(), id);
 
-            return m_Dense.at(m_Sparse.at(id));
+            if (!Has(id)) {
+                return Expected<std::reference_wrapper<T&>>::FromException(std::invalid_argument(
+                    "Trying to retrieve a non-existent element of type: " + std::string(typeid(T).name()) +
+                    " from index" + std::to_string(id)));
+            }
+
+            return std::ref(m_Dense.at(m_Sparse.at(id)));
         }
 
         /**
@@ -128,7 +141,7 @@ namespace Axle {
 
         /**
          * Gets the indexes which have an element assigned.
-         * The returned indexes are not sorted.
+         * The returned indexes are not sorted in any way.
          *
          * @returns A vector of indexes which are certain to have an element assigned
          */

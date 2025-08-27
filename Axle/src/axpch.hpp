@@ -19,3 +19,4 @@
 
 // Error handling
 #include <stdexcept>
+#include <optional>

@@ -330,7 +330,8 @@ namespace Axle {
 
             for (const EntityID& entity : entities) {
                 if (m_Entities->HasAll<Components...>(entity)) {
-                    components.emplace_back(m_Entities->Get<Components>(entity)...);
+                    // We can safely unwrap here because we already checked that the entity has all the components
+                    components.emplace_back((m_Entities->Get<Components>(entity)).Unwrap().get()...);
                 }
             }
 
@@ -349,7 +350,8 @@ namespace Axle {
 
             for (const EntityID& entity : entities) {
                 if (m_Entities->HasAll<Components...>(entity)) {
-                    components.emplace_back(m_Entities->Get<Components>(entity)...);
+                    // We can safely unwrap here because we already checked that the entity has all the components
+                    components.emplace_back((m_Entities->Get<Components>(entity)).Unwrap().get()...);
                 }
             }
 
