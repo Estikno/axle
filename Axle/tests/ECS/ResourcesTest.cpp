@@ -1,3 +1,4 @@
+#include "Other/CustomTypes/Expected.hpp"
 #include <doctest.h>
 
 #include <typeindex>
@@ -33,7 +34,11 @@ TEST_CASE("Resources") {
         *g = 9.81f;
         res.Add<f32>(g);
 
-        f32* gravity = res.Get<f32>();
+        Expected<f32*> gravity_exp = res.Get<f32>();
+
+        CHECK(gravity_exp.IsValid());
+
+        f32* gravity = gravity_exp.Unwrap();
 
         REQUIRE_FALSE(gravity == nullptr);
         CHECK(*gravity == doctest::Approx(9.81f));
@@ -46,7 +51,11 @@ TEST_CASE("Resources") {
             res.Add<f32>(g);
         }
 
-        f32* gravity = res.Get<f32>();
+        Expected<f32*> gravity_exp = res.Get<f32>();
+
+        CHECK(gravity_exp.IsValid());
+
+        f32* gravity = gravity_exp.Unwrap();
 
         REQUIRE_FALSE(gravity == nullptr);
         CHECK(*gravity == doctest::Approx(9.81f));
@@ -60,13 +69,13 @@ TEST_CASE("Resources") {
         }
 
         {
-            f32* gravity = res.Get<f32>();
+            f32* gravity = res.Get<f32>().Unwrap();
 
             *gravity = 10.0f;
         }
 
 
-        f32* gravity = res.Get<f32>();
+        f32* gravity = res.Get<f32>().Unwrap();
 
         REQUIRE_FALSE(gravity == nullptr);
         CHECK(*gravity == doctest::Approx(10.0f));
@@ -81,10 +90,10 @@ TEST_CASE("Resources") {
 
         { res.Remove<f32>(); }
 
-        f32* gravity = res.Get<f32>();
+        Expected<f32*> gravity = res.Get<f32>();
         size_t size = res.GetDataTEST().size();
 
-        CHECK(gravity == nullptr);
+        CHECK_FALSE(gravity.IsValid());
         CHECK(size == 0);
     }
 
@@ -106,8 +115,8 @@ TEST_CASE("Resources") {
         REQUIRE(res.Contains<f32>());
         REQUIRE(res.Contains<i32>());
 
-        f32* gravity = res.Get<f32>();
-        i32* integer = res.Get<i32>();
+        f32* gravity = res.Get<f32>().Unwrap();
+        i32* integer = res.Get<i32>().Unwrap();
 
         REQUIRE_FALSE(gravity == nullptr);
         REQUIRE_FALSE(integer == nullptr);

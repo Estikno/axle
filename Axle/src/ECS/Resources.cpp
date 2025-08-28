@@ -33,7 +33,7 @@ namespace Axle {
     Expected<T*> Resources::Get() {
         auto it = m_Data.find(std::type_index(typeid(T)));
 
-        if (it != m_Data.end()) {
+        if (it == m_Data.end()) {
             return Expected<T*>::FromException(std::invalid_argument(
                 "Resource of type " + std::string(typeid(T).name()) + " does not exist in the resource manager."));
         }
@@ -45,7 +45,7 @@ namespace Axle {
     Expected<std::shared_ptr<T>> Resources::GetShared() {
         auto it = m_Data.find(std::type_index(typeid(T)));
 
-        if (it != m_Data.end()) {
+        if (it == m_Data.end()) {
             return Expected<std::shared_ptr<T>>::FromException(std::invalid_argument(
                 "Resource of type " + std::string(typeid(T).name()) + " does not exist in the resource manager."));
         }
@@ -66,15 +66,15 @@ namespace Axle {
 #ifdef AXLE_TESTING
     template AXLE_TEST_API void Resources::Add<f32>(f32*);
     template AXLE_TEST_API void Resources::Add<f32>(std::shared_ptr<f32>);
-    template AXLE_TEST_API f32* Resources::Get<f32>();
-    template AXLE_TEST_API std::shared_ptr<f32> Resources::GetShared<f32>();
+    template AXLE_TEST_API Expected<f32*> Resources::Get<f32>();
+    template AXLE_TEST_API Expected<std::shared_ptr<f32>> Resources::GetShared<f32>();
     template AXLE_TEST_API void Resources::Remove<f32>();
     template AXLE_TEST_API bool Resources::Contains<f32>() const noexcept;
 
     template AXLE_TEST_API void Resources::Add<i32>(i32*);
     template AXLE_TEST_API void Resources::Add<i32>(std::shared_ptr<i32>);
-    template AXLE_TEST_API i32* Resources::Get<i32>();
-    template AXLE_TEST_API std::shared_ptr<i32> Resources::GetShared<i32>();
+    template AXLE_TEST_API Expected<i32*> Resources::Get<i32>();
+    template AXLE_TEST_API Expected<std::shared_ptr<i32>> Resources::GetShared<i32>();
     template AXLE_TEST_API void Resources::Remove<i32>();
     template AXLE_TEST_API bool Resources::Contains<i32>() const noexcept;
 #endif // AXLE_TESTING

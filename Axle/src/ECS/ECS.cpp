@@ -9,6 +9,7 @@
 
 #include "ECS.hpp"
 #include "Other/CustomTypes/SparseSet.hpp"
+#include <functional>
 
 namespace Axle {
     ECS::ECS() {
@@ -148,7 +149,7 @@ namespace Axle {
     }
 
     template <typename T>
-    Expected<std::reference_wrapper<T&>> ECS::Get(EntityID id) {
+    Expected<std::reference_wrapper<T>> ECS::Get(EntityID id) {
         AX_ENSURE(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
         AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
         AX_ASSERT(m_LivingEntities.at(id), "Entity ID {0} is not alive.", id);
@@ -177,13 +178,13 @@ namespace Axle {
     template AXLE_TEST_API bool ECS::Has<Velocity>(EntityID);
     template AXLE_TEST_API bool ECS::HasAll<Position, Velocity>(EntityID);
     template AXLE_TEST_API bool ECS::HasAny<Position, Velocity>(EntityID);
-    template AXLE_TEST_API Position& ECS::Get<Position>(EntityID);
-    template AXLE_TEST_API Velocity& ECS::Get<Velocity>(EntityID);
+    template AXLE_TEST_API Expected<std::reference_wrapper<Position>> ECS::Get<Position>(EntityID);
+    template AXLE_TEST_API Expected<std::reference_wrapper<Velocity>> ECS::Get<Velocity>(EntityID);
     template AXLE_TEST_API class View<Position, Velocity>;
     template AXLE_TEST_API class View<Velocity>;
     template AXLE_TEST_API class View<Position>;
-    template AXLE_TEST_API class SparseSet<Position>;
-    template AXLE_TEST_API class SparseSet<Velocity>;
+    // template AXLE_TEST_API class SparseSet<Position>;
+    // template AXLE_TEST_API class SparseSet<Velocity>;
 #endif // AXLE_TESTING
 
 } // namespace Axle

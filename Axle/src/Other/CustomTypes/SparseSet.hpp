@@ -102,12 +102,12 @@ namespace Axle {
          *
          * @returns A reference to the element of type T
          */
-        Expected<std::reference_wrapper<T&>> Get(size_t id) {
+        Expected<std::reference_wrapper<T>> Get(size_t id) {
             AX_ASSERT(
                 Has(id), "Trying to retrieve a non-existent element of type: {0} from index {1}", typeid(T).name(), id);
 
             if (!Has(id)) {
-                return Expected<std::reference_wrapper<T&>>::FromException(std::invalid_argument(
+                return Expected<std::reference_wrapper<T>>::FromException(std::invalid_argument(
                     "Trying to retrieve a non-existent element of type: " + std::string(typeid(T).name()) +
                     " from index" + std::to_string(id)));
             }

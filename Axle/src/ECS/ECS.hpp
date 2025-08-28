@@ -75,7 +75,7 @@ namespace Axle {
          * @returns A reference to the component of type T.
          */
         template <typename T>
-        Expected<std::reference_wrapper<T&>> Get(EntityID id);
+        Expected<std::reference_wrapper<T>> Get(EntityID id);
 
         /**
          * Gets the id of the last created entity.

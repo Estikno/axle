@@ -52,8 +52,8 @@ TEST_CASE("Entities ECS Test") {
 
         SparseSet<Position>* p = static_cast<SparseSet<Position>*>(entities.GetComponentArraysTEST().at(0).get());
 
-        CHECK(p->Get(0).x == doctest::Approx(1.0f));
-        CHECK(p->Get(0).y == doctest::Approx(2.0f));
+        CHECK(p->Get(0).Unwrap().get().x == doctest::Approx(1.0f));
+        CHECK(p->Get(0).Unwrap().get().y == doctest::Approx(2.0f));
     }
 
     SUBCASE("Entity map updates") {
@@ -103,8 +103,8 @@ TEST_CASE("Entities ECS Test") {
 
         SparseSet<Position>* p = static_cast<SparseSet<Position>*>(entities.GetComponentArraysTEST().at(0).get());
 
-        CHECK(p->Get(0).x == doctest::Approx(3.0f));
-        CHECK(p->Get(0).y == doctest::Approx(4.0f));
+        CHECK(p->Get(0).Unwrap().get().x == doctest::Approx(3.0f));
+        CHECK(p->Get(0).Unwrap().get().y == doctest::Approx(4.0f));
     }
 
     SUBCASE("Delete entity") {
@@ -144,10 +144,10 @@ TEST_CASE("Entities ECS Test") {
 
         SparseSet<Velocity>* v = static_cast<SparseSet<Velocity>*>(entities.GetComponentArraysTEST().at(1).get());
 
-        CHECK(v->Get(0).vx == doctest::Approx(2.0f));
-        CHECK(v->Get(0).vy == doctest::Approx(2.0f));
+        CHECK(v->Get(0).Unwrap().get().vx == doctest::Approx(2.0f));
+        CHECK(v->Get(0).Unwrap().get().vy == doctest::Approx(2.0f));
 
-        Velocity& vel = entities.Get<Velocity>(2);
+        Velocity& vel = entities.Get<Velocity>(2).Unwrap().get();
         CHECK(vel.vx == doctest::Approx(3.0f));
         CHECK(vel.vy == doctest::Approx(3.0f));
 

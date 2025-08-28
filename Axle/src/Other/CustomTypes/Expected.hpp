@@ -19,6 +19,10 @@ namespace Axle {
     template <typename T>
     class Expected {
     public:
+        // For now the assignment operators are deleted
+        Expected& operator=(const Expected&) = delete;
+        Expected& operator=(Expected&&) = delete;
+
         // Construct from a const lvalue reference to T
         // Copies 'rhs' into the union's m_Value member
         Expected(const T& rhs)
@@ -54,7 +58,7 @@ namespace Axle {
         }
 
         ~Expected() {
-            // Can't use std::exception_ptr because it doesn't parse
+            // Can't use directly std::exception_ptr because it doesn't parse
             using std::exception_ptr;
             if (m_HasVal)
                 m_Value.~T();
@@ -75,7 +79,7 @@ namespace Axle {
             if (typeid(exception) != typeid(E)) {
                 throw std::invalid_argument("Slicing detected");
             }
-            return FromException(std::exception_ptr(exception));
+            return FromException(std::make_exception_ptr(exception));
         }
 
         /**
@@ -88,7 +92,7 @@ namespace Axle {
         static Expected<T> FromException(std::exception_ptr p) {
             Expected<T> result;
             result.m_HasVal = false;
-            new (&result.m_HasVal) std::exception_ptr(std::move(p));
+            new (&result.m_Exception) std::exception_ptr(std::move(p));
             return result;
         }
 
@@ -117,7 +121,11 @@ namespace Axle {
                     // It's needed to move the exception from the second Expected to the first one and the value of the
                     // first to the second one
                     std::exception_ptr t = std::move(rhs.m_Exception);
+                    // destroy rhs exception, construct rhs value
+                    rhs.m_Exception.~exception_ptr();
                     new (&rhs.m_Value) T(std::move(m_Value));
+                    // destroy this value, construct this exception
+                    m_Value.~T();
                     new (&m_Exception) std::exception_ptr(t);
                     std::swap(m_HasVal, rhs.m_HasVal);
                 }
@@ -129,7 +137,8 @@ namespace Axle {
                 } else {
                     // Swap the exceptions
                     m_Exception.swap(rhs.m_Exception);
-                    std::swap(m_HasVal, rhs.m_HasVal);
+                    // Unnecessary but clearer
+                    // std::swap(m_HasVal, rhs.m_HasVal);
                 }
             }
         }
@@ -179,7 +188,7 @@ namespace Axle {
             try {
                 if (!m_HasVal)
                     std::rethrow_exception(m_Exception);
-            } catch (const E& object) {
+            } catch (const E&) {
                 return true;
             } catch (...) {}
             return false;
