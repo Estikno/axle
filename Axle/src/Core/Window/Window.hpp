@@ -1,3 +1,5 @@
+#pragma once
+
 #include "axpch.hpp"
 
 #include "Core/Core.hpp"

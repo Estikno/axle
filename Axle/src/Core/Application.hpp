@@ -3,6 +3,7 @@
 #include "axpch.hpp"
 
 #include "Core.hpp"
+#include "Window/Window.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -17,7 +18,8 @@ namespace Axle {
         void Run();
 
     private:
-        GLFWwindow* m_window = nullptr;
+        std::unique_ptr<Window> m_Window;
+        bool m_Running = true;
     };
 
     // To be defined in client

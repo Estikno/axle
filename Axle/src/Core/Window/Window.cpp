@@ -21,16 +21,37 @@ namespace Axle {
         AX_CORE_INFO("Creating window {0} ({1}, {2})", props.Title, props.Width, props.Height);
 
         if (!s_IsGlfwInitialized) {
-            int success = glfwInit();
+            i32 success = glfwInit();
             AX_ASSERT(success, "Could not initialize GLFW!");
 
             s_IsGlfwInitialized = true;
         }
 
         m_Window = glfwCreateWindow((int) props.Width, (int) props.Height, props.Title.c_str(), nullptr, nullptr);
+        AX_ASSERT(m_Window, "Failed to create GLFW window!");
+
         glfwMakeContextCurrent(m_Window);
         // Set a way to retrieve the window data from the GLFW window easily
         glfwSetWindowUserPointer(m_Window, &m_Data);
         SetVSync(true);
+    }
+
+    Window::~Window() {
+        glfwDestroyWindow(m_Window);
+    }
+
+    void Window::OnUpdate() {
+        glfwPollEvents();
+        glfwSwapBuffers(m_Window);
+    }
+
+    void Window::SetVSync(bool enabled) {
+        if (enabled) {
+            glfwSwapInterval(1);
+        } else {
+            glfwSwapInterval(0);
+        }
+
+        m_Data.VSync = enabled;
     }
 } // namespace Axle

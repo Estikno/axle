@@ -7,9 +7,10 @@
 #include "Input/Input.hpp"
 #include "Input/InputCallbacks.hpp"
 #include "Error/Panic.hpp"
+#include "Core/Events/EventHandler.hpp"
+#include "Window/Window.hpp"
 
 #include <GLFW/glfw3.h>
-#include "Core/Events/EventHandler.hpp"
 
 namespace Axle {
     void ErrorCallback(int error, const char* description) {
@@ -25,21 +26,12 @@ namespace Axle {
 
         glfwSetErrorCallback(ErrorCallback);
 
-        m_window = glfwCreateWindow(1280, 720, "Axle Engine", nullptr, nullptr);
+        m_Window = std::unique_ptr<Window>(Window::Create());
 
-        if (!m_window) {
-            glfwTerminate();
-
-            AX_PANIC("Failed to create GLFW window");
-        }
-
-        glfwSetKeyCallback(m_window, KeyCallback);
-        glfwSetCursorPosCallback(m_window, CursorPositionCallback);
-        glfwSetMouseButtonCallback(m_window, MouseButtonCallback);
-        glfwSetScrollCallback(m_window, ScrollCallback);
-
-        glfwMakeContextCurrent(m_window);
-        glfwSwapInterval(1);
+        // glfwSetKeyCallback(m_Window, KeyCallback);
+        // glfwSetCursorPosCallback(m_Window, CursorPositionCallback);
+        // glfwSetMouseButtonCallback(m_Window, MouseButtonCallback);
+        // glfwSetScrollCallback(m_Window, ScrollCallback);
     }
 
     Application::~Application() {
@@ -48,17 +40,17 @@ namespace Axle {
 
         AX_CORE_TRACE("Stopping the engine...");
 
-        glfwDestroyWindow(m_window);
+        // glfwDestroyWindow(m_window);
         glfwTerminate();
     }
 
     void Application::Run() {
-        while (!glfwWindowShouldClose(m_window)) {
+        while (m_Running) {
+            m_Window->OnUpdate();
 
             // NOTE: Input state updating should be performed at the end of each frame.
             // The input is recorded in between the frame but the update happens at the end.
             Input::Update();
-            glfwPollEvents();
         }
     }
 } // namespace Axle
