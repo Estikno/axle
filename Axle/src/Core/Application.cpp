@@ -20,13 +20,9 @@ namespace Axle {
     Application::Application() {
         AX_CORE_TRACE("Starting the engine...");
 
-        if (!glfwInit()) {
-            AX_PANIC("Failed to initialize GLFW");
-        }
+        m_Window = std::unique_ptr<Window>(Window::Create());
 
         glfwSetErrorCallback(ErrorCallback);
-
-        m_Window = std::unique_ptr<Window>(Window::Create());
 
         // glfwSetKeyCallback(m_Window, KeyCallback);
         // glfwSetCursorPosCallback(m_Window, CursorPositionCallback);
