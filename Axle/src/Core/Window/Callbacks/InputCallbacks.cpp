@@ -1,9 +1,13 @@
 #include "axpch.hpp"
-#include "../Types.hpp"
 
-#include "Input.hpp"
-#include "../Logger/Log.hpp"
-#include "InputState.hpp"
+#include "Core/Types.hpp"
+
+#include "Core/Input/Input.hpp"
+#include "Core/Logger/Log.hpp"
+#include "Core/Input/InputState.hpp"
+#include "InputCallbacks.hpp"
+#include "Core/Events/EventHandler.hpp"
+#include "Core/Events/Event.hpp"
 
 #include <GLFW/glfw3.h>
 #include <glm/vec2.hpp>
@@ -11,7 +15,9 @@
 namespace Axle {
     void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
         if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-            glfwSetWindowShouldClose(window, GLFW_TRUE);
+            // glfwSetWindowShouldClose(window, GLFW_TRUE);
+            Event* event = new Event(EventType::WindowClose, EventCategory::Window);
+            AX_ADD_EVENT(event);
         }
 
         // Convert the GLFW key to our own key enum

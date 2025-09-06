@@ -21,6 +21,12 @@ namespace Axle {
               Height(height) {}
     };
 
+    struct WindowData {
+        std::string Title;
+        u32 Width, Height;
+        bool VSync;
+    };
+
     class AXLE_API Window {
     public:
         using EventCallbackFn = std::function<void(Event*)>;
@@ -37,9 +43,6 @@ namespace Axle {
             return m_Data.Height;
         }
 
-        inline void SetEventCallback(const EventCallbackFn& callback) {
-            m_Data.EventCallback = callback;
-        }
         void SetVSync(bool enabled);
         inline bool IsVSync() const {
             return m_Data.VSync;
@@ -49,15 +52,6 @@ namespace Axle {
 
     private:
         GLFWwindow* m_Window;
-
-        struct WindowData {
-            std::string Title;
-            u32 Width, Height;
-            bool VSync;
-
-            EventCallbackFn EventCallback;
-        };
-
         WindowData m_Data;
     };
 } // namespace Axle

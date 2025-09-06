@@ -55,6 +55,7 @@ void TestFunction_Complex_CustomData(Event* event) {
     CHECK(event != nullptr);
     CHECK(event->GetEventType() == Axle::EventType::KeyPressed);
     CHECK(event->GetEventCategory() == Axle::EventCategory::Input);
+    CHECK(event->GetContext().custom_data.has_value());
 
     PlayerData* player = std::any_cast<PlayerData*>(event->GetContext().custom_data.value());
 
@@ -71,59 +72,70 @@ TEST_CASE("EventHandler") {
     EventHandler& instance = EventHandler::GetInstance();
 
     SUBCASE("EventHandler AddEvent") {
-        Subscription sub_1 = instance.Subscribe(TestFunction_Render, EventType::AppRender, EventCategory::Render);
-        Subscription sub_2 = instance.Subscribe(TestFunction_Tick, EventType::AppTick, EventCategory::Render);
+        size_t id = instance.Subscribe(TestFunction_Render, EventType::AppRender, EventCategory::Render);
+        size_t id2 = instance.Subscribe(TestFunction_Tick, EventType::AppTick, EventCategory::Render);
 
-        Event event_1(EventType::AppRender, EventCategory::Render);
-        Event event_2(EventType::AppTick, EventCategory::Render);
+        Event* event_1 = new Event(EventType::AppRender, EventCategory::Render);
+        Event* event_2 = new Event(EventType::AppTick, EventCategory::Render);
 
         CHECK_NOTHROW(AX_ADD_EVENT(event_1));
         CHECK_NOTHROW(AX_ADD_EVENT(event_2));
 
         instance.ProcessEvents();
+
+        instance.Unsubscribe(id);
+        instance.Unsubscribe(id2);
     }
 
     SUBCASE("EventHandler with inherited events") {
-        Subscription sub_1 = instance.Subscribe(TestFunction_Input, EventType::AppUpdate, EventCategory::Window);
+        size_t id = instance.Subscribe(TestFunction_Input, EventType::AppUpdate, EventCategory::Window);
 
-        newEvent event_1(EventType::AppUpdate, EventCategory::Input);
+        newEvent* event_1 = new newEvent(EventType::AppUpdate, EventCategory::Input);
 
         CHECK_NOTHROW(AX_ADD_EVENT(event_1));
 
         instance.ProcessEvents();
+
+        instance.Unsubscribe(id);
     }
 
     SUBCASE("EventHandler receiving events of a whole group") {
-        Subscription sub_1 = instance.Subscribe(TestFunction_AllInput, EventType::None, EventCategory::Input);
+        size_t id = instance.Subscribe(TestFunction_AllInput, EventType::None, EventCategory::Input);
 
-        Event event_1(EventType::KeyPressed, EventCategory::Input);
+        Event* event_1 = new Event(EventType::KeyPressed, EventCategory::Input);
 
         CHECK_NOTHROW(AX_ADD_EVENT(event_1));
 
         instance.ProcessEvents();
+
+        instance.Unsubscribe(id);
     }
 
     SUBCASE("Event containing custom data") {
-        Subscription sub_1 = instance.Subscribe(TestFunction_AllInput_With_Data, EventType::None, EventCategory::Input);
+        size_t id = instance.Subscribe(TestFunction_AllInput_With_Data, EventType::None, EventCategory::Input);
 
-        Event event_1(EventType::KeyPressed, EventCategory::Input);
-        event_1.GetContext().u16_values[0] = 12;
+        Event* event_1 = new Event(EventType::KeyPressed, EventCategory::Input);
+        event_1->GetContext().u16_values[0] = 12;
 
         CHECK_NOTHROW(AX_ADD_EVENT(event_1));
 
         instance.ProcessEvents();
+
+        instance.Unsubscribe(id);
     }
 
     SUBCASE("Event containing complex custom data") {
-        Subscription sub_1 = instance.Subscribe(TestFunction_Complex_CustomData, EventType::None, EventCategory::Input);
+        size_t id = instance.Subscribe(TestFunction_Complex_CustomData, EventType::None, EventCategory::Input);
 
         PlayerData* pdata = new PlayerData{12, 100.0f};
 
-        Event event_1(EventType::KeyPressed, EventCategory::Input);
-        event_1.GetContext().custom_data = pdata;
+        Event* event_1 = new Event(EventType::KeyPressed, EventCategory::Input);
+        event_1->GetContext().custom_data = pdata;
 
         CHECK_NOTHROW(AX_ADD_EVENT(event_1));
 
         instance.ProcessEvents();
+
+        instance.Unsubscribe(id);
     }
 }

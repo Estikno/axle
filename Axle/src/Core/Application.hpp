@@ -2,8 +2,10 @@
 
 #include "axpch.hpp"
 
+#include "Other/Observer.hpp"
 #include "Core.hpp"
 #include "Window/Window.hpp"
+#include "Events/Event.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -18,6 +20,8 @@ namespace Axle {
         void Run();
 
     private:
+        void OnWindowClose(Event* event);
+
         std::unique_ptr<Window> m_Window;
         bool m_Running = true;
     };

@@ -4,6 +4,8 @@
 #include "Core/Logger/Log.hpp"
 #include "Core/Error/Panic.hpp"
 
+#include "Callbacks/InputCallbacks.hpp"
+
 #include <GLFW/glfw3.h>
 
 namespace Axle {
@@ -34,6 +36,12 @@ namespace Axle {
         // Set a way to retrieve the window data from the GLFW window easily
         glfwSetWindowUserPointer(m_Window, &m_Data);
         SetVSync(true);
+
+        // Input callbacks
+        glfwSetKeyCallback(m_Window, KeyCallback);
+        glfwSetCursorPosCallback(m_Window, CursorPositionCallback);
+        glfwSetMouseButtonCallback(m_Window, MouseButtonCallback);
+        glfwSetScrollCallback(m_Window, ScrollCallback);
     }
 
     Window::~Window() {

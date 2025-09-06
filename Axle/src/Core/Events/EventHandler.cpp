@@ -20,12 +20,12 @@ namespace Axle {
         AX_CORE_TRACE("Event handler initialized...");
     }
 
-    void EventHandler::AddEvent(Event event) {
-        AX_CORE_INFO("Added a new event of type: {}", (i32) (event.GetEventType()));
-        m_EventQueue.push_back(std::move(event));
+    void EventHandler::AddEvent(Event* event) {
+        AX_CORE_INFO("Added a new event of type: {}", (i32) (event->GetEventType()));
+        m_EventQueue.push_back(std::unique_ptr<Event>(event));
     }
 
-    Subscription<Event> EventHandler::Subscribe(const HandlerType& handler, EventType type, EventCategory category) {
+    size_t EventHandler::Subscribe(const HandlerType& handler, EventType type, EventCategory category) {
         m_HandlersType[m_nextId] = std::make_pair(category, type);
         return Subject<Event>::Subscribe(handler);
     }
@@ -53,7 +53,7 @@ namespace Axle {
 
     void EventHandler::ProcessEvents() {
         for (auto& event : m_EventQueue) {
-            Notify(&event);
+            Notify(event.get());
         }
 
         m_EventQueue.clear();

@@ -9,14 +9,12 @@ namespace Axle {
     /// Enum that defines the event type
     enum class EventType {
         None = 0,
+        // Window
         WindowClose,
         WindowResize,
         WindowFocus,
         WindowLostFocus,
         WindowMoved,
-        AppTick,
-        AppUpdate,
-        AppRender,
         // Input
         KeyPressed,
         KeyIsPressed,
@@ -25,7 +23,11 @@ namespace Axle {
         MouseButtonIsPressed,
         MouseButtonReleased,
         MouseMoved,
-        MouseScrolled
+        MouseScrolled,
+        // Other
+        AppTick,
+        AppUpdate,
+        AppRender,
     };
 
     /// Enum that defines the event category
@@ -73,6 +75,10 @@ namespace Axle {
             /// 16 x 8-bit unsigned integers
             u8 u8_values[16];
         };
+
+        EventContext()
+            : custom_data(std::nullopt),
+              u64_values{0, 0} {}
     };
 
     /**

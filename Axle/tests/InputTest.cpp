@@ -29,7 +29,7 @@ TEST_CASE("Input system key handling") {
     Input::SimulateReset();
     EventHandler::Init();
 
-    Subscription sub_1 = EventHandler::GetInstance().Subscribe(TestKeyEvents, EventType::None, EventCategory::Input);
+    size_t id = EventHandler::GetInstance().Subscribe(TestKeyEvents, EventType::None, EventCategory::Input);
 
     SUBCASE("No key action") {
         CHECK_FALSE(Input::GetKeyDown(Keys::A));
@@ -73,14 +73,15 @@ TEST_CASE("Input system key handling") {
         CHECK_FALSE(Input::GetKeyUp(Keys::A));
         CHECK_FALSE(Input::GetKeyDown(Keys::A));
     }
+
+    EventHandler::GetInstance().Unsubscribe(id);
 }
 
 TEST_CASE("Input system mouse button handling") {
     Input::SimulateReset();
     EventHandler::Init();
 
-    Subscription sub_1 =
-        EventHandler::GetInstance().Subscribe(TestMouseButtonEvents, EventType::None, EventCategory::Input);
+    size_t id = EventHandler::GetInstance().Subscribe(TestMouseButtonEvents, EventType::None, EventCategory::Input);
 
     SUBCASE("No mouse button action") {
         CHECK_FALSE(Input::GetMouseButtonDown(MouseButtons::BUTTON_LEFT));
@@ -123,6 +124,8 @@ TEST_CASE("Input system mouse button handling") {
         CHECK_FALSE(Input::GetMouseButtonDown(MouseButtons::BUTTON_LEFT));
         CHECK(Input::GetMouseButton(MouseButtons::BUTTON_LEFT));
     }
+
+    EventHandler::GetInstance().Unsubscribe(id);
 }
 
 TEST_CASE("Mouse position handling") {
@@ -152,10 +155,12 @@ TEST_CASE("Mouse wheel handling") {
     Input::SimulateReset();
     EventHandler::Init();
 
-    Subscription sub_1 =
+    size_t id =
         EventHandler::GetInstance().Subscribe(TestMouseWheelEvents, EventType::MouseScrolled, EventCategory::Input);
 
     Input::SimulateMouseWheel(1.0f);
     Input::SimulateUpdate();
     EventHandler::GetInstance().ProcessEvents();
+
+    EventHandler::GetInstance().Unsubscribe(id);
 }

@@ -1,13 +1,12 @@
 #include "axpch.hpp"
 
 #include "Application.hpp"
-#include "axpch.hpp"
 
 #include "Logger/Log.hpp"
 #include "Input/Input.hpp"
-#include "Input/InputCallbacks.hpp"
 #include "Error/Panic.hpp"
 #include "Core/Events/EventHandler.hpp"
+#include "Core/Events/Event.hpp"
 #include "Window/Window.hpp"
 
 #include <GLFW/glfw3.h>
@@ -20,14 +19,12 @@ namespace Axle {
     Application::Application() {
         AX_CORE_TRACE("Starting the engine...");
 
+        EventHandler::GetInstance().Subscribe(
+            [&](Event* e) { OnWindowClose(e); }, EventType::WindowClose, EventCategory::Window);
+
         m_Window = std::unique_ptr<Window>(Window::Create());
 
         glfwSetErrorCallback(ErrorCallback);
-
-        // glfwSetKeyCallback(m_Window, KeyCallback);
-        // glfwSetCursorPosCallback(m_Window, CursorPositionCallback);
-        // glfwSetMouseButtonCallback(m_Window, MouseButtonCallback);
-        // glfwSetScrollCallback(m_Window, ScrollCallback);
     }
 
     Application::~Application() {
@@ -36,17 +33,24 @@ namespace Axle {
 
         AX_CORE_TRACE("Stopping the engine...");
 
-        // glfwDestroyWindow(m_window);
+        // We need to delete the window before terminating glfw
+        m_Window.reset();
+
         glfwTerminate();
     }
 
     void Application::Run() {
         while (m_Running) {
             m_Window->OnUpdate();
+            EventHandler::GetInstance().ProcessEvents();
 
             // NOTE: Input state updating should be performed at the end of each frame.
             // The input is recorded in between the frame but the update happens at the end.
             Input::Update();
         }
+    }
+
+    void Application::OnWindowClose(Event* event) {
+        m_Running = false;
     }
 } // namespace Axle

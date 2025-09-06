@@ -48,10 +48,9 @@ namespace Axle {
          *
          * This function is not recommended to be called manually, better by the macro.
          *
-         * @param event A pointer to the event added. This pointer will be entirely handled by this class, DO NOT DELETE
-         * IT YOURSELF.
+         * @param event The event added.
          */
-        void AddEvent(Event event);
+        void AddEvent(Event* event);
 
         /**
          * Subscribes a handler (function) to the event system.
@@ -65,7 +64,7 @@ namespace Axle {
          * @returns A subscription object that has to be kept on scope. As if it's not the handler will be unsubscribed
          * automatically. This object can also be used to manage the subscription.
          */
-        Subscription<Event> Subscribe(const HandlerType& handler, EventType type, EventCategory category);
+        size_t Subscribe(const HandlerType& handler, EventType type, EventCategory category);
 
         /**
          * Processes all the events in the queue and notifies the subscribers.
@@ -81,7 +80,6 @@ namespace Axle {
          * */
         void DestroyEvents();
 
-    protected:
         /**
          * Deletes the handler type from the hashmap related to the given id.
          *
@@ -91,6 +89,7 @@ namespace Axle {
          */
         void Unsubscribe(size_t id) override;
 
+    protected:
         /**
          * The notify method is called internally and it notifies the suscribers about the new event that has arrived.
          *
@@ -104,7 +103,7 @@ namespace Axle {
         /// A map that stores the type and category of event each handler wants (by the id)
         std::unordered_map<size_t, std::pair<EventCategory, EventType>> m_HandlersType;
 
-        std::vector<Event> m_EventQueue;
+        std::vector<std::unique_ptr<Event>> m_EventQueue;
     };
 } // namespace Axle
 
