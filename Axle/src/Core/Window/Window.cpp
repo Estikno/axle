@@ -36,6 +36,7 @@ namespace Axle {
             s_IsGlfwInitialized = true;
         }
 
+        // Creating the actual window with GLFW
         m_Window = glfwCreateWindow((int) props.Width, (int) props.Height, props.Title.c_str(), nullptr, nullptr);
         AX_ASSERT(m_Window, "Failed to create GLFW window!");
 
@@ -60,6 +61,8 @@ namespace Axle {
 
     Window::~Window() {
         glfwDestroyWindow(m_Window);
+
+        // If it's the last window terminate GLFW
         --active_windows;
         if (active_windows == 0) {
             glfwTerminate();
