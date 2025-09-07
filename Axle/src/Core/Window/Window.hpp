@@ -34,6 +34,9 @@ namespace Axle {
         Window(const WindowProps& props);
         ~Window();
 
+        /**
+         * Method to be called every frame to update the window.
+         * */
         void OnUpdate();
 
         inline u32 GetWidth() const {
@@ -42,15 +45,28 @@ namespace Axle {
         inline u32 GetHeight() const {
             return m_Data.Height;
         }
-
-        void SetVSync(bool enabled);
         inline bool IsVSync() const {
             return m_Data.VSync;
         }
 
+        /**
+         * Enable or not vertical synchronization.
+         *
+         * @param enabled True to enable VSync, false to disable it.
+         * */
+        void SetVSync(bool enabled);
+
+        /**
+         * Creates a new window given the properties.
+         *
+         * @param props The properties of the window to be created.
+         *
+         * @returns A pointer to the created window.
+         * */
         static Window* Create(const WindowProps& props = WindowProps());
 
     private:
+        /// The underlying glfw window
         GLFWwindow* m_Window;
         WindowData m_Data;
     };

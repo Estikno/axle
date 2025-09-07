@@ -21,7 +21,7 @@ namespace Axle {
     }
 
     void EventHandler::AddEvent(Event* event) {
-        AX_CORE_INFO("Added a new event of type: {}", (i32) (event->GetEventType()));
+        AX_CORE_TRACE("Added a new event of type: {}", (i32) (event->GetEventType()));
         m_EventQueue.push_back(std::unique_ptr<Event>(event));
     }
 

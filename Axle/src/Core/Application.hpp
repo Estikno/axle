@@ -10,8 +10,6 @@
 #include <GLFW/glfw3.h>
 
 namespace Axle {
-    void ErrorCallback(int error, const char* description);
-
     class AXLE_API Application {
     public:
         Application();

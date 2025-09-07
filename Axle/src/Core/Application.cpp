@@ -9,34 +9,24 @@
 #include "Core/Events/Event.hpp"
 #include "Window/Window.hpp"
 
-#include <GLFW/glfw3.h>
-
 namespace Axle {
-    void ErrorCallback(int error, const char* description) {
-        AX_CORE_ERROR("GLFW Error ({0}): {1}", error, description);
-    }
-
     Application::Application() {
-        AX_CORE_TRACE("Starting the engine...");
+        AX_CORE_INFO("Starting the engine...");
 
         EventHandler::GetInstance().Subscribe(
             [&](Event* e) { OnWindowClose(e); }, EventType::WindowClose, EventCategory::Window);
 
         m_Window = std::unique_ptr<Window>(Window::Create());
-
-        glfwSetErrorCallback(ErrorCallback);
     }
 
     Application::~Application() {
         // Destroy all remaining events
         EventHandler::GetInstance().DestroyEvents();
 
-        AX_CORE_TRACE("Stopping the engine...");
+        AX_CORE_INFO("Stopping the engine...");
 
         // We need to delete the window before terminating glfw
         m_Window.reset();
-
-        glfwTerminate();
     }
 
     void Application::Run() {

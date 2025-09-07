@@ -48,7 +48,8 @@ namespace Axle {
          *
          * This function is not recommended to be called manually, better by the macro.
          *
-         * @param event The event added.
+         * @param event A pointer to the event added. This pointer will be entirely handled by this class, DO NOT DELETE
+         * IT YOURSELF.
          */
         void AddEvent(Event* event);
 
