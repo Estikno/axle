@@ -56,14 +56,15 @@ namespace Axle {
         /**
          * Subscribes a handler (function) to the event system.
          *
+         * Note that the order is first in last out. The last subscribed handler will be the first to be called.
+         *
          * @param handler The function that has to be called when receiving a cerating event
          * @param type The type of event it is interested in
          * @param category The category of the event
          *
          * If you want to receive notifications of all events with in a category simply left the type as NONE
          *
-         * @returns A subscription object that has to be kept on scope. As if it's not the handler will be unsubscribed
-         * automatically. This object can also be used to manage the subscription.
+         * @returns A a subscription id that can be used to unsubscribe later
          */
         size_t Subscribe(const HandlerType& handler, EventType type, EventCategory category);
 

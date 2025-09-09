@@ -33,8 +33,6 @@ namespace Axle {
     /// Enum that defines the event category
     enum class EventCategory { None = 0, Window, Input, Render };
 
-    enum class SubscribeLayer { Debug = 0, UI, Render, Other };
-
     /**
      * @brief Context of the event. Contains data that can be used by the event.
      *
@@ -95,7 +93,7 @@ namespace Axle {
          *
          * @returns If the event has already been handled.
          */
-        bool IsHadled() {
+        bool IsHandled() {
             return m_Handled;
         }
 

@@ -7,15 +7,23 @@
 #include "Error/Panic.hpp"
 #include "Core/Events/EventHandler.hpp"
 #include "Core/Events/Event.hpp"
+#include "Core/Layer/Layer.hpp"
 #include "Window/Window.hpp"
 
 namespace Axle {
+    Application* Application::s_Instance = nullptr;
+
     Application::Application() {
         AX_CORE_INFO("Starting the engine...");
+
+        if (s_Instance != nullptr) {
+            AX_PANIC("Application already exists!");
+        }
 
         EventHandler::GetInstance().Subscribe(
             [&](Event* e) { OnWindowClose(e); }, EventType::WindowClose, EventCategory::Window);
 
+        s_Instance = this;
         m_Window = std::unique_ptr<Window>(Window::Create());
     }
 
@@ -29,14 +37,25 @@ namespace Axle {
         m_Window.reset();
     }
 
+    void Application::PushLayer(Layer* layer) {
+        m_LayerStack.PushLayer(layer);
+    }
+
+    void Application::PushOverlay(Layer* layer) {
+        m_LayerStack.PushOverlay(layer);
+    }
+
     void Application::Run() {
         while (m_Running) {
-            m_Window->OnUpdate();
             EventHandler::GetInstance().ProcessEvents();
+            Input::Update();
+
+            for (Layer* layer : m_LayerStack)
+                layer->OnUpdate();
 
             // NOTE: Input state updating should be performed at the end of each frame.
             // The input is recorded in between the frame but the update happens at the end.
-            Input::Update();
+            m_Window->OnUpdate();
         }
     }
 

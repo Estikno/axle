@@ -16,6 +16,7 @@
 #include <typeindex>
 #include <typeinfo>
 #include <limits>
+#include <ranges>
 
 // Error handling
 #include <stdexcept>

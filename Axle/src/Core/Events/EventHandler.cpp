@@ -1,6 +1,6 @@
 #include "axpch.hpp"
-#include "../Types.hpp"
 
+#include "../Types.hpp"
 #include "EventHandler.hpp"
 #include "../Logger/Log.hpp"
 #include "Event.hpp"
@@ -36,6 +36,9 @@ namespace Axle {
     }
 
     void EventHandler::Notify(Event* event) {
+        if (event->IsHandled())
+            return;
+
         for (auto& [id, handler] : m_handlers) {
             auto it = m_HandlersType.find(id);
             if (it == m_HandlersType.end())
@@ -52,7 +55,8 @@ namespace Axle {
     }
 
     void EventHandler::ProcessEvents() {
-        for (auto& event : m_EventQueue) {
+        // Iterate in reverse order to ensure that the last added event is processed first
+        for (auto& event : std::views::reverse(m_EventQueue)) {
             Notify(event.get());
         }
 
