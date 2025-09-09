@@ -169,16 +169,19 @@ project "Axle"
         defines { "AX_DEBUG", "AXLE_TESTING" }
         symbols "On"
 		runtime "Debug"
+        -- buildoptions "/MDd"
 
     filter "configurations:Release"
         defines "AX_RELEASE"
         optimize "On"
 		runtime "Release"
+        -- buildoptions "/MD"
 
     filter "configurations:Dist"
         defines "AX_DIST"
         optimize "On"
 		runtime "Release"
+        -- buildoptions "/MD"
 
 project "Sandbox"
     location "Sandbox"
@@ -221,16 +224,19 @@ project "Sandbox"
         defines "AX_DEBUG"
         symbols "On"
 		runtime "Debug"
+        -- buildoptions "/MDd"
 
     filter "configurations:Release"
         defines "AX_RELEASE"
         optimize "On"
 		runtime "Release"
+        -- buildoptions "/MD"
 
     filter "configurations:Dist"
         defines "AX_DIST"
         optimize "On"
 		runtime "Release"
+        -- buildoptions "/MD"
 
 project "Tests"
     location "Axle/tests"
@@ -275,6 +281,7 @@ project "Tests"
         defines { "AX_DEBUG" }
         symbols "On"
 		runtime "Debug"
+        -- buildoptions "/MDd"
 	
 	filter "configurations:Release or configurations:Dist"
 		kind "None"

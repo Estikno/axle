@@ -33,6 +33,8 @@ namespace Axle {
     /// Enum that defines the event category
     enum class EventCategory { None = 0, Window, Input, Render };
 
+    enum class SubscribeLayer { Debug = 0, UI, Render, Other };
+
     /**
      * @brief Context of the event. Contains data that can be used by the event.
      *
@@ -94,14 +96,14 @@ namespace Axle {
          * @returns If the event has already been handled.
          */
         bool IsHadled() {
-            return m_isHandled;
+            return m_Handled;
         }
 
         /**
          * Marks the event as handled
          */
         virtual void Handle() {
-            m_isHandled = true;
+            m_Handled = true;
         }
 
         /**
@@ -110,7 +112,7 @@ namespace Axle {
          * @returns The type of event
          */
         EventType GetEventType() {
-            return m_eventType;
+            return m_EventType;
         }
 
         /**
@@ -119,11 +121,11 @@ namespace Axle {
          * @returns The cateory of the event
          */
         EventCategory GetEventCategory() {
-            return m_eventCategory;
+            return m_EventCategory;
         }
 
         EventContext& GetContext() {
-            return m_context;
+            return m_Context;
         }
 
         /**
@@ -136,12 +138,12 @@ namespace Axle {
         virtual ~Event();
 
     protected:
-        bool m_isHandled = false;
+        bool m_Handled = false;
 
-        EventType m_eventType = EventType::None;
-        EventCategory m_eventCategory = EventCategory::None;
+        EventType m_EventType = EventType::None;
+        EventCategory m_EventCategory = EventCategory::None;
 
-        EventContext m_context = {};
+        EventContext m_Context = {};
     };
 } // namespace Axle
 
