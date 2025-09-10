@@ -39,10 +39,12 @@ namespace Axle {
 
     void Application::PushLayer(Layer* layer) {
         m_LayerStack.PushLayer(layer);
+        layer->OnAttach();
     }
 
     void Application::PushOverlay(Layer* layer) {
         m_LayerStack.PushOverlay(layer);
+        layer->OnDetach();
     }
 
     void Application::Run() {
@@ -53,8 +55,6 @@ namespace Axle {
             for (Layer* layer : m_LayerStack)
                 layer->OnUpdate();
 
-            // NOTE: Input state updating should be performed at the end of each frame.
-            // The input is recorded in between the frame but the update happens at the end.
             m_Window->OnUpdate();
         }
     }
