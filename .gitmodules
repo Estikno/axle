@@ -10,3 +10,6 @@
 [submodule "Axle/vendor/glm"]
 	path = Axle/vendor/glm
 	url = https://github.com/g-truc/glm
+[submodule "Axle/vendor/imgui"]
+	path = Axle/vendor/imgui
+	url = https://github.com/ocornut/imgui.git

@@ -1,3 +1,5 @@
+#define GLFW_INCLUDE_NONE
+
 #include "axpch.hpp"
 
 #include "Window.hpp"
@@ -7,6 +9,7 @@
 #include "Callbacks/InputCallbacks.hpp"
 #include "Callbacks/WindowCallbacks.hpp"
 
+#include <glad/gl.h>
 #include <GLFW/glfw3.h>
 
 namespace Axle {
@@ -43,6 +46,13 @@ namespace Axle {
         ++active_windows;
 
         glfwMakeContextCurrent(m_Window);
+
+        // INitialize Glad
+        int version = gladLoadGL(glfwGetProcAddress);
+        AX_ASSERT(version != 0, "Failed to initialize Glad!");
+
+        AX_CORE_INFO("Loaded OpenGL {0}.{1}", GLAD_VERSION_MAJOR(version), GLAD_VERSION_MINOR(version));
+
         // Set a way to retrieve the window data from the GLFW window easily
         glfwSetWindowUserPointer(m_Window, &m_Data);
         // By default enable VSync

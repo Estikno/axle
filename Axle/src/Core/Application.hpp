@@ -7,8 +7,6 @@
 #include "Window/Window.hpp"
 #include "Events/Event.hpp"
 
-#include <GLFW/glfw3.h>
-
 namespace Axle {
     class AXLE_API Application {
     public:

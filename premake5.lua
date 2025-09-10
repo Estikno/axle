@@ -12,6 +12,7 @@ IncludeDir["Glad"] = "Axle/vendor/Glad/include"
 IncludeDir["Doctest"] = "Axle/vendor/doctest/doctest"
 IncludeDir["Spdlog"] = "Axle/vendor/spdlog/include"
 IncludeDir["glm"] = "Axle/vendor/glm"
+IncludeDir["imgui"] = "Axle/vendor/imgui"
 
 project "Glad"
 	location "Axle/vendor/Glad"
@@ -111,6 +112,47 @@ project "GLFW"
         runtime "Release"
         optimize "on"
 
+project "ImGui"
+    location "Axle/vendor/imgui"
+    kind "StaticLib"
+    language "C++"
+    cppdialect "C++20"
+    -- staticruntime "on"
+	-- warnings "off"
+
+    targetdir ("bin/" .. outputdir .. "/%{prj.name}")
+    objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+
+    files {
+        "Axle/vendor/imgui/*.cpp",
+        "Axle/vendor/imgui/*.h",
+        "Axle/vendor/imgui/backends/imgui_impl_glfw.*",
+        "Axle/vendor/imgui/backends/imgui_impl_opengl3.*",
+        "Axle/vendor/imgui/misc/cpp/imgui_stdlib.*"
+    }
+
+    includedirs {
+        "Axle/vendor/imgui",
+		"%{IncludeDir.GLFW}",
+    }
+
+    filter "system:windows"
+        systemversion "latest"
+        staticruntime "On"
+
+    filter "configurations:Debug"
+        runtime "Debug"
+        symbols "on"
+
+    filter "configurations:Release"
+        runtime "Release"
+        optimize "on"
+
+    filter "configurations:Dist"
+        runtime "Release"
+        optimize "on"
+
+
 project "Axle"
     location "Axle"
     kind "SharedLib"
@@ -131,12 +173,13 @@ project "Axle"
 		"%{IncludeDir.Spdlog}",
 		"%{IncludeDir.GLFW}",
         "%{IncludeDir.Glad}",
-		"%{IncludeDir.glm}"
+		"%{IncludeDir.glm}",
+        "%{IncludeDir.imgui}"
     }
 
     -- buildoptions { "/utf-8" }
 	
-	links { "GLFW", "Glad" }
+	links { "GLFW", "Glad", "ImGui" }
 
     filter "action:vs*"
         buildoptions { "/utf-8" }
