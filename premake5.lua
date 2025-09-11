@@ -168,7 +168,7 @@ project "Axle"
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
 
     pchheader "axpch.hpp"
-    pchsource "Axle/src/axpch.cpp"
+    pchsource "axpch.cpp"
 
     files { "%{prj.name}/src/**.hpp", "%{prj.name}/src/**.cpp", "%{prj.name}/src/**.h" }
 

@@ -29,6 +29,7 @@ namespace Axle {
         s_Instance = this;
         m_Window = std::unique_ptr<Window>(Window::Create());
 
+        // Layers setup
         m_LayerStack = new LayerStack();
         PushOverlay(new ImGuiLayer());
     }
@@ -39,7 +40,9 @@ namespace Axle {
 
         AX_CORE_INFO("Stopping the engine...");
 
+        // By deleting the layer stack, we also delete all layers and detach them
         delete m_LayerStack;
+
         // We delete the main window and termninate GLFW
         m_Window.reset();
     }
@@ -60,6 +63,7 @@ namespace Axle {
             Input::Update();
 
             glClear(GL_COLOR_BUFFER_BIT);
+
             for (Layer* layer : *m_LayerStack)
                 layer->OnUpdate();
 

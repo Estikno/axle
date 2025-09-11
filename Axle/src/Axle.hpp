@@ -11,8 +11,6 @@
 
 #include "ECS/Resources.hpp"
 
-#include "ImGui/ImGuiLayer.hpp"
-
 // ---Entry Point---
 #include "Core/EntryPoint.hpp"
 // -----------------

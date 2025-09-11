@@ -11,9 +11,36 @@ namespace Axle {
         LayerStack();
         ~LayerStack();
 
+        /**
+         * Pushes a layer to the stack.
+         * LAYERS are pushed below OVERLAYS.
+         *
+         * @param layer The layer to push.
+         * */
         void PushLayer(Layer* layer);
+
+        /**
+         * Pushes an overlay to the stack.
+         * An OVERLAY is always pushed on top of all layers.
+         *
+         * @param overlay The overlay to push.
+         * */
         void PushOverlay(Layer* overlay);
+
+        /**
+         * Removes a layer from the stack.
+         * The pointer is not deleted.
+         *
+         * @param layer The layer to remove.
+         * */
         void PopLayer(Layer* layer);
+
+        /**
+         * Removes an overlay from the stack.
+         * The pointer is not deleted.
+         *
+         * @param overlay The overlay to remove.
+         * */
         void PopOverlay(Layer* overlay);
 
         std::vector<Layer*>::iterator begin() {
