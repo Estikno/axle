@@ -56,6 +56,10 @@ namespace Axle {
          * */
         void SetVSync(bool enabled);
 
+        inline GLFWwindow* GetNativeWindow() {
+            return m_Window;
+        }
+
         /**
          * Creates a new window given the properties.
          *

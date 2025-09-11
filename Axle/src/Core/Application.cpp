@@ -10,6 +10,9 @@
 #include "Core/Layer/Layer.hpp"
 #include "Window/Window.hpp"
 
+#include "ImGui/ImGuiLayer.hpp"
+#include <glad/gl.h>
+
 namespace Axle {
     Application* Application::s_Instance = nullptr;
 
@@ -25,6 +28,9 @@ namespace Axle {
 
         s_Instance = this;
         m_Window = std::unique_ptr<Window>(Window::Create());
+
+        m_LayerStack = new LayerStack();
+        PushOverlay(new ImGuiLayer());
     }
 
     Application::~Application() {
@@ -33,18 +39,19 @@ namespace Axle {
 
         AX_CORE_INFO("Stopping the engine...");
 
-        // We need to delete the window before terminating glfw
+        delete m_LayerStack;
+        // We delete the main window and termninate GLFW
         m_Window.reset();
     }
 
     void Application::PushLayer(Layer* layer) {
-        m_LayerStack.PushLayer(layer);
+        m_LayerStack->PushLayer(layer);
         layer->OnAttach();
     }
 
     void Application::PushOverlay(Layer* layer) {
-        m_LayerStack.PushOverlay(layer);
-        layer->OnDetach();
+        m_LayerStack->PushOverlay(layer);
+        layer->OnAttach();
     }
 
     void Application::Run() {
@@ -52,7 +59,8 @@ namespace Axle {
             EventHandler::GetInstance().ProcessEvents();
             Input::Update();
 
-            for (Layer* layer : m_LayerStack)
+            glClear(GL_COLOR_BUFFER_BIT);
+            for (Layer* layer : *m_LayerStack)
                 layer->OnUpdate();
 
             m_Window->OnUpdate();

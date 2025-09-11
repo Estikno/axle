@@ -140,6 +140,10 @@ project "ImGui"
         systemversion "latest"
         staticruntime "On"
 
+    filter "system:linux"
+        systemversion "latest"
+        pic "On"
+
     filter "configurations:Debug"
         runtime "Debug"
         symbols "on"
