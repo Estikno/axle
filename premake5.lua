@@ -181,6 +181,8 @@ project "Axle"
 	
 	links { "GLFW", "Glad", "ImGui" }
 
+    defines { "GLFW_INCLUDE_NONE" }
+
     filter "action:vs*"
         buildoptions { "/utf-8" }
 

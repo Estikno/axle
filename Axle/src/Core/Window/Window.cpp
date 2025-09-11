@@ -1,5 +1,3 @@
-#define GLFW_INCLUDE_NONE
-
 #include "axpch.hpp"
 
 #include "Window.hpp"

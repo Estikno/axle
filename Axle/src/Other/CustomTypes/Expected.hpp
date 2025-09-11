@@ -136,7 +136,7 @@ namespace Axle {
                     rhs.Swap(*this);
                 } else {
                     // Swap the exceptions
-                    m_Exception.swap(rhs.m_Exception);
+                    std::swap(m_Exception, rhs.m_Exception);
                     // Unnecessary but clearer
                     // std::swap(m_HasVal, rhs.m_HasVal);
                 }
