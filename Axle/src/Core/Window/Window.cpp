@@ -82,7 +82,7 @@ namespace Axle {
         if (active_windows == 0) {
             glfwTerminate();
             s_IsGlfwInitialized = false;
-            AX_CORE_TRACE("GLFW terminated successfully.");
+            AX_CORE_INFO("GLFW terminated successfully.");
         }
     }
 
