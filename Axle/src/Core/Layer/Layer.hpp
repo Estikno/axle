@@ -3,7 +3,6 @@
 #include "axpch.hpp"
 
 #include "Core/Core.hpp"
-#include "Core/Events/Event.hpp"
 
 namespace Axle {
     class AXLE_API Layer {
@@ -21,6 +20,8 @@ namespace Axle {
 
     protected:
         std::string m_DebugName;
+
+        /// The indexes of the events the layer is subscribed to.
         std::vector<size_t> m_EventSubscribeIndexes;
     };
 } // namespace Axle

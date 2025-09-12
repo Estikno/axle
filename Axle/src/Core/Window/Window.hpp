@@ -24,6 +24,7 @@ namespace Axle {
     struct WindowData {
         std::string Title;
         u32 Width, Height;
+        u32 FramebufferWidth, FramebufferHeight;
         bool VSync;
     };
 

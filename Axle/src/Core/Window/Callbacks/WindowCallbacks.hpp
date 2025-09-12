@@ -8,4 +8,5 @@
 namespace Axle {
     void WindowCloseCallback(GLFWwindow* window);
     void WindowSizeCallback(GLFWwindow* window, int width, int height);
+    void FrameBufferSizeCallback(GLFWwindow* window, int width, int height);
 } // namespace Axle

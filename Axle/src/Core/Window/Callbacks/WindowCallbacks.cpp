@@ -9,6 +9,7 @@
 #include "../Window.hpp"
 
 #include <GLFW/glfw3.h>
+#include <glad/gl.h>
 
 namespace Axle {
     void WindowCloseCallback(GLFWwindow* window) {
@@ -35,5 +36,14 @@ namespace Axle {
         event->GetContext().u32_values[0] = static_cast<u32>(width);
         event->GetContext().u32_values[1] = static_cast<u32>(height);
         AX_ADD_EVENT(event);
+    }
+
+    void FrameBufferSizeCallback(GLFWwindow* window, int width, int height) {
+        glViewport(0, 0, width, height);
+
+        // Update the window data
+        WindowData* data = static_cast<WindowData*>(glfwGetWindowUserPointer(window));
+        data->FramebufferWidth = static_cast<u32>(width);
+        data->FramebufferHeight = static_cast<u32>(height);
     }
 } // namespace Axle

@@ -33,6 +33,11 @@ namespace Axle {
             i32 success = glfwInit();
             AX_ASSERT(success, "Could not initialize GLFW!");
 
+            // Define openGL version (4.6 Core)
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+            glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
             glfwSetErrorCallback(ErrorCallback);
             s_IsGlfwInitialized = true;
         }
@@ -45,9 +50,10 @@ namespace Axle {
 
         glfwMakeContextCurrent(m_Window);
 
-        // INitialize Glad
+        // Initialize Glad
         int version = gladLoadGL(glfwGetProcAddress);
         AX_ASSERT(version != 0, "Failed to initialize Glad!");
+        glViewport(0, 0, props.Width, props.Height);
 
         AX_CORE_INFO("Loaded OpenGL {0}.{1}", GLAD_VERSION_MAJOR(version), GLAD_VERSION_MINOR(version));
 
@@ -59,6 +65,7 @@ namespace Axle {
         // Window callbacks
         glfwSetWindowCloseCallback(m_Window, WindowCloseCallback);
         glfwSetWindowSizeCallback(m_Window, WindowSizeCallback);
+        glfwSetFramebufferSizeCallback(m_Window, FrameBufferSizeCallback);
 
         // Input callbacks
         glfwSetKeyCallback(m_Window, KeyCallback);
