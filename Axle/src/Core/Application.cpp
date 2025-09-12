@@ -48,11 +48,13 @@ namespace Axle {
     }
 
     void Application::PushLayer(Layer* layer) {
+        AX_CORE_INFO("{0} layer attached", layer->GetName());
         m_LayerStack->PushLayer(layer);
         layer->OnAttach();
     }
 
     void Application::PushOverlay(Layer* layer) {
+        AX_CORE_INFO("{0} overlay attached", layer->GetName());
         m_LayerStack->PushOverlay(layer);
         layer->OnAttach();
     }

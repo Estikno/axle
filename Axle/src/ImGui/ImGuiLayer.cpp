@@ -17,8 +17,6 @@ namespace Axle {
     }
 
     void ImGuiLayer::OnAttach() {
-        AX_CORE_INFO("{0} layer attached", m_DebugName);
-
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();

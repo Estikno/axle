@@ -11,6 +11,8 @@
 
 #include "ECS/Resources.hpp"
 
+#include "Core/Layer/Layer.hpp"
+
 // ---Entry Point---
 #include "Core/EntryPoint.hpp"
 // -----------------

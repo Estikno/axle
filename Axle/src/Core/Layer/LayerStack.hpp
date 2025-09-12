@@ -8,7 +8,6 @@
 namespace Axle {
     class AXLE_API LayerStack {
     public:
-        LayerStack();
         ~LayerStack();
 
         /**
@@ -58,6 +57,6 @@ namespace Axle {
 
     private:
         std::vector<Layer*> m_Layers;
-        std::vector<Layer*>::iterator m_LayerInsert;
+        size_t m_LayerInsert = 0;
     };
 } // namespace Axle
