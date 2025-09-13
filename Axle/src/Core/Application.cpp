@@ -11,7 +11,9 @@
 #include "Window/Window.hpp"
 
 #include "ImGui/ImGuiLayer.hpp"
+
 #include <glad/gl.h>
+#include <GLFW/glfw3.h>
 
 namespace Axle {
     Application* Application::s_Instance = nullptr;
@@ -60,19 +62,63 @@ namespace Axle {
     }
 
     void Application::Update() {
-        while (m_Running) {
-            EventHandler::GetInstance().ProcessEvents();
-            Input::Update();
+        for (Layer* layer : *m_LayerStack)
+            layer->OnAttach();
 
+        f64 previous = glfwGetTime();
+        f64 lag = 0.0;
+
+        while (m_Running) {
+            // Calculate each frame time
+            f64 current = glfwGetTime();
+            f64 elapsed = current - previous;
+            // Cap at 250 ms to avoid spiral of death
+            if (elapsed > 0.25)
+                elapsed = 0.25;
+            previous = current;
+
+            // TODO: We could interpolate rendering
+
+            // Use this varible to make sure that update loops at a fixed rate
+            lag += elapsed;
+
+            while (lag >= m_DeltaTime) {
+                // Update logic
+                // --------------------------
+                EventHandler::GetInstance().ProcessEvents();
+                Input::Update();
+
+                for (Layer* layer : *m_LayerStack)
+                    layer->OnUpdate();
+                // --------------------------
+                lag -= m_DeltaTime;
+            }
+
+            // Sleep a bit to avoid pegging a CPU core
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+
+        for (Layer* layer : *m_LayerStack)
+            layer->OnDettach();
+    }
+
+    void Application::Render() {
+        for (Layer* layer : *m_LayerStack)
+            layer->OnAttachRender();
+
+        while (m_Running) {
             // Temporary background color
             glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
 
             for (Layer* layer : *m_LayerStack)
-                layer->OnUpdate();
+                layer->OnRender();
 
             m_Window->OnUpdate();
         }
+
+        for (Layer* layer : *m_LayerStack)
+            layer->OnDettachRender();
     }
 
     void Application::OnWindowClose(Event* event) {

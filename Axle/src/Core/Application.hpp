@@ -37,7 +37,7 @@ namespace Axle {
         LayerStack* m_LayerStack;
 
         /// Time between update loops
-        f64 dt = 1.0 / 60.0;
+        const f64 m_DeltaTime = 1.0 / 60.0;
     };
 
     // To be defined in client

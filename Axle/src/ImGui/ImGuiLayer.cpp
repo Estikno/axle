@@ -12,10 +12,6 @@ namespace Axle {
     ImGuiLayer::ImGuiLayer()
         : Layer("ImGui Layer") {}
 
-    ImGuiLayer::~ImGuiLayer() {
-        OnDetach();
-    }
-
     void ImGuiLayer::OnAttach() {
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
@@ -45,7 +41,7 @@ namespace Axle {
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
 
-    void ImGuiLayer::OnDetach() {
+    void ImGuiLayer::OnDettach() {
         AX_CORE_INFO("{0} layer detached", m_DebugName);
 
         ImGui_ImplOpenGL3_Shutdown();

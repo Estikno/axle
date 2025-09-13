@@ -28,11 +28,13 @@ namespace Axle {
     }
 
     size_t EventHandler::Subscribe(const HandlerType& handler, EventType type, EventCategory category) {
+        std::scoped_lock lock(m_EventMutex);
         m_HandlersType[m_nextId] = std::make_pair(category, type);
         return Subject<Event>::Subscribe(handler);
     }
 
     void EventHandler::Unsubscribe(size_t id) {
+        std::scoped_lock lock(m_EventMutex);
         m_HandlersType.erase(id);
         Subject<Event>::Unsubscribe(id);
     }
