@@ -15,9 +15,6 @@ namespace Axle {
      * receive notifications on window events, but it does not want to manually check the window class.
      *
      * This way everything is centralized, eliminating spaggeti references.
-     *
-     * TODO: Right now there is no buffer or multi thread safety. Every incoming event is handled and notified right
-     * away. This needs to be changed.
      */
     class AXLE_API EventHandler : public Subject<Event> {
     public:
@@ -45,8 +42,10 @@ namespace Axle {
 
         /**
          * Add an event to the event handler and it will be notified automatically.
-         *
          * This function is not recommended to be called manually, better by the macro.
+         *
+         * This is the only multithread safe method in this class. The other stuff should all be called form the same
+         * thread.
          *
          * @param event A pointer to the event added. This pointer will be entirely handled by this class, DO NOT DELETE
          * IT YOURSELF.
@@ -106,6 +105,8 @@ namespace Axle {
         std::unordered_map<size_t, std::pair<EventCategory, EventType>> m_HandlersType;
 
         std::vector<std::unique_ptr<Event>> m_EventQueue;
+
+        std::mutex m_EventMutex;
     };
 } // namespace Axle
 

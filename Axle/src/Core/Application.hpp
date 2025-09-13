@@ -13,7 +13,8 @@ namespace Axle {
         Application();
         virtual ~Application();
 
-        void Run();
+        void Update();
+        void Render();
 
         void PushLayer(Layer* layer);
         void PushOverlay(Layer* layer);
@@ -29,11 +30,14 @@ namespace Axle {
     private:
         void OnWindowClose(Event* event);
 
+        static Application* s_Instance;
+
         std::unique_ptr<Window> m_Window;
-        bool m_Running = true;
+        std::atomic<bool> m_Running = true;
         LayerStack* m_LayerStack;
 
-        static Application* s_Instance;
+        /// Time between update loops
+        f64 dt = 1.0 / 60.0;
     };
 
     // To be defined in client

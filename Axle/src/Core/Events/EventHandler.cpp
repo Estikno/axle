@@ -5,6 +5,7 @@
 #include "../Logger/Log.hpp"
 #include "Event.hpp"
 #include "../../Other/Observer.hpp"
+#include <mutex>
 
 namespace Axle {
     std::unique_ptr<EventHandler> EventHandler::m_EventHandler;
@@ -22,6 +23,8 @@ namespace Axle {
 
     void EventHandler::AddEvent(Event* event) {
         AX_CORE_TRACE("Added a new event of type: {}", (i32) (event->GetEventType()));
+
+        std::scoped_lock lock(m_EventMutex);
         m_EventQueue.push_back(std::unique_ptr<Event>(event));
     }
 

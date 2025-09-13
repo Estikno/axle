@@ -59,7 +59,7 @@ namespace Axle {
         layer->OnAttach();
     }
 
-    void Application::Run() {
+    void Application::Update() {
         while (m_Running) {
             EventHandler::GetInstance().ProcessEvents();
             Input::Update();

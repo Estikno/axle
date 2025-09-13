@@ -21,3 +21,8 @@
 // Error handling
 #include <stdexcept>
 #include <optional>
+
+// Multithreading
+#include <thread>
+#include <atomic>
+#include <mutex>
