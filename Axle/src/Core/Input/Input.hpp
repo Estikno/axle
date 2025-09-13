@@ -136,5 +136,7 @@ namespace Axle {
 
     private:
         static InputState s_InputState;
+
+        static std::mutex s_InputMutex;
     };
 } // namespace Axle

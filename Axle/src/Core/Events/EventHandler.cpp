@@ -5,7 +5,6 @@
 #include "../Logger/Log.hpp"
 #include "Event.hpp"
 #include "../../Other/Observer.hpp"
-#include <mutex>
 
 namespace Axle {
     std::unique_ptr<EventHandler> EventHandler::m_EventHandler;
@@ -58,12 +57,18 @@ namespace Axle {
     }
 
     void EventHandler::ProcessEvents() {
-        // Iterate in reverse order to ensure that the last added event is processed first
-        for (auto& event : std::views::reverse(m_EventQueue)) {
-            Notify(event.get());
+        std::vector<std::unique_ptr<Event>> eventsToProcess;
+
+        // Swap the event queue with a local vector to minimize lock time and to also clear the queue for new events
+        {
+            std::scoped_lock lock(m_EventMutex);
+            eventsToProcess.swap(m_EventQueue);
         }
 
-        m_EventQueue.clear();
+        // Iterate in reverse order to ensure that the last added event is processed first
+        for (auto& event : std::views::reverse(eventsToProcess)) {
+            Notify(event.get());
+        }
     }
 
     void EventHandler::DestroyEvents() {

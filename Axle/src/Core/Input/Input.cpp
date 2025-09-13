@@ -4,23 +4,28 @@
 #include "Input.hpp"
 #include "../Logger/Log.hpp"
 #include "../Events/EventHandler.hpp"
+#include "Core/Events/Event.hpp"
 
 #include <glm/vec2.hpp>
-#include "Core/Events/Event.hpp"
 
 namespace Axle {
     InputState Input::s_InputState;
+    std::mutex Input::s_InputMutex;
 
     void Input::Update() {
+        std::scoped_lock lock(s_InputMutex);
         s_InputState.keyboard_previous = s_InputState.keyboard_current;
         s_InputState.mouse_previous = s_InputState.mouse_current;
     }
 
     void Input::SetKey(Keys key, bool pressed) {
-        // Only handles if the state of the key has changed
-        if (s_InputState.keyboard_current.keys[static_cast<i32>(key)] != pressed) {
-            // Update internal state
-            s_InputState.keyboard_current.keys[static_cast<i32>(key)] = pressed;
+        {
+            std::scoped_lock lock(s_InputMutex);
+            // Only handles if the state of the key has changed
+            if (s_InputState.keyboard_current.keys[static_cast<i32>(key)] != pressed) {
+                // Update internal state
+                s_InputState.keyboard_current.keys[static_cast<i32>(key)] = pressed;
+            }
         }
 
         // Fire off an event informing of the change in state
@@ -39,10 +44,13 @@ namespace Axle {
     }
 
     void Input::SetMouseButton(MouseButtons button, bool pressed) {
-        // Only handles if the state of the key has changed
-        if (s_InputState.mouse_current.buttons[static_cast<i32>(button)] != pressed) {
-            // Update internal state
-            s_InputState.mouse_current.buttons[static_cast<i32>(button)] = pressed;
+        {
+            std::scoped_lock lock(s_InputMutex);
+            // Only handles if the state of the key has changed
+            if (s_InputState.mouse_current.buttons[static_cast<i32>(button)] != pressed) {
+                // Update internal state
+                s_InputState.mouse_current.buttons[static_cast<i32>(button)] = pressed;
+            }
         }
 
         // Fire off an event informing of the change in state
@@ -61,12 +69,20 @@ namespace Axle {
     }
 
     void Input::SetMousePosition(const glm::vec2& position) {
-        // Only handles if the state of the key has changed
-        if (s_InputState.mouse_current.position == position)
-            return;
+        bool stateChange = false;
 
-        // Update internal state
-        s_InputState.mouse_current.position = position;
+        {
+            std::scoped_lock lock(s_InputMutex);
+            // Only handles if the state of the key has changed
+            if (s_InputState.mouse_current.position != position) {
+                // Update internal state
+                s_InputState.mouse_current.position = position;
+                stateChange = true;
+            }
+        }
+
+        if (!stateChange)
+            return;
 
         // Fire off an event informing of the change in state
         Event* event = new Event(EventType::MouseMoved, EventCategory::Input);
@@ -80,43 +96,49 @@ namespace Axle {
     void Input::SetMouseWheel(f32 delta) {
         // Fire off an event informing of the change in state
         Event* event = new Event(EventType::MouseScrolled, EventCategory::Input);
-
         event->GetContext().f32_values[0] = delta;
 
         AX_ADD_EVENT(event);
     }
 
     bool Input::GetKeyDown(Keys key) {
+        std::scoped_lock lock(s_InputMutex);
         return s_InputState.keyboard_current.keys[static_cast<i32>(key)] &&
                !s_InputState.keyboard_previous.keys[static_cast<i32>(key)];
     }
 
     bool Input::GetKeyUp(Keys key) {
+        std::scoped_lock lock(s_InputMutex);
         return !s_InputState.keyboard_current.keys[static_cast<i32>(key)] &&
                s_InputState.keyboard_previous.keys[static_cast<i32>(key)];
     }
 
     bool Input::GetKey(Keys key) {
+        std::scoped_lock lock(s_InputMutex);
         return s_InputState.keyboard_current.keys[static_cast<i32>(key)] &&
                s_InputState.keyboard_previous.keys[static_cast<i32>(key)];
     }
 
     bool Input::GetMouseButtonDown(MouseButtons button) {
+        std::scoped_lock lock(s_InputMutex);
         return s_InputState.mouse_current.buttons[static_cast<i32>(button)] &&
                !s_InputState.mouse_previous.buttons[static_cast<i32>(button)];
     }
 
     bool Input::GetMouseButtonUp(MouseButtons button) {
+        std::scoped_lock lock(s_InputMutex);
         return !s_InputState.mouse_current.buttons[static_cast<i32>(button)] &&
                s_InputState.mouse_previous.buttons[static_cast<i32>(button)];
     }
 
     bool Input::GetMouseButton(MouseButtons button) {
+        std::scoped_lock lock(s_InputMutex);
         return s_InputState.mouse_current.buttons[static_cast<i32>(button)] &&
                s_InputState.mouse_previous.buttons[static_cast<i32>(button)];
     }
 
     glm::vec2 Input::GetMousePosition() {
+        std::scoped_lock lock(s_InputMutex);
         return s_InputState.mouse_current.position;
     }
 
