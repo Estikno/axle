@@ -1,8 +1,8 @@
 #pragma once
 
 #include "axpch.hpp"
-#include "../Types.hpp"
 
+#include "../Types.hpp"
 #include "../Core.hpp"
 #include "Event.hpp"
 #include "../../Other/Observer.hpp"

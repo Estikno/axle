@@ -168,7 +168,7 @@ project "Axle"
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
 
     pchheader "axpch.hpp"
-    pchsource "axpch.cpp"
+    pchsource "Axle/src/axpch.cpp"
 
     files { "%{prj.name}/src/**.hpp", "%{prj.name}/src/**.cpp", "%{prj.name}/src/**.h" }
 
@@ -252,7 +252,8 @@ project "Sandbox"
 		"%{IncludeDir.glm}"
 	}
 
-    links { "Axle" }
+    -- Temporary: After implementing own render system remove the glad link
+    links { "Axle", "Glad" }
 
     -- buildoptions { "/utf-8" }
 
