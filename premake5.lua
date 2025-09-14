@@ -252,8 +252,7 @@ project "Sandbox"
 		"%{IncludeDir.glm}"
 	}
 
-    -- Temporary: After implementing own render system remove the glad link
-    links { "Axle", "Glad" }
+    links { "Axle" }
 
     -- buildoptions { "/utf-8" }
 
