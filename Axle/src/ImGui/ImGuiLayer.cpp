@@ -10,9 +10,17 @@
 
 namespace Axle {
     ImGuiLayer::ImGuiLayer()
-        : Layer("ImGui Layer") {}
+        : Layer("ImGui") {}
 
-    void ImGuiLayer::OnAttach() {
+    void ImGuiLayer::OnAttach() {}
+
+    void ImGuiLayer::OnUpdate() {}
+
+    void ImGuiLayer::OnDettach() {
+        AX_CORE_INFO("{0} layer detached", m_DebugName);
+    }
+
+    void ImGuiLayer::OnAttachRender() {
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -30,7 +38,7 @@ namespace Axle {
         ImGui::StyleColorsDark();
     }
 
-    void ImGuiLayer::OnUpdate() {
+    void ImGuiLayer::OnRender() {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -41,9 +49,7 @@ namespace Axle {
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
 
-    void ImGuiLayer::OnDettach() {
-        AX_CORE_INFO("{0} layer detached", m_DebugName);
-
+    void ImGuiLayer::OnDettachRender() {
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();

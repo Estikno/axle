@@ -13,13 +13,22 @@ namespace Axle {
         Application();
         virtual ~Application();
 
+        void Run();
         void Update();
         void Render();
 
         void PushLayer(Layer* layer);
         void PushOverlay(Layer* layer);
 
-        inline Window& GetWindow() {
+        /**
+         * Returns the window of the application.
+         * Caution: This functions must only be called by the render thread.
+         *
+         * If you need to check for example if the window is resized, use events.
+         *
+         * @returns A reference to the window.
+         * */
+        inline Window& GetWindow() const {
             return *m_Window;
         }
 

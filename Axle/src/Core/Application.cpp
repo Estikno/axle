@@ -29,7 +29,7 @@ namespace Axle {
             [&](Event* e) { OnWindowClose(e); }, EventType::WindowClose, EventCategory::Window);
 
         s_Instance = this;
-        m_Window = std::unique_ptr<Window>(Window::Create());
+        // m_Window = std::unique_ptr<Window>(Window::Create());
 
         // Layers setup
         m_LayerStack = new LayerStack();
@@ -44,24 +44,28 @@ namespace Axle {
 
         // By deleting the layer stack, we also delete all layers and detach them
         delete m_LayerStack;
-
-        // We delete the main window and termninate GLFW
-        m_Window.reset();
     }
 
     void Application::PushLayer(Layer* layer) {
         AX_CORE_INFO("{0} layer attached", layer->GetName());
         m_LayerStack->PushLayer(layer);
-        layer->OnAttach();
     }
 
     void Application::PushOverlay(Layer* layer) {
         AX_CORE_INFO("{0} overlay attached", layer->GetName());
         m_LayerStack->PushOverlay(layer);
-        layer->OnAttach();
+    }
+
+    void Application::Run() {
+        std::thread RenderThread(&Application::Render, this);
+        Update();
+
+        RenderThread.join();
     }
 
     void Application::Update() {
+        AX_CORE_INFO("Welcome from thread {0}", std::hash<std::thread::id>{}(std::this_thread::get_id()));
+
         for (Layer* layer : *m_LayerStack)
             layer->OnAttach();
 
@@ -103,6 +107,10 @@ namespace Axle {
     }
 
     void Application::Render() {
+        AX_CORE_INFO("Welcome from thread {0}", std::hash<std::thread::id>{}(std::this_thread::get_id()));
+
+        m_Window = std::unique_ptr<Window>(Window::Create());
+
         for (Layer* layer : *m_LayerStack)
             layer->OnAttachRender();
 
@@ -119,6 +127,9 @@ namespace Axle {
 
         for (Layer* layer : *m_LayerStack)
             layer->OnDettachRender();
+
+        // We delete the main window and termninate GLFW
+        m_Window.reset();
     }
 
     void Application::OnWindowClose(Event* event) {

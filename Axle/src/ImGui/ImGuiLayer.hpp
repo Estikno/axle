@@ -10,7 +10,11 @@ namespace Axle {
         ~ImGuiLayer() override = default;
 
         void OnAttach() override;
-        void OnDettach() override;
         void OnUpdate() override;
+        void OnDettach() override;
+
+        void OnAttachRender() override;
+        void OnRender() override;
+        void OnDettachRender() override;
     };
 } // namespace Axle
