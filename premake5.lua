@@ -218,6 +218,7 @@ project "Axle"
         defines { "AX_DEBUG", "AXLE_TESTING" }
         symbols "On"
 		runtime "Debug"
+        sanitize { "Address" }
         -- buildoptions "/MDd"
 
     filter "configurations:Release"
@@ -273,6 +274,7 @@ project "Sandbox"
         defines "AX_DEBUG"
         symbols "On"
 		runtime "Debug"
+        sanitize { "Address" }
         -- buildoptions "/MDd"
 
     filter "configurations:Release"
@@ -330,6 +332,7 @@ project "Tests"
         defines { "AX_DEBUG" }
         symbols "On"
 		runtime "Debug"
+        sanitize { "Address" }
         -- buildoptions "/MDd"
 	
 	filter "configurations:Release or configurations:Dist"
