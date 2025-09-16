@@ -81,7 +81,7 @@ namespace Axle {
                 elapsed = 0.25;
             previous = current;
 
-            // TODO: We could interpolate rendering
+            // TODO: We could interpolate rendering of physics objects
 
             // Use this varible to make sure that update loops at a fixed rate
             lag += elapsed;
@@ -93,7 +93,7 @@ namespace Axle {
                 Input::Update();
 
                 for (Layer* layer : *m_LayerStack)
-                    layer->OnUpdate();
+                    layer->OnUpdate(m_DeltaTime);
                 // --------------------------
                 lag -= m_DeltaTime;
             }
@@ -114,13 +114,20 @@ namespace Axle {
         for (Layer* layer : *m_LayerStack)
             layer->OnAttachRender();
 
+        f64 previous = glfwGetTime();
+
         while (m_Running) {
+            // Calculate each frame time
+            f64 current = glfwGetTime();
+            f64 elapsed = current - previous;
+            previous = current;
+
             // Temporary background color
             glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
 
             for (Layer* layer : *m_LayerStack)
-                layer->OnRender();
+                layer->OnRender(elapsed);
 
             m_Window->OnUpdate();
         }

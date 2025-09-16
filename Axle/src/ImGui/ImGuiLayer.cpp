@@ -14,10 +14,11 @@ namespace Axle {
 
     void ImGuiLayer::OnAttach() {}
 
-    void ImGuiLayer::OnUpdate() {}
+    void ImGuiLayer::OnUpdate(f64 FixedDeltaTime) {}
 
     void ImGuiLayer::OnDettach() {
         AX_CORE_INFO("{0} layer detached", m_DebugName);
+        Layer::OnDettach();
     }
 
     void ImGuiLayer::OnAttachRender() {
@@ -38,12 +39,18 @@ namespace Axle {
         ImGui::StyleColorsDark();
     }
 
-    void ImGuiLayer::OnRender() {
+    void ImGuiLayer::OnRender(f64 DeltaTime) {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::ShowDemoWindow(); // Show demo window! :)
+        // Show demo window! :)
+        ImGui::ShowDemoWindow();
+
+        // Custom FPS displayer
+        ImGui::Begin("FPS");
+        ImGui::Text("fps: %.1f", 1.0 / DeltaTime);
+        ImGui::End();
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

@@ -11,7 +11,7 @@ public:
     ~LearnLayer() override = default;
 
     void OnAttach() override {}
-    void OnUpdate() override {}
+    void OnUpdate(f64 FixedDeltaTime) override {}
     void OnDettach() override {
         AX_INFO("Learn layer detached");
     }
@@ -66,7 +66,7 @@ public:
         glDeleteBuffers(1, &EBO);
         glDeleteProgram(shaderProgram);
     }
-    void OnRender() override {
+    void OnRender(f64 DeltaTime) override {
         // We specify OpenGL to use our program and our VAO
         glUseProgram(shaderProgram);
         glBindVertexArray(VAOs[0]);

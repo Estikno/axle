@@ -3,6 +3,7 @@
 #include "axpch.hpp"
 
 #include "Core/Core.hpp"
+#include "Core/Types.hpp"
 
 namespace Axle {
     class AXLE_API Layer {
@@ -19,12 +20,12 @@ namespace Axle {
          * Called a fixed amount of times per second.
          * It's recommended to do all physics and logic updates here.
          * */
-        virtual void OnUpdate() = 0;
+        virtual void OnUpdate(f64 FixedDeltaTime) = 0;
 
         /**
          * Called when the layer is dettached from the stack.
          * */
-        virtual void OnDettach() = 0;
+        virtual void OnDettach();
 
         /**
          * Called when the layer is attached to the stack, but in the render thread.
@@ -35,7 +36,7 @@ namespace Axle {
         /**
          * Called every frame in the render thread.
          * All OpenGL calls must be done here. */
-        virtual void OnRender() = 0;
+        virtual void OnRender(f64 DeltaTime) = 0;
 
         /**
          * Called when the layer is dettached from the stack, but in the render thread.
