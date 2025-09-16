@@ -44,41 +44,17 @@ namespace Axle {
         std::optional<std::any> custom_data;
 
         // Raw numeric / fixed-size data (128 bits in total)
-        union {
-            /// 2 x 64-bit signed integers
-            i64 i64_values[2];
-
-            /// 2 x 64-bit unsigned integers
-            u64 u64_values[2];
-
-            /// 2 x 64-bit floating-point numbers
-            f64 f64_values[2];
-
-            /// 4 x 32-bit signed integers
-            i32 i32_values[4];
-
-            /// 4 x 32-bit unsigned integers
-            u32 u32_values[4];
-
-            /// 4 x 32-bit floats
-            f32 f32_values[4];
-
-            /// 8 x 16-bit signed integers
-            i16 i16_values[8];
-
-            /// 8 x 16-bit unsigned integers
-            u16 u16_values[8];
-
-            /// 16 x 8-bit signed integers
-            i8 i8_values[16];
-
-            /// 16 x 8-bit unsigned integers
-            u8 u8_values[16];
-        };
-
-        EventContext()
-            : custom_data(std::nullopt),
-              u64_values{0, 0} {}
+        std::variant<std::array<i64, 2>,
+                     std::array<u64, 2>,
+                     std::array<f64, 2>,
+                     std::array<i32, 4>,
+                     std::array<u32, 4>,
+                     std::array<f32, 4>,
+                     std::array<i16, 8>,
+                     std::array<u16, 8>,
+                     std::array<i8, 16>,
+                     std::array<u8, 16>>
+            raw_data;
     };
 
     /**

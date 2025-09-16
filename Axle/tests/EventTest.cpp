@@ -48,7 +48,7 @@ void TestFunction_AllInput_With_Data(Event* event) {
     CHECK(event->GetEventCategory() == Axle::EventCategory::Input);
     CHECK_FALSE(event->GetContext().custom_data.has_value());
 
-    CHECK(event->GetContext().u16_values[0] == 12);
+    CHECK(std::get<std::array<u16, 8>>(event->GetContext().raw_data).at(0) == 12);
 }
 
 void TestFunction_Complex_CustomData(Event* event) {
@@ -115,7 +115,7 @@ TEST_CASE("EventHandler") {
         size_t id = instance.Subscribe(TestFunction_AllInput_With_Data, EventType::None, EventCategory::Input);
 
         Event* event_1 = new Event(EventType::KeyPressed, EventCategory::Input);
-        event_1->GetContext().u16_values[0] = 12;
+        event_1->GetContext().raw_data = std::array<u16, 8>{12};
 
         CHECK_NOTHROW(AX_ADD_EVENT(event_1));
 

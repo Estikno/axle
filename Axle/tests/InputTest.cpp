@@ -4,25 +4,29 @@
 #include "Core/Input/Input.hpp"
 #include "Core/Events/Event.hpp"
 #include "Core/Events/EventHandler.hpp"
+#include "Core/Input/InputState.hpp"
 
 using namespace Axle;
 
 void TestKeyEvents(Event* event) {
     CHECK_FALSE(event == nullptr);
     CHECK(event->GetEventCategory() == Axle::EventCategory::Input);
-    CHECK(event->GetContext().u16_values[0] == (unsigned short) Keys::A);
+    // CHECK(event->GetContext().u16_values[0] == (unsigned short) Keys::A);
+    CHECK(std::get<std::array<u16, 8>>(event->GetContext().raw_data).at(0) == (u16) Keys::A);
 }
 
 void TestMouseButtonEvents(Event* event) {
     CHECK_FALSE(event == nullptr);
     CHECK(event->GetEventCategory() == Axle::EventCategory::Input);
-    CHECK(event->GetContext().u16_values[0] == (unsigned short) MouseButtons::BUTTON_LEFT);
+    // CHECK(event->GetContext().u16_values[0] == (unsigned short) MouseButtons::BUTTON_LEFT);
+    CHECK(std::get<std::array<u16, 8>>(event->GetContext().raw_data).at(0) == (u16) MouseButtons::BUTTON_LEFT);
 }
 
 void TestMouseWheelEvents(Event* event) {
     CHECK_FALSE(event == nullptr);
     CHECK(event->GetEventCategory() == Axle::EventCategory::Input);
-    CHECK(event->GetContext().f32_values[0] == doctest::Approx(1.0));
+    // CHECK(event->GetContext().f32_values[0] == doctest::Approx(1.0));
+    CHECK(std::get<std::array<f32, 4>>(event->GetContext().raw_data).at(0) == doctest::Approx(1.0));
 }
 
 TEST_CASE("Input system key handling") {

@@ -33,8 +33,7 @@ namespace Axle {
 
         // Send the event at the end to ensure the size is correctly updated
         Event* event = new Event(EventType::WindowResize, EventCategory::Window);
-        event->GetContext().u32_values[0] = static_cast<u32>(width);
-        event->GetContext().u32_values[1] = static_cast<u32>(height);
+        event->GetContext().raw_data = std::array<u32, 4>{static_cast<u32>(width), static_cast<u32>(height)};
         AX_ADD_EVENT(event);
     }
 

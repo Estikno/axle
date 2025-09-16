@@ -17,6 +17,7 @@
 #include <typeinfo>
 #include <limits>
 #include <ranges>
+#include <variant>
 
 // Error handling
 #include <stdexcept>
