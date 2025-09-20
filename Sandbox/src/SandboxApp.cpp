@@ -58,6 +58,10 @@ public:
         // We reset the VAO and VBO bindings to their defaults to prevent accidental modification
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
+
+        // Important: Do NOT unbind the EBO while a VAO is active as the bound EBO is stored in the VAO.
+        // Unbinding it will mean that OpenGL will think we dont want to use the EBO.
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     }
     void OnDettachRender() override {
         // We clean up the used resources
@@ -73,28 +77,36 @@ public:
 
         // We draw the triangle
         // glDrawArrays(GL_TRIANGLES, 0, 3);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
     }
 
 private:
     f32 vertices[18] = {
-        -0.5f,
         0.0f,
-        0.0f,
-
         0.5f,
         0.0f,
+
+        -0.5f * float(sqrt(3.0)) / 2.0f,
+        -0.5f * 0.5f,
         0.0f,
 
+        0.5f * float(sqrt(3.0)) / 2.0f,
+        -0.5f * 0.5f,
+        0.0f,
+
+        0.0f,
         -0.5f,
-        1.0f,
         0.0f,
 
-        0.5f,
-        1.0f,
+        -0.6f,
+        0.2f,
+        0.0f,
+
+        0.6f,
+        0.2f,
         0.0f,
     };
-    u32 indices[6] = {0, 1, 2, 1, 2, 3};
+    u32 indices[9] = {1, 3, 4, 3, 5, 2, 0, 4, 5};
     u32 vertexShader, fragmentShader, shaderProgram, EBO;
     u32 VBOs[1], VAOs[1];
     const char* vertexShaderSource = "#version 460 core\n"

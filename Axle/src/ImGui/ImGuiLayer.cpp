@@ -47,9 +47,9 @@ namespace Axle {
         // Show demo window! :)
         ImGui::ShowDemoWindow();
 
-        // Custom FPS displayer
-        ImGui::Begin("FPS");
-        ImGui::Text("fps: %.1f", 1.0 / DeltaTime);
+        // Debug Information
+        ImGui::Begin("Debug Info");
+        ImGui::Text("FPS: %.1f", 1.0 / DeltaTime);
         ImGui::End();
 
         ImGui::Render();
