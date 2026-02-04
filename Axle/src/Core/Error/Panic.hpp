@@ -60,14 +60,16 @@ namespace Axle {
     ::Axle::Panic(__VA_ARGS__);
 
 #define AX_ENSURE(condition, ...) \
-    if (!(condition)) {           \
+    if (condition) {              \
+    } else {                      \
         AX_PANIC(__VA_ARGS__);    \
     }
 
 // Debug asserts, only active in testing mode
 #ifdef AXLE_TESTING
 #    define AX_ASSERT(condition, ...) \
-        if (!(condition)) {           \
+        if (condition) {              \
+        } else                        \
             AX_PANIC(__VA_ARGS__);    \
         }
 #else
