@@ -2,10 +2,10 @@
 
 #include "axpch.hpp"
 
-#include "../Types.hpp"
 #include "../Core.hpp"
 #include "Event.hpp"
 #include <cstddef>
+#include <tuple>
 
 namespace Axle {
     /**
@@ -43,6 +43,7 @@ namespace Axle {
             return *m_EventHandler;
         }
 
+        // TODO: Optimize how to add events as now they are coppied
         /**
          * Add an event to the event handler and it will be notified automatically.
          * This function is not recommended to be called manually, better by the macro.
@@ -79,11 +80,6 @@ namespace Axle {
         void ProcessEvents();
 
         /**
-         * Destroys all the events in the queue without notifying the subscribers
-         * */
-        void DestroyEvents();
-
-        /**
          * Deletes the handler type from the hashmap related to the given id.
          *
          * This method is called internally and should only be called by the "Subscription" class
@@ -103,15 +99,12 @@ namespace Axle {
     private:
         /// The singleton of the event handler class
         static std::unique_ptr<EventHandler> m_EventHandler;
-        /// A map that stores the type and category of event each handler wants (by the id)
-        std::unordered_map<size_t, std::pair<EventCategory, EventType>> m_HandlersType;
 
         std::vector<Event> m_EventQueue;
-
         std::mutex m_EventMutex;
 
         /// Active handlers mapped by their ID
-        std::unordered_map<size_t, HandlerType> m_handlers;
+        std::unordered_map<size_t, std::tuple<HandlerType, EventCategory, EventType>> m_handlers;
         /// Next unique ID for new subscriptions
         size_t m_nextId = 0;
     };

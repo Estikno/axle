@@ -37,9 +37,6 @@ namespace Axle {
     }
 
     Application::~Application() {
-        // Destroy all remaining events
-        EventHandler::GetInstance().DestroyEvents();
-
         AX_CORE_INFO("Stopping the engine...");
 
         // By deleting the layer stack, we also delete all layers and detach them

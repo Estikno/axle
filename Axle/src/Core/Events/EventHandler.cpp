@@ -4,6 +4,7 @@
 #include "EventHandler.hpp"
 #include "../Logger/Log.hpp"
 #include "Event.hpp"
+#include <tuple>
 
 namespace Axle {
     std::unique_ptr<EventHandler> EventHandler::m_EventHandler;
@@ -30,8 +31,7 @@ namespace Axle {
         std::scoped_lock lock(m_EventMutex);
 
         i32 id = m_nextId++;
-        m_HandlersType[id] = std::make_pair(category, type);
-        m_handlers[id] = handler;
+        m_handlers[id] = std::make_tuple(handler, category, type);
 
         return id;
     }
@@ -39,7 +39,6 @@ namespace Axle {
     void EventHandler::Unsubscribe(size_t id) {
         std::scoped_lock lock(m_EventMutex);
 
-        m_HandlersType.erase(id);
         m_handlers.erase(id);
     }
 
@@ -47,12 +46,8 @@ namespace Axle {
         if (event.IsHandled())
             return;
 
-        for (auto& [id, handler] : m_handlers) {
-            auto it = m_HandlersType.find(id);
-            if (it == m_HandlersType.end())
-                continue; // Skip if the handler is not registered
-
-            auto& [category, type] = it->second;
+        for (auto it = m_handlers.begin(); it != m_handlers.end(); it++) {
+            auto& [handler, category, type] = it->second;
 
             if (category != event.GetEventCategory())
                 continue;
@@ -71,13 +66,8 @@ namespace Axle {
             eventsToProcess.swap(m_EventQueue);
         }
 
-        // Iterate in reverse order to ensure that the last added event is processed first
-        for (auto& event : std::views::reverse(eventsToProcess)) {
+        for (auto& event : eventsToProcess) {
             Notify(event);
         }
-    }
-
-    void EventHandler::DestroyEvents() {
-        m_EventQueue.clear();
     }
 } // namespace Axle

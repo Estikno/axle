@@ -10,6 +10,20 @@
 
 using namespace Axle;
 
+struct Position {
+    f32 x, y;
+    Position(f32 x = 0.0f, f32 y = 0.0f)
+        : x(x),
+          y(y) {}
+};
+
+struct Velocity {
+    f32 vx, vy;
+    Velocity(f32 vx = 0.0f, f32 vy = 0.0f)
+        : vx(vx),
+          vy(vy) {}
+};
+
 TEST_CASE("Ecs View tests") {
     Log::Init();
     ECS entities;
