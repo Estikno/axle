@@ -297,7 +297,7 @@ project "Tests"
     language "C++"
     cppdialect "C++20"
     -- staticruntime "On"
-	
+
 	defines { "AXLE_TESTING" }
 
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
@@ -337,7 +337,7 @@ project "Tests"
         -- sanitize { "Adress" }
         -- sanitize { "Thread" }
         -- buildoptions "/MDd"
-	
+
 	filter "configurations:Release or configurations:Dist"
 		kind "None"
 
