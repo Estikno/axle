@@ -26,7 +26,7 @@ namespace Axle {
         }
 
         EventHandler::GetInstance().Subscribe(
-            [&](Event* e) { OnWindowClose(e); }, EventType::WindowClose, EventCategory::Window);
+            [&](Event& e) { OnWindowClose(e); }, EventType::WindowClose, EventCategory::Window);
 
         s_Instance = this;
         // m_Window = std::unique_ptr<Window>(Window::Create());
@@ -139,7 +139,7 @@ namespace Axle {
         m_Window.reset();
     }
 
-    void Application::OnWindowClose(Event* event) {
+    void Application::OnWindowClose(Event& event) {
         m_Running = false;
     }
 } // namespace Axle

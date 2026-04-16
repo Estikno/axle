@@ -29,17 +29,17 @@ namespace Axle {
         }
 
         // Fire off an event informing of the change in state
-        Event* event;
+        Event event(EventType::KeyIsPressed, EventCategory::Input);
 
         if (Input::GetKeyDown(key))
-            event = new Event(EventType::KeyPressed, EventCategory::Input);
+            event = Event(EventType::KeyPressed, EventCategory::Input);
         else if (Input::GetKeyUp(key))
-            event = new Event(EventType::KeyReleased, EventCategory::Input);
+            event = Event(EventType::KeyReleased, EventCategory::Input);
         else
-            event = new Event(EventType::KeyIsPressed, EventCategory::Input);
+            event = Event(EventType::KeyIsPressed, EventCategory::Input);
 
         // event->GetContext().u16_values[0] = static_cast<u16>(key);
-        event->GetContext().raw_data = std::array<u16, 8>{static_cast<u16>(key)};
+        event.GetContext().raw_data = std::array<u16, 8>{static_cast<u16>(key)};
 
         AX_ADD_EVENT(event);
     }
@@ -55,17 +55,17 @@ namespace Axle {
         }
 
         // Fire off an event informing of the change in state
-        Event* event;
+        Event event(EventType::MouseButtonIsPressed, EventCategory::Input);
 
         if (Input::GetMouseButtonDown(button))
-            event = new Event(EventType::MouseButtonPressed, EventCategory::Input);
+            event = Event(EventType::MouseButtonPressed, EventCategory::Input);
         else if (Input::GetMouseButtonUp(button))
-            event = new Event(EventType::MouseButtonReleased, EventCategory::Input);
+            event = Event(EventType::MouseButtonReleased, EventCategory::Input);
         else
-            event = new Event(EventType::MouseButtonIsPressed, EventCategory::Input);
+            event = Event(EventType::MouseButtonIsPressed, EventCategory::Input);
 
         // event->GetContext().u16_values[0] = static_cast<u16>(button);
-        event->GetContext().raw_data = std::array<u16, 8>{static_cast<u16>(button)};
+        event.GetContext().raw_data = std::array<u16, 8>{static_cast<u16>(button)};
 
         AX_ADD_EVENT(event);
     }
@@ -87,20 +87,20 @@ namespace Axle {
             return;
 
         // Fire off an event informing of the change in state
-        Event* event = new Event(EventType::MouseMoved, EventCategory::Input);
+        Event event(EventType::MouseMoved, EventCategory::Input);
 
         // event->GetContext().u16_values[0] = static_cast<u16>(position.x);
         // event->GetContext().u16_values[1] = static_cast<u16>(position.y);
-        event->GetContext().raw_data = std::array<u16, 8>{static_cast<u16>(position.x), static_cast<u16>(position.y)};
+        event.GetContext().raw_data = std::array<u16, 8>{static_cast<u16>(position.x), static_cast<u16>(position.y)};
 
         AX_ADD_EVENT(event);
     }
 
     void Input::SetMouseWheel(f32 delta) {
         // Fire off an event informing of the change in state
-        Event* event = new Event(EventType::MouseScrolled, EventCategory::Input);
+        Event event(EventType::MouseScrolled, EventCategory::Input);
         // event->GetContext().f32_values[0] = delta;
-        event->GetContext().raw_data = std::array<f32, 4>{static_cast<f32>(delta)};
+        event.GetContext().raw_data = std::array<f32, 4>{static_cast<f32>(delta)};
 
         AX_ADD_EVENT(event);
     }

@@ -5,7 +5,7 @@
 #include "../Types.hpp"
 #include "../Core.hpp"
 #include "Event.hpp"
-#include "../../Other/Observer.hpp"
+#include <cstddef>
 
 namespace Axle {
     /**
@@ -16,8 +16,11 @@ namespace Axle {
      *
      * This way everything is centralized, eliminating spaggeti references.
      */
-    class AXLE_API EventHandler : public Subject<Event> {
+    class AXLE_API EventHandler {
     public:
+        /// The type of function the subject accepts
+        using HandlerType = std::function<void(Event&)>;
+
         EventHandler(const EventHandler&) = delete;
         EventHandler& operator=(const EventHandler&) = delete;
         EventHandler() = default;
@@ -47,10 +50,9 @@ namespace Axle {
          * This is the only multithread safe method in this class. The other stuff should all be called form the same
          * thread.
          *
-         * @param event A pointer to the event added. This pointer will be entirely handled by this class, DO NOT DELETE
-         * IT YOURSELF.
+         * @param event An event object
          */
-        void AddEvent(Event* event);
+        void AddEvent(Event event);
 
         /**
          * Subscribes a handler (function) to the event system.
@@ -88,7 +90,7 @@ namespace Axle {
          *
          * @param id Id to delete
          */
-        void Unsubscribe(size_t id) override;
+        void Unsubscribe(size_t id);
 
     protected:
         /**
@@ -96,7 +98,7 @@ namespace Axle {
          *
          * Only notifies suscribers that are interested in the type of the event.
          */
-        void Notify(Event* event) override;
+        void Notify(Event& event);
 
     private:
         /// The singleton of the event handler class
@@ -104,9 +106,14 @@ namespace Axle {
         /// A map that stores the type and category of event each handler wants (by the id)
         std::unordered_map<size_t, std::pair<EventCategory, EventType>> m_HandlersType;
 
-        std::vector<std::unique_ptr<Event>> m_EventQueue;
+        std::vector<Event> m_EventQueue;
 
         std::mutex m_EventMutex;
+
+        /// Active handlers mapped by their ID
+        std::unordered_map<size_t, HandlerType> m_handlers;
+        /// Next unique ID for new subscriptions
+        size_t m_nextId = 0;
     };
 } // namespace Axle
 

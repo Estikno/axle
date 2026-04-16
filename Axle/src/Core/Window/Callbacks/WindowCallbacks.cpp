@@ -13,7 +13,7 @@
 
 namespace Axle {
     void WindowCloseCallback(GLFWwindow* window) {
-        Event* event = new Event(EventType::WindowClose, EventCategory::Window);
+        Event event(EventType::WindowClose, EventCategory::Window);
         AX_ADD_EVENT(event);
     }
 
@@ -32,8 +32,8 @@ namespace Axle {
         AX_CORE_TRACE("Window resized to: {0}x{1}", width, height);
 
         // Send the event at the end to ensure the size is correctly updated
-        Event* event = new Event(EventType::WindowResize, EventCategory::Window);
-        event->GetContext().raw_data = std::array<u32, 4>{static_cast<u32>(width), static_cast<u32>(height)};
+        Event event(EventType::WindowResize, EventCategory::Window);
+        event.GetContext().raw_data = std::array<u32, 4>{static_cast<u32>(width), static_cast<u32>(height)};
         AX_ADD_EVENT(event);
     }
 

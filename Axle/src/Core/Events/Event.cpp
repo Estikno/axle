@@ -5,10 +5,9 @@
 #include "../Types.hpp"
 
 namespace Axle {
-    Event::Event(const EventType eventType, const EventCategory eventCategory) {
-        m_EventType = eventType;
-        m_EventCategory = eventCategory;
-
+    Event::Event(const EventType eventType, const EventCategory eventCategory)
+        : m_EventType(eventType),
+          m_EventCategory(eventCategory) {
         AX_CORE_TRACE("Creating an event enum of type: {}", (i32) eventType);
     }
 

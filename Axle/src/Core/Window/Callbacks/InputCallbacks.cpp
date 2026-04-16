@@ -16,7 +16,7 @@ namespace Axle {
     void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
         // Temporal delete window when escape is pressed
         if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-            Event* event = new Event(EventType::WindowClose, EventCategory::Window);
+            Event event(EventType::WindowClose, EventCategory::Window);
             AX_ADD_EVENT(event);
         }
 

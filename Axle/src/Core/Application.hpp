@@ -37,7 +37,7 @@ namespace Axle {
         }
 
     private:
-        void OnWindowClose(Event* event);
+        void OnWindowClose(Event& event);
 
         static Application* s_Instance;
 

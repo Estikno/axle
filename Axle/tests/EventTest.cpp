@@ -21,43 +21,37 @@ struct PlayerData {
     float health;
 };
 
-void TestFunction_Render(Event* event) {
-    CHECK(event != nullptr);
-    CHECK(event->GetEventType() == Axle::EventType::AppRender);
+void TestFunction_Render(Event& event) {
+    CHECK(event.GetEventType() == Axle::EventType::AppRender);
 }
 
-void TestFunction_Tick(Event* event) {
-    CHECK(event != nullptr);
-    CHECK(event->GetEventType() == Axle::EventType::AppTick);
+void TestFunction_Tick(Event& event) {
+    CHECK(event.GetEventType() == Axle::EventType::AppTick);
 }
 
-void TestFunction_Input(Event* event) {
-    CHECK(event != nullptr);
-    CHECK(event->GetEventType() == Axle::EventType::AppUpdate);
+void TestFunction_Input(Event& event) {
+    CHECK(event.GetEventType() == Axle::EventType::AppUpdate);
 }
 
-void TestFunction_AllInput(Event* event) {
-    CHECK(event != nullptr);
-    CHECK(event->GetEventType() == Axle::EventType::KeyPressed);
-    CHECK(event->GetEventCategory() == Axle::EventCategory::Input);
+void TestFunction_AllInput(Event& event) {
+    CHECK(event.GetEventType() == Axle::EventType::KeyPressed);
+    CHECK(event.GetEventCategory() == Axle::EventCategory::Input);
 }
 
-void TestFunction_AllInput_With_Data(Event* event) {
-    CHECK(event != nullptr);
-    CHECK(event->GetEventType() == Axle::EventType::KeyPressed);
-    CHECK(event->GetEventCategory() == Axle::EventCategory::Input);
-    CHECK_FALSE(event->GetContext().custom_data.has_value());
+void TestFunction_AllInput_With_Data(Event& event) {
+    CHECK(event.GetEventType() == Axle::EventType::KeyPressed);
+    CHECK(event.GetEventCategory() == Axle::EventCategory::Input);
+    CHECK_FALSE(event.GetContext().custom_data.has_value());
 
-    CHECK(std::get<std::array<u16, 8>>(event->GetContext().raw_data).at(0) == 12);
+    CHECK(std::get<std::array<u16, 8>>(event.GetContext().raw_data).at(0) == 12);
 }
 
-void TestFunction_Complex_CustomData(Event* event) {
-    CHECK(event != nullptr);
-    CHECK(event->GetEventType() == Axle::EventType::KeyPressed);
-    CHECK(event->GetEventCategory() == Axle::EventCategory::Input);
-    CHECK(event->GetContext().custom_data.has_value());
+void TestFunction_Complex_CustomData(Event& event) {
+    CHECK(event.GetEventType() == Axle::EventType::KeyPressed);
+    CHECK(event.GetEventCategory() == Axle::EventCategory::Input);
+    CHECK(event.GetContext().custom_data.has_value());
 
-    PlayerData* player = std::any_cast<PlayerData*>(event->GetContext().custom_data.value());
+    PlayerData* player = std::any_cast<PlayerData*>(event.GetContext().custom_data.value());
 
     CHECK(player->id == 12);
     CHECK(player->health == doctest::Approx(100.0f));
@@ -75,8 +69,8 @@ TEST_CASE("EventHandler") {
         size_t id = instance.Subscribe(TestFunction_Render, EventType::AppRender, EventCategory::Render);
         size_t id2 = instance.Subscribe(TestFunction_Tick, EventType::AppTick, EventCategory::Render);
 
-        Event* event_1 = new Event(EventType::AppRender, EventCategory::Render);
-        Event* event_2 = new Event(EventType::AppTick, EventCategory::Render);
+        Event event_1(EventType::AppRender, EventCategory::Render);
+        Event event_2(EventType::AppTick, EventCategory::Render);
 
         CHECK_NOTHROW(AX_ADD_EVENT(event_1));
         CHECK_NOTHROW(AX_ADD_EVENT(event_2));
@@ -90,7 +84,7 @@ TEST_CASE("EventHandler") {
     SUBCASE("EventHandler with inherited events") {
         size_t id = instance.Subscribe(TestFunction_Input, EventType::AppUpdate, EventCategory::Window);
 
-        newEvent* event_1 = new newEvent(EventType::AppUpdate, EventCategory::Input);
+        newEvent event_1(EventType::AppUpdate, EventCategory::Input);
 
         CHECK_NOTHROW(AX_ADD_EVENT(event_1));
 
@@ -102,7 +96,7 @@ TEST_CASE("EventHandler") {
     SUBCASE("EventHandler receiving events of a whole group") {
         size_t id = instance.Subscribe(TestFunction_AllInput, EventType::None, EventCategory::Input);
 
-        Event* event_1 = new Event(EventType::KeyPressed, EventCategory::Input);
+        Event event_1(EventType::KeyPressed, EventCategory::Input);
 
         CHECK_NOTHROW(AX_ADD_EVENT(event_1));
 
@@ -114,8 +108,8 @@ TEST_CASE("EventHandler") {
     SUBCASE("Event containing custom data") {
         size_t id = instance.Subscribe(TestFunction_AllInput_With_Data, EventType::None, EventCategory::Input);
 
-        Event* event_1 = new Event(EventType::KeyPressed, EventCategory::Input);
-        event_1->GetContext().raw_data = std::array<u16, 8>{12};
+        Event event_1(EventType::KeyPressed, EventCategory::Input);
+        event_1.GetContext().raw_data = std::array<u16, 8>{12};
 
         CHECK_NOTHROW(AX_ADD_EVENT(event_1));
 
@@ -129,8 +123,8 @@ TEST_CASE("EventHandler") {
 
         PlayerData* pdata = new PlayerData{12, 100.0f};
 
-        Event* event_1 = new Event(EventType::KeyPressed, EventCategory::Input);
-        event_1->GetContext().custom_data = pdata;
+        Event event_1(EventType::KeyPressed, EventCategory::Input);
+        event_1.GetContext().custom_data = pdata;
 
         CHECK_NOTHROW(AX_ADD_EVENT(event_1));
 
