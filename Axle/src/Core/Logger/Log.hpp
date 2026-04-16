@@ -8,6 +8,9 @@
 namespace Axle {
     class AXLE_API Log {
     public:
+        Log() {};
+        ~Log() {};
+
         /**
          * Initializes the logger and its singletons
          *
@@ -16,6 +19,11 @@ namespace Axle {
          * It is safe to call multiple times, it simply displays a warning after the first call.
          */
         static void Init();
+
+        /**
+         * Shutdowns the manager, important to call when no other component depends on it anymore
+         */
+        static void ShutDown();
 
         /**
          * Gets the core logger singleton

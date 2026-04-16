@@ -48,6 +48,9 @@ int main(int argc, char** argv) {
     Axle::Application* app = Axle::CreateApplication();
     app->Run();
     delete app;
+
+    Axle::EventHandler::ShutDown();
+    Axle::Log::ShutDown();
 }
 
 #endif

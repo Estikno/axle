@@ -17,7 +17,12 @@ namespace Axle {
 
         m_EventHandler = std::make_unique<EventHandler>();
 
-        AX_CORE_TRACE("Event handler initialized...");
+        AX_CORE_INFO("Event handler initialized...");
+    }
+
+    void EventHandler::ShutDown() {
+        m_EventHandler.reset();
+        AX_CORE_INFO("Event handler deleted...");
     }
 
     void EventHandler::AddEvent(Event event) {

@@ -23,7 +23,9 @@ namespace Axle {
 
         EventHandler(const EventHandler&) = delete;
         EventHandler& operator=(const EventHandler&) = delete;
-        EventHandler() = default;
+
+        EventHandler() {}
+        ~EventHandler() {}
 
         /**
          * Initializes the event handler and its singleton
@@ -33,6 +35,11 @@ namespace Axle {
          * It is safe to call multiple times, it simply displays a warning after the first call.
          */
         static void Init();
+
+        /**
+         * Shutdowns the manager, important to call when no other component depends on it anymore
+         */
+        static void ShutDown();
 
         /**
          * Gets the event handler singleton
