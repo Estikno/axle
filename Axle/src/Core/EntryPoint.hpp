@@ -25,6 +25,11 @@ int main(int argc, char** argv) {
     Axle::Application* app = Axle::CreateApplication();
     app->Run();
     delete app;
+
+    Axle::EventHandler::ShutDown();
+    Axle::Log::ShutDown();
+
+    return 0;
 }
 
 #endif // AX_PLATFORM_WINDOWS
@@ -51,6 +56,8 @@ int main(int argc, char** argv) {
 
     Axle::EventHandler::ShutDown();
     Axle::Log::ShutDown();
+
+    return 0;
 }
 
 #endif
