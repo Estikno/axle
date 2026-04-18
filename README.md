@@ -50,7 +50,7 @@ If you’re curious about the process or want to follow along with the ups and d
 <!-- Prerequisites -->
 ### :bangbang: Prerequisites
 
-This project uses **Premake** to generate the project files and is mainly developed for windows, althought Linux is also supported.
+This project uses **CMake** to generate the project files and is mainly developed in Linux, althought Windows is also supported.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
