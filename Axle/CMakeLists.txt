@@ -3,6 +3,16 @@
 #  Defines: Glad, GLFW, ImGui (vendored static libs) + Axle (shared lib)
 # ══════════════════════════════════════════════════════════════════════════════
 
+# ══════════════════════════════════════════════════════════════════════════════
+#  llfio (official submodule, uses its own CMakeLists.txt)
+# ══════════════════════════════════════════════════════════════════════════════
+# Disable features we don't need before add_subdirectory picks them up
+set(LLFIO_FORCE_DYNAMIC_THREAD_POOL_GROUP_OFF ON CACHE BOOL "" FORCE)
+set(LLFIO_FORCE_NETWORKING_OFF                ON CACHE BOOL "" FORCE)
+set(LLFIO_FORCE_OPENSSL_OFF                   ON CACHE BOOL "" FORCE)
+
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/vendor/llfio" SYSTEM)
+
 # ── Vendor include paths (used by multiple targets below) ─────────────────────
 set(VENDOR "${CMAKE_CURRENT_SOURCE_DIR}/vendor")
 
@@ -46,67 +56,16 @@ if(UNIX)
 endif()
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  GLFW  (C static lib)
+#  GLFW  (official submodule, uses its own CMakeLists.txt)
 # ══════════════════════════════════════════════════════════════════════════════
 
-# GLFW shared sources (needed on all platforms)
-set(GLFW_COMMON_SOURCES
-    "${VENDOR}/GLFW/src/context.c"
-    "${VENDOR}/GLFW/src/init.c"
-    "${VENDOR}/GLFW/src/input.c"
-    "${VENDOR}/GLFW/src/monitor.c"
-    "${VENDOR}/GLFW/src/vulkan.c"
-    "${VENDOR}/GLFW/src/window.c"
-    # GLFW 3.4+: platform dispatcher and null (headless) backend
-    "${VENDOR}/GLFW/src/platform.c"
-    "${VENDOR}/GLFW/src/null_init.c"
-    "${VENDOR}/GLFW/src/null_joystick.c"
-    "${VENDOR}/GLFW/src/null_monitor.c"
-    "${VENDOR}/GLFW/src/null_window.c"
-)
+# Disable GLFW extras we don't need
+set(GLFW_BUILD_DOCS     OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(GLFW_INSTALL        OFF CACHE BOOL "" FORCE)
 
-# Collect platform-specific GLFW sources
-if(WIN32)
-    file(GLOB GLFW_PLATFORM_SOURCES
-        "${VENDOR}/GLFW/src/win32_*.c"
-        "${VENDOR}/GLFW/src/wgl_context.c"
-        "${VENDOR}/GLFW/src/egl_context.c"
-        "${VENDOR}/GLFW/src/osmesa_context.c"
-    )
-    set(GLFW_PLATFORM_DEFINES _GLFW_WIN32 _CRT_SECURE_NO_WARNINGS)
-elseif(UNIX)
-    file(GLOB GLFW_PLATFORM_SOURCES
-        "${VENDOR}/GLFW/src/x11_*.c"
-        "${VENDOR}/GLFW/src/glx_context.c"
-        "${VENDOR}/GLFW/src/egl_context.c"
-        "${VENDOR}/GLFW/src/osmesa_context.c"
-        "${VENDOR}/GLFW/src/posix_time.c"
-        "${VENDOR}/GLFW/src/posix_thread.c"
-        # GLFW 3.4+ additional sources
-        "${VENDOR}/GLFW/src/posix_module.c"   # _glfwPlatformLoadModule / GetModuleSymbol / FreeModule
-        "${VENDOR}/GLFW/src/posix_poll.c"     # _glfwPollPOSIX
-        "${VENDOR}/GLFW/src/xkb_unicode.c"    # _glfwKeySym2Unicode
-        "${VENDOR}/GLFW/src/linux_joystick.c" # _glfwInitJoysticksLinux etc.
-    )
-    set(GLFW_PLATFORM_DEFINES _GLFW_X11)
-endif()
-
-add_library(GLFW STATIC ${GLFW_COMMON_SOURCES} ${GLFW_PLATFORM_SOURCES})
-
-target_include_directories(GLFW PUBLIC "${INC_GLFW}")
-target_compile_definitions(GLFW PRIVATE ${GLFW_PLATFORM_DEFINES})
-
-set_target_properties(GLFW PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_BASE}/$<CONFIG>/${CMAKE_SYSTEM_NAME}-x64/GLFW"
-    ARCHIVE_OUTPUT_DIRECTORY "${OUTPUT_BASE}/$<CONFIG>/${CMAKE_SYSTEM_NAME}-x64/GLFW"
-    LIBRARY_OUTPUT_DIRECTORY "${OUTPUT_BASE}/$<CONFIG>/${CMAKE_SYSTEM_NAME}-x64/GLFW"
-)
-
-if(UNIX)
-    set_target_properties(GLFW PROPERTIES POSITION_INDEPENDENT_CODE ON)
-
-    target_link_libraries(GLFW PUBLIC GL m dl X11 pthread Xrandr Xi Xxf86vm Xcursor)
-endif()
+add_subdirectory("${VENDOR}/GLFW" SYSTEM)
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  ImGui  (C++20 static lib)
@@ -124,7 +83,8 @@ file(GLOB IMGUI_SOURCES
 
 add_library(ImGui STATIC ${IMGUI_SOURCES})
 
-target_include_directories(ImGui PUBLIC "${INC_IMGUI}" "${INC_GLFW}")
+target_include_directories(ImGui PUBLIC "${INC_IMGUI}")
+target_link_libraries(ImGui PUBLIC glfw)
 
 set_target_properties(ImGui PROPERTIES
     CXX_STANDARD 20
@@ -184,12 +144,15 @@ endif()
 
 if(UNIX)
     # On Linux, static libs linked into a shared lib need --whole-archive
-    # otherwise the linker silently drops unreferenced symbols
+    # otherwise the linker silently drops unreferenced symbols.
+    # Note: glfw and llfio_sl manage their own symbols correctly so they
+    # sit outside the --whole-archive block.
     target_link_libraries(Axle PUBLIC
-        -Wl,--whole-archive GLFW Glad ImGui -Wl,--no-whole-archive
+        -Wl,--whole-archive Glad ImGui -Wl,--no-whole-archive
+        glfw llfio_sl
     )
 else()
-    target_link_libraries(Axle PUBLIC GLFW Glad ImGui)
+    target_link_libraries(Axle PUBLIC glfw Glad ImGui llfio_sl)
 endif()
 
 # ── Precompiled header ─────────────────────────────────────────────────────────
