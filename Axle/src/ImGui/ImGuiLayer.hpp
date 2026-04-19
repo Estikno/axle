@@ -1,8 +1,12 @@
 #pragma once
 
+#include "Core/Events/Event.hpp"
 #include "Core/Layer/Layer.hpp"
-#include "Core/Core.hpp"
 #include "Core/Types.hpp"
+
+#ifdef AX_DEBUG
+#    include "Debug/Console.hpp"
+#endif // AXLE_TESTING
 
 namespace Axle {
     class ImGuiLayer : public Layer {
@@ -17,5 +21,12 @@ namespace Axle {
         void OnAttachRender() override;
         void OnRender(f64 DeltaTime) override;
         void OnDettachRender() override;
+
+    private:
+        // Renderer variables
+#ifdef AX_DEBUG
+        DebugConsole m_Console;
+        bool m_OpenOverlay = true;
+#endif // AXLE_TESTING
     };
 } // namespace Axle

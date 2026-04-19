@@ -1,5 +1,8 @@
 #include "axpch.hpp"
 
+#include "Core/Events/Event.hpp"
+#include "Core/Events/EventHandler.hpp"
+#include "Core/Input/InputState.hpp"
 #include "Core/Logger/Log.hpp"
 #include "ImGuiLayer.hpp"
 #include "Core/Application.hpp"
@@ -7,6 +10,11 @@
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
+
+#ifdef AX_DEBUG
+#    include "Debug/Console.hpp"
+#    include "Debug/Overlay.hpp"
+#endif // AXLE_TESTING
 
 namespace Axle {
     ImGuiLayer::ImGuiLayer()
@@ -37,6 +45,27 @@ namespace Axle {
 
         // Setup Dear ImGui style
         ImGui::StyleColorsDark();
+
+#ifdef AX_DEBUG
+        // Setup sonsole
+        m_Console.Init();
+        // Key to toggle the console
+        EventHandler::GetInstance().Subscribe(
+            [&](Event& event) {
+                if (std::get<std::array<u16, 8>>(event.GetContext().raw_data).at(0) == static_cast<u16>(Keys::F1))
+                    m_Console.Open = !m_Console.Open;
+            },
+            EventType::KeyPressed,
+            EventCategory::Input);
+        // Key to toggle the overlay
+        EventHandler::GetInstance().Subscribe(
+            [&](Event& event) {
+                if (std::get<std::array<u16, 8>>(event.GetContext().raw_data).at(0) == static_cast<u16>(Keys::F2))
+                    m_OpenOverlay = !m_OpenOverlay;
+            },
+            EventType::KeyPressed,
+            EventCategory::Input);
+#endif // AXLE_TESTING
     }
 
     void ImGuiLayer::OnRender(f64 DeltaTime) {
@@ -45,18 +74,27 @@ namespace Axle {
         ImGui::NewFrame();
 
         // Show demo window! :)
-        ImGui::ShowDemoWindow();
+        // ImGui::ShowDemoWindow();
 
+        // Console
+#ifdef AX_DEBUG
+        if (m_Console.Open)
+            m_Console.Draw("Debug console", &m_Console.Open);
         // Debug Information
-        ImGui::Begin("Debug Info");
-        ImGui::Text("FPS: %.1f", 1.0 / DeltaTime);
-        ImGui::End();
+        if (m_OpenOverlay)
+            ShowSimpleOverlay(&m_OpenOverlay, DeltaTime);
+#endif // AXLE_TESTING
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
 
     void ImGuiLayer::OnDettachRender() {
+#ifdef AX_DEBUG
+        // Destroy console
+        m_Console.Destroy();
+#endif // AXLE_TESTING
+
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();

@@ -6,6 +6,7 @@
 #include "../Events/EventHandler.hpp"
 #include "Core/Events/Event.hpp"
 
+#include <array>
 #include <glm/vec2.hpp>
 
 namespace Axle {
@@ -28,6 +29,15 @@ namespace Axle {
     }
 
     void InputManager::Update() {
+        // Send events if keys are pressed
+        for (u16 i = 0; i < static_cast<u16>(Keys::MaxKeys); ++i) {
+            if (GetKey(static_cast<Keys>(i))) {
+                Event event(EventType::KeyIsPressed, EventCategory::Input);
+                event.GetContext().raw_data = std::array<u16, 8>{i};
+                AX_ADD_EVENT(event);
+            }
+        }
+
         std::scoped_lock lock(m_InputMutex);
         m_InputState.keyboard_previous = m_InputState.keyboard_current;
         m_InputState.mouse_previous = m_InputState.mouse_current;
