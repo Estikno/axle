@@ -5,6 +5,7 @@
 #include "Application.hpp"
 #include "Events/EventHandler.hpp"
 #include "Logger/Log.hpp"
+#include "Core/Input/InputManager.hpp"
 
 #ifdef AX_PLATFORM_WINDOWS
 
@@ -20,12 +21,14 @@ of focusing on making the main loop.
 int main(int argc, char** argv) {
     Axle::Log::Init();
     Axle::EventHandler::Init();
+    Axle::InputManager::Init();
 
     // Main application loop
     Axle::Application* app = Axle::CreateApplication();
     app->Run();
     delete app;
 
+    Axle::InputManager::ShutDown();
     Axle::EventHandler::ShutDown();
     Axle::Log::ShutDown();
 
@@ -48,12 +51,14 @@ of focusing on making the main loop.
 int main(int argc, char** argv) {
     Axle::Log::Init();
     Axle::EventHandler::Init();
+    Axle::InputManager::Init();
 
     // Main application loop
     Axle::Application* app = Axle::CreateApplication();
     app->Run();
     delete app;
 
+    Axle::InputManager::ShutDown();
     Axle::EventHandler::ShutDown();
     Axle::Log::ShutDown();
 

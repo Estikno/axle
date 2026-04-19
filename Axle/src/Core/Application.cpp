@@ -3,7 +3,7 @@
 #include "Application.hpp"
 
 #include "Logger/Log.hpp"
-#include "Input/Input.hpp"
+#include "Input/InputManager.hpp"
 #include "Error/Panic.hpp"
 #include "Core/Events/EventHandler.hpp"
 #include "Core/Events/Event.hpp"
@@ -87,7 +87,7 @@ namespace Axle {
                 // Update logic
                 // --------------------------
                 EventHandler::GetInstance().ProcessEvents();
-                Input::Update();
+                InputManager::GetInstance().Update();
 
                 for (Layer* layer : *m_LayerStack)
                     layer->OnUpdate(m_DeltaTime);

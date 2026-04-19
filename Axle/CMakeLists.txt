@@ -3,16 +3,6 @@
 #  Defines: Glad, GLFW, ImGui (vendored static libs) + Axle (shared lib)
 # ══════════════════════════════════════════════════════════════════════════════
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  llfio (official submodule, uses its own CMakeLists.txt)
-# ══════════════════════════════════════════════════════════════════════════════
-# Disable features we don't need before add_subdirectory picks them up
-set(LLFIO_FORCE_DYNAMIC_THREAD_POOL_GROUP_OFF ON CACHE BOOL "" FORCE)
-set(LLFIO_FORCE_NETWORKING_OFF                ON CACHE BOOL "" FORCE)
-set(LLFIO_FORCE_OPENSSL_OFF                   ON CACHE BOOL "" FORCE)
-
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/vendor/llfio" SYSTEM)
-
 # ── Vendor include paths (used by multiple targets below) ─────────────────────
 set(VENDOR "${CMAKE_CURRENT_SOURCE_DIR}/vendor")
 
@@ -22,6 +12,7 @@ set(INC_SPDLOG  "${VENDOR}/spdlog/include")
 set(INC_GLM     "${VENDOR}/glm")
 set(INC_IMGUI   "${VENDOR}/imgui")
 set(INC_DOCTEST "${VENDOR}/doctest/doctest")
+set(INC_MIO,    "${VENDOR}/mio/include")
 
 # Make these available to Sandbox and Tests via a cached variable
 set(AXLE_VENDOR_INCLUDES
@@ -122,6 +113,7 @@ target_include_directories(Axle
         "${INC_GLAD}"
         "${INC_GLM}"
         "${INC_IMGUI}"
+        "${INC_MIO}"
 )
 
 target_compile_definitions(Axle
@@ -145,14 +137,14 @@ endif()
 if(UNIX)
     # On Linux, static libs linked into a shared lib need --whole-archive
     # otherwise the linker silently drops unreferenced symbols.
-    # Note: glfw and llfio_sl manage their own symbols correctly so they
+    # Note: glfw manage their own symbols correctly so they
     # sit outside the --whole-archive block.
     target_link_libraries(Axle PUBLIC
         -Wl,--whole-archive Glad ImGui -Wl,--no-whole-archive
-        glfw llfio_sl
+        glfw
     )
 else()
-    target_link_libraries(Axle PUBLIC glfw Glad ImGui llfio_sl)
+    target_link_libraries(Axle PUBLIC glfw Glad ImGui)
 endif()
 
 # ── Precompiled header ─────────────────────────────────────────────────────────
@@ -191,4 +183,7 @@ target_compile_options(Axle PRIVATE
     $<$<AND:$<CXX_COMPILER_ID:GNU,Clang>,$<CONFIG:Release,Dist>>:-O2>
     $<$<AND:$<CXX_COMPILER_ID:MSVC>,$<CONFIG:Release,Dist>>:/O2>
 )
+
+
+
 

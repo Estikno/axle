@@ -2,7 +2,7 @@
 
 #include "Core/Types.hpp"
 
-#include "Core/Input/Input.hpp"
+#include "Core/Input/InputManager.hpp"
 #include "Core/Logger/Log.hpp"
 #include "Core/Input/InputState.hpp"
 #include "InputCallbacks.hpp"
@@ -34,12 +34,12 @@ namespace Axle {
         }
 
         // Sends the status to the input system
-        Input::SetKey(key_enum, !(action == GLFW_RELEASE));
+        InputManager::GetInstance().SetKey(key_enum, !(action == GLFW_RELEASE));
     }
 
     void CursorPositionCallback(GLFWwindow* window, double xpos, double ypos) {
         glm::vec2 position(static_cast<f32>(xpos), static_cast<f32>(ypos));
-        Input::SetMousePosition(position);
+        InputManager::GetInstance().SetMousePosition(position);
     }
 
     void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
@@ -51,10 +51,10 @@ namespace Axle {
             return;
         }
 
-        Input::SetMouseButton(button_enum, action == GLFW_PRESS);
+        InputManager::GetInstance().SetMouseButton(button_enum, action == GLFW_PRESS);
     }
 
     void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
-        Input::SetMouseWheel(static_cast<f32>(yoffset));
+        InputManager::GetInstance().SetMouseWheel(static_cast<f32>(yoffset));
     }
 } // namespace Axle

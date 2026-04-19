@@ -9,8 +9,39 @@
 #include <glm/vec2.hpp>
 
 namespace Axle {
-    class Input {
+    class AXLE_API InputManager {
     public:
+        InputManager(const InputManager&) = delete;
+        InputManager& operator=(const InputManager&) = delete;
+
+        InputManager() {}
+        ~InputManager() {}
+
+        /**
+         * Initializes the Input manager and its singleton
+         *
+         * Important: This has to be called before using the macros and any other functionality
+         *
+         * It is safe to call multiple times, it simply displays a warning after the first call.
+         */
+        static void Init();
+
+        /**
+         * Shutdowns the manager, important to call when no other component depends on it anymore
+         */
+        static void ShutDown();
+
+        /**
+         * Gets the Input Manager singleton
+         *
+         * The manager has to have already been initilized before getting the instance.
+         *
+         * @returns Returns a reference to the Event Handler
+         */
+        inline static InputManager& GetInstance() {
+            return *m_InputManager;
+        }
+
         /**
          * Returns true if the key was pressed down this frame.
          *
@@ -21,7 +52,7 @@ namespace Axle {
          *
          * @returns True if the key was pressed down this frame, false otherwise.
          */
-        AXLE_API static bool GetKeyDown(Keys key);
+        bool GetKeyDown(Keys key);
 
         /**
          * Returns true if the key was released this frame.
@@ -33,7 +64,7 @@ namespace Axle {
          *
          * @returns True if the key was released this frame, false otherwise.
          */
-        AXLE_API static bool GetKeyUp(Keys key);
+        bool GetKeyUp(Keys key);
 
         /**
          * Returns true if the key is currently being pressed.
@@ -44,7 +75,7 @@ namespace Axle {
          *
          * @returns True if the key is currently being pressed, false otherwise.
          */
-        AXLE_API static bool GetKey(Keys key);
+        bool GetKey(Keys key);
 
         /**
          * Same as GetKeyDown, but for mouse buttons.
@@ -53,7 +84,7 @@ namespace Axle {
          *
          * @returns True if the mouse button was pressed down this frame, false otherwise.
          */
-        AXLE_API static bool GetMouseButtonDown(MouseButtons button);
+        bool GetMouseButtonDown(MouseButtons button);
 
         /**
          * Same as GetKeyUp, but for mouse buttons.
@@ -62,7 +93,7 @@ namespace Axle {
          *
          * @returns True if the mouse button was released this frame, false otherwise.
          */
-        AXLE_API static bool GetMouseButtonUp(MouseButtons button);
+        bool GetMouseButtonUp(MouseButtons button);
 
         /**
          * Same as GetKey, but for mouse buttons.
@@ -71,14 +102,14 @@ namespace Axle {
          *
          * @returns True if the mouse button is currently being pressed, false otherwise.
          */
-        AXLE_API static bool GetMouseButton(MouseButtons button);
+        bool GetMouseButton(MouseButtons button);
 
         /**
          * Gets the current mouse position in screen coordinates.
          *
          * @returns The current mouse position in screen coordinates.
          */
-        AXLE_API static glm::vec2 GetMousePosition();
+        glm::vec2 GetMousePosition();
 
         // Modify the keys state. This should only be called by the event system and should not be available to the end
         // user.
@@ -91,7 +122,7 @@ namespace Axle {
          * @param key The key to set the state of.
          * @param pressed True if the key is pressed, false otherwise.
          */
-        static void SetKey(Keys key, bool pressed);
+        void SetKey(Keys key, bool pressed);
 
         /**
          * Sets the state of a mouse button.
@@ -101,42 +132,43 @@ namespace Axle {
          * @param button The mouse button to set the state of.
          * @param pressed True if the mouse button is pressed, false otherwise.
          */
-        static void SetMouseButton(MouseButtons button, bool pressed);
+        void SetMouseButton(MouseButtons button, bool pressed);
 
         /**
          * Sets the mouse position.
          *
          * @param position The new mouse position in screen coordinates.
          */
-        static void SetMousePosition(const glm::vec2& position);
+        void SetMousePosition(const glm::vec2& position);
 
         /**
          * Sets the mouse wheel delta.
          *
          * @param delta The amount the mouse wheel has been scrolled.
          */
-        static void SetMouseWheel(f32 delta);
+        void SetMouseWheel(f32 delta);
 
         /**
          * Updates the input state.
          */
-        static void Update();
+        void Update();
 
 
         // For testing purposes only
 #ifdef AXLE_TESTING
-        AXLE_TEST_API static void SimulateKeyState(Keys key, bool pressed);
-        AXLE_TEST_API static void SimulateMouseButtonState(MouseButtons button, bool pressed);
-        AXLE_TEST_API static void SimulateMousePosition(const glm::vec2& position);
-        AXLE_TEST_API static void SimulateMouseWheel(f32 delta);
-        AXLE_TEST_API static void SimulateUpdate();
-        AXLE_TEST_API static void SimulateReset();
+        void SimulateKeyState(Keys key, bool pressed);
+        void SimulateMouseButtonState(MouseButtons button, bool pressed);
+        void SimulateMousePosition(const glm::vec2& position);
+        void SimulateMouseWheel(f32 delta);
+        void SimulateUpdate();
+        void SimulateReset();
 #endif // AXLE_TESTING
 
 
     private:
-        static InputState s_InputState;
+        static std::unique_ptr<InputManager> m_InputManager;
 
-        static std::mutex s_InputMutex;
+        InputState m_InputState;
+        std::mutex m_InputMutex;
     };
 } // namespace Axle

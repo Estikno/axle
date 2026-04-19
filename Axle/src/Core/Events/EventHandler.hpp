@@ -44,6 +44,8 @@ namespace Axle {
         /**
          * Gets the event handler singleton
          *
+         * The manager has to have already been initilized before getting the instance.
+         *
          * @returns Returns a reference to the Event Handler
          */
         inline static EventHandler& GetInstance() {

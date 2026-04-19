@@ -9,6 +9,7 @@
 #include "Other/CustomTypes/Expected.hpp"
 
 namespace Axle {
+    // TODO: Check if this interface is really necesary because it's seem it's not
     class ISparseSet {
     public:
         virtual ~ISparseSet() = default;
