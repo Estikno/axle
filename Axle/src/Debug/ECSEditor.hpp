@@ -31,7 +31,9 @@ namespace Axle::Debug {
         }
 
         void DrawEntityList() {
-            ImGui::BeginChild("##EntityList", ImVec2(160, 0), true);
+            ImGui::BeginChild("##EntityList",
+                              ImVec2(200, 0),
+                              ImGuiChildFlags_ResizeX | ImGuiChildFlags_Borders | ImGuiChildFlags_NavFlattened);
             ImGui::Text("Entities");
             ImGui::Separator();
 
