@@ -9,19 +9,68 @@
 
 #include "Core/Error/Panic.hpp"
 #include "Other/CustomTypes/Expected.hpp"
-#include <functional>
 #include <stdexcept>
 
 namespace Axle {
+#ifdef AX_DEBUG
+    // This is used for displaying data on the ImGui debug UI
+    struct ComponentDescriptorDebug {
+        std::string name;
+        std::function<void(void*)> drawImGui;
+    };
+
+#endif // AX_DEBUG
     class ECS {
     public:
         AXLE_TEST_API ECS();
+
+        /**
+         * Initializes the ECS and its singleton
+         *
+         * Important: This has to be called before using the macros and any other functionality
+         *
+         * It is safe to call multiple times, it simply displays a warning after the first call.
+         */
+        static void Init();
+
+        /**
+         * Shutdowns the manager, important to call when no other component depends on it anymore
+         */
+        static void ShutDown();
+
+        /**
+         * Gets the ECS singleton
+         *
+         * The manager has to have already been initilized before getting the instance.
+         *
+         * @returns Returns a reference to the Event Handler
+         */
+        inline static ECS& GetInstance() {
+            return *m_ECS;
+        }
 
         /**
          * Registers a component for later use in entities
          */
         template <typename T>
         void RegisterComponent();
+
+#ifdef AX_DEBUG
+        /**
+         * Registers a component for later use in entities
+         *
+         * This is the debug method that is used to display the components contents in IMGUI
+         */
+        template <typename T>
+        void RegisterComponent(std::function<void(T&)> editor) {
+            // Original version for the normal funtionality
+            RegisterComponent<T>();
+
+            ComponentType typeID = GetComponentType<T>();
+            m_ComponentDescriptorsDebug[typeID] = {.name = typeid(T).name(),
+                                                   .drawImGui = [editor](void* ptr) { editor(*static_cast<T*>(ptr)); }};
+        }
+#endif // AX_DEBUG
 
         /**
          * Creates a new entity and returns a reference to the entities
@@ -137,6 +186,15 @@ namespace Axle {
             return (Has<Ts>(id) || ...);
         }
 
+        /**
+         * Checks if a given entity is alive or not (i.e. is initialized)
+         *
+         * @returns true if the entity is alive and false otherwise
+         */
+        inline bool IsAlive(EntityID id) const noexcept {
+            return id < MAX_ENTITIES && m_LivingEntities.at(id);
+        }
+
 #ifdef AXLE_TESTING
         inline std::unordered_map<ComponentType, std::unique_ptr<ISparseSet>>& GetComponentArraysTEST() {
             return m_ComponentArrays;
@@ -146,8 +204,13 @@ namespace Axle {
             return m_EntityMasks;
         }
 
-        std::priority_queue<EntityID, std::vector<EntityID>, std::greater<EntityID>>& GetAvailableEntitiesTEST() {
+        inline std::priority_queue<EntityID, std::vector<EntityID>, std::greater<EntityID>>&
+        GetAvailableEntitiesTEST() {
             return m_AvailableEntities;
+        }
+
+        inline std::unordered_map<ComponentType, ComponentDescriptorDebug>& GetDescriptors() {
+            return m_ComponentDescriptorsDebug;
         }
 #endif // AXLE_TESTING
 
@@ -244,7 +307,7 @@ namespace Axle {
          */
         template <typename T>
         inline bool IsComponentRegistered() {
-            // NOTE: If a component has not been registered, its type ID will be registered for later use even if it's
+            // FIX: If a component has not been registered, its type ID will be registered for later use even if it's
             // not desired
             return m_ComponentArrays.find(GetComponentType<T>()) != m_ComponentArrays.end();
         }
@@ -296,6 +359,7 @@ namespace Axle {
         std::array<ComponentMask, MAX_ENTITIES> m_EntityMasks;
 
         /// An array that keeps track of which entities are alive and which are not.
+        // TODO: Change array to vector, or atleast consider it if there can be a lot of entities
         std::array<bool, MAX_ENTITIES> m_LivingEntities;
 
         /// The index of the entity that is being inserted into.
@@ -310,6 +374,13 @@ namespace Axle {
 
         /// The number of living entities in the ECS.
         EntityID m_LivingEntityCount = 0;
+
+        /// The singleton of the event handler class
+        static std::unique_ptr<ECS> m_ECS;
+
+#ifdef AX_DEBUG
+        std::unordered_map<ComponentType, ComponentDescriptorDebug> m_ComponentDescriptorsDebug;
+#endif // AX_DEBUG
     };
 
     // template method definitions
@@ -403,6 +474,7 @@ namespace Axle {
 
         return GetComponentArray<T>().Get(id);
     }
+    // ---------------------------
 
     template <typename... Components>
     class View {
@@ -454,9 +526,12 @@ namespace Axle {
         }
 
         /**
-         * Only gets the entities that have all the specified components.
+         * Returns the maximum number of entities which the given set of components
          *
-         * @returns A vector of EntityIDs that have all the specified components.
+         * IMPORANT: It's not guaranted for all entities to have all the components, it's
+         * just an estimation. If you want correct data call GetAll instead
+         *
+         * @returns A vector of EntityIDs that are most likely to have all components specified
          */
         AXLE_TEST_API std::vector<EntityID> GetEntities() {
             size_t index = GetSmallestComponentArrayIndex();
@@ -465,7 +540,7 @@ namespace Axle {
 
     private:
         size_t GetSmallestComponentArrayIndex() {
-            // Find the smallest number of entities that satisfies all the componenents requirements
+            // Find the smallest number of entities that are most likely to satisfy all the componenents requirements
             size_t smallest_size = std::numeric_limits<size_t>::max();
             size_t index = 0;
 
@@ -495,3 +570,34 @@ namespace Axle {
         ECS* m_Entities;
     };
 } // namespace Axle
+
+#ifdef AX_DEBUG
+/**
+ * Registers a component with an ImGui editor lambda.
+ *
+ * Usage:
+ *   AX_REGISTER_COMPONENT(ecs, Transform, {
+ *       ImGui::DragFloat3("Position", &c.position.x);
+ *   });
+ *
+ * 'c' is the component instance, available inside the block.
+ */
+#    define AX_REGISTER_COMPONENT(type, ...) \
+        ::Axle::ECS::GetInstance().RegisterComponent<type>([](type & c) __VA_ARGS__)
+
+/**
+ * Begins an ImGui component editor block for use inside AX_REGISTER_COMPONENT.
+ * Not strictly needed but makes intent clearer if you want named helpers.
+ */
+#    define AX_COMPONENT_FIELD_FLOAT(label, field) ::ImGui::DragFloat(label, &c.field)
+#    define AX_COMPONENT_FIELD_BOOL(label, field) ::ImGui::Checkbox(label, &c.field)
+#    define AX_COMPONENT_FIELD_INT(label, field) ::ImGui::DragInt(label, &c.field)
+#else
+#    define AX_REGISTER_COMPONENT(type, ...) ::Axle::ECS::GetInstance().RegisterComponent<type>()
+
+// All field helpers expand to nothing in release
+#    define AX_COMPONENT_FIELD_FLOAT(label, field)
+#    define AX_COMPONENT_FIELD_FLOAT3(label, field)
+#    define AX_COMPONENT_FIELD_BOOL(label, field)
+#    define AX_COMPONENT_FIELD_INT(label, field)
+#endif // AX_DEBUG

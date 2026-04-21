@@ -5,7 +5,7 @@
 #include "imgui.h"
 #include "Core/Types.hpp"
 
-namespace Axle {
+namespace Axle::Debug {
     void ShowSimpleOverlay(bool* p_open, f64 DeltaTime) {
         static int location = 0;
         ImGuiIO& io = ImGui::GetIO();
@@ -65,4 +65,4 @@ namespace Axle {
         }
         ImGui::End();
     }
-} // namespace Axle
+} // namespace Axle::Debug

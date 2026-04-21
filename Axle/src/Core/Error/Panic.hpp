@@ -77,5 +77,5 @@ namespace Axle {
             }                          \
         } while (0)
 #else
-#    define AX_ASSERT ((void) 0)
+#    define AX_ASSERT(condition, ...) ((void) 0)
 #endif // AXLE_TESTING

@@ -1,6 +1,7 @@
 #include "axpch.hpp"
 
 #include "Core/Events/Event.hpp"
+#include "ECS/ECS.hpp"
 #include "Core/Events/EventHandler.hpp"
 #include "Core/Input/InputState.hpp"
 #include "Core/Logger/Log.hpp"
@@ -11,10 +12,14 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
 
-#ifdef AX_DEBUG
-#    include "Debug/Console.hpp"
-#    include "Debug/Overlay.hpp"
-#endif // AXLE_TESTING
+#include "Debug/Console.hpp"
+#include "Debug/Overlay.hpp"
+
+struct Position {
+    int x;
+    int y;
+    float other;
+};
 
 namespace Axle {
     ImGuiLayer::ImGuiLayer()
@@ -46,7 +51,6 @@ namespace Axle {
         // Setup Dear ImGui style
         ImGui::StyleColorsDark();
 
-#ifdef AX_DEBUG
         // Setup sonsole
         m_Console.Init();
         // Key to toggle the console
@@ -65,7 +69,22 @@ namespace Axle {
             },
             EventType::KeyPressed,
             EventCategory::Input);
-#endif // AXLE_TESTING
+        // Key to toggle the ECS editor
+        EventHandler::GetInstance().Subscribe(
+            [&](Event& event) {
+                if (std::get<std::array<u16, 8>>(event.GetContext().raw_data).at(0) == static_cast<u16>(Keys::F3))
+                    m_ECSEditor.m_Open = !m_ECSEditor.m_Open;
+            },
+            EventType::KeyPressed,
+            EventCategory::Input);
+
+        AX_REGISTER_COMPONENT(Position, {
+            ImGui::DragInt("Position x", &c.x);
+            ImGui::DragInt("Position y", &c.y);
+            ImGui::DragFloat("Other", &c.other);
+        });
+
+        ECS::GetInstance().CreateEntity().WithComponent<Position>(Position{.x = 12, .y = 3, .other = 4.3f});
     }
 
     void ImGuiLayer::OnRender(f64 DeltaTime) {
@@ -77,23 +96,22 @@ namespace Axle {
         // ImGui::ShowDemoWindow();
 
         // Console
-#ifdef AX_DEBUG
         if (m_Console.Open)
             m_Console.Draw("Debug console", &m_Console.Open);
         // Debug Information
         if (m_OpenOverlay)
-            ShowSimpleOverlay(&m_OpenOverlay, DeltaTime);
-#endif // AXLE_TESTING
+            Debug::ShowSimpleOverlay(&m_OpenOverlay, DeltaTime);
+        // ECS Editor
+        if (m_ECSEditor.m_Open)
+            m_ECSEditor.Draw("ECS Editor", &m_ECSEditor.m_Open);
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
 
     void ImGuiLayer::OnDettachRender() {
-#ifdef AX_DEBUG
         // Destroy console
         m_Console.Destroy();
-#endif // AXLE_TESTING
 
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();

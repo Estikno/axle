@@ -5,9 +5,11 @@
 #include "imgui.h"
 #include "Core/Logger/Log.hpp"
 
+#include <sstream>
+
 #define IM_COUNTOF(_ARR) ((size_t) (sizeof(_ARR) / sizeof(*(_ARR))))
 
-namespace Axle {
+namespace Axle::Debug {
     struct DebugConsole {
         char InputBuf[256];
         ImVector<char*> Items;
@@ -30,7 +32,6 @@ namespace Axle {
             Commands.push_back("HISTORY");
             Commands.push_back("CLEAR");
             Commands.push_back("CLASSIFY");
-            Commands.push_back("TEST");
             AutoScroll = true;
             ScrollToBottom = false;
             AddLog("Welcome to Dear ImGui!");
@@ -244,6 +245,15 @@ namespace Axle {
         }
 
         void ExecCommand(const char* command_line) {
+            // Split input by spaces
+            std::string str_command(command_line);
+            std::vector<std::string> tokens;
+            std::istringstream iss(str_command);
+            std::string token;
+            while (iss >> token) {
+                tokens.push_back(token);
+            }
+
             AddLog("# %s\n", command_line);
 
             // Insert into history. First find match and delete it so it can be pushed to the back.
@@ -268,8 +278,7 @@ namespace Axle {
                 int first = History.Size - 10;
                 for (int i = first > 0 ? first : 0; i < History.Size; i++)
                     AddLog("%3d: %s\n", i, History[i]);
-            } else if (Stricmp(command_line, "TEST") == 0) {
-                AddLog("This is a custom command");
+                // Add more commands and their behavior here
             } else {
                 AddLog("Unknown command: '%s'\n", command_line);
             }
@@ -372,4 +381,4 @@ namespace Axle {
             return 0;
         }
     };
-} // namespace Axle
+} // namespace Axle::Debug

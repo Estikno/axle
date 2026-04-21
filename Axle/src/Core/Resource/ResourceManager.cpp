@@ -26,9 +26,12 @@ namespace Axle {
         AX_CORE_INFO("Resource Manager deleted...");
     }
 
-    TextFileHandle LoadText(std::string path) {
-        std::ifstream file("foo.txt");
-        std::ostringstream ss;
+    TextFileHandle ResourceManager::LoadText(std::string path) {
+        std::ifstream file(path);
+        if (!file.is_open()) {
+            AX_CORE_ERROR("Failed to open file {0}", path);
+        }
+        std::stringstream ss;
         ss << file.rdbuf();
         AX_CORE_INFO(ss.str());
 

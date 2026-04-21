@@ -43,4 +43,5 @@ namespace Axle {
     constexpr EntityID MAX_ENTITIES = 10000;
 
     using ComponentMask = std::bitset<MAX_COMPONENTS>;
+    constexpr EntityID INVALID_ENTITY = std::numeric_limits<EntityID>::max();
 } // namespace Axle

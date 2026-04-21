@@ -10,10 +10,28 @@
 #include "Other/CustomTypes/SparseSet.hpp"
 
 namespace Axle {
+    std::unique_ptr<ECS> ECS::m_ECS;
+
     ECS::ECS() {
         for (EntityID entity = 0; entity < MAX_ENTITIES; ++entity) {
             m_AvailableEntities.push(entity);
         }
+    }
+
+    void ECS::Init() {
+        if (m_ECS != nullptr) {
+            AX_CORE_WARN("Init method of the ECS has been called a second time. IGNORING");
+            return;
+        }
+
+        m_ECS = std::make_unique<ECS>();
+
+        AX_CORE_INFO("ECS initialized...");
+    }
+
+    void ECS::ShutDown() {
+        m_ECS.reset();
+        AX_CORE_INFO("ECS deleted...");
     }
 
     ECS& ECS::CreateEntity() {

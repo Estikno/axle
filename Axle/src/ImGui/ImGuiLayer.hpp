@@ -4,9 +4,8 @@
 #include "Core/Layer/Layer.hpp"
 #include "Core/Types.hpp"
 
-#ifdef AX_DEBUG
-#    include "Debug/Console.hpp"
-#endif // AXLE_TESTING
+#include "Debug/Console.hpp"
+#include "Debug/ECSEditor.hpp"
 
 namespace Axle {
     class ImGuiLayer : public Layer {
@@ -24,9 +23,8 @@ namespace Axle {
 
     private:
         // Renderer variables
-#ifdef AX_DEBUG
-        DebugConsole m_Console;
+        Debug::DebugConsole m_Console;
         bool m_OpenOverlay = true;
-#endif // AXLE_TESTING
+        Debug::ECSEditor m_ECSEditor;
     };
 } // namespace Axle

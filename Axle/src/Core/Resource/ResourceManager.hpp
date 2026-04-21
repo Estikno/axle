@@ -10,7 +10,7 @@ namespace Axle {
     };
 
     // TODO: Make the class thread safety
-    class ResourceManager {
+    class AXLE_API ResourceManager {
     public:
         ResourceManager(const ResourceManager&) = delete;
         ResourceManager& operator=(const ResourceManager&) = delete;
@@ -31,6 +31,10 @@ namespace Axle {
          * Shutdowns the manager, important to call when no other component depends on it anymore
          */
         static void ShutDown();
+
+        inline static ResourceManager& GetInstance() {
+            return *m_ResourceManager;
+        }
 
         TextFileHandle LoadText(std::string path);
         std::string GetText(const TextFileHandle& handle);

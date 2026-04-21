@@ -9,7 +9,7 @@
 #include "Core/Input/InputManager.hpp"
 #include "Core/Error/Panic.hpp"
 
-#include "ECS/Resources.hpp"
+#include "Core/Resource/ResourceManager.hpp"
 
 #include "Core/Layer/Layer.hpp"
 

@@ -1,11 +1,13 @@
 #pragma once
 
+#include "ECS/ECS.hpp"
 #include "axpch.hpp"
 
 #include "Application.hpp"
 #include "Events/EventHandler.hpp"
 #include "Logger/Log.hpp"
 #include "Core/Input/InputManager.hpp"
+#include "Core/Resource/ResourceManager.hpp"
 
 #ifdef AX_PLATFORM_WINDOWS
 
@@ -22,12 +24,16 @@ int main(int argc, char** argv) {
     Axle::Log::Init();
     Axle::EventHandler::Init();
     Axle::InputManager::Init();
+    Axle::ResourceManager::Init();
+    Axle::ECS::Init();
 
     // Main application loop
     Axle::Application* app = Axle::CreateApplication();
     app->Run();
     delete app;
 
+    Axle::ECS::ShutDown();
+    Axle::ResourceManager::ShutDown();
     Axle::InputManager::ShutDown();
     Axle::EventHandler::ShutDown();
     Axle::Log::ShutDown();
@@ -52,12 +58,16 @@ int main(int argc, char** argv) {
     Axle::Log::Init();
     Axle::EventHandler::Init();
     Axle::InputManager::Init();
+    Axle::ResourceManager::Init();
+    Axle::ECS::Init();
 
     // Main application loop
     Axle::Application* app = Axle::CreateApplication();
     app->Run();
     delete app;
 
+    Axle::ECS::ShutDown();
+    Axle::ResourceManager::ShutDown();
     Axle::InputManager::ShutDown();
     Axle::EventHandler::ShutDown();
     Axle::Log::ShutDown();

@@ -9,7 +9,6 @@
 #include "Other/CustomTypes/Expected.hpp"
 
 namespace Axle {
-    // TODO: Check if this interface is really necesary because it's seem it's not
     class ISparseSet {
     public:
         virtual ~ISparseSet() = default;
@@ -17,6 +16,9 @@ namespace Axle {
         virtual size_t Size() const = 0;
         virtual std::vector<size_t> GetList() = 0;
         virtual bool Has(size_t id) const = 0;
+#ifdef AX_DEBUG
+        virtual void* GetRaw(size_t id) = 0;
+#endif // AX_DEBUG
     };
 
     template <typename T>
@@ -26,6 +28,7 @@ namespace Axle {
 
         SparseSet() {
             // Some arbitraty size values to avoid frequent reallocations
+            // TODO: Add the abilty of specifying these arbitraty values
             m_Dense.reserve(1000);
             m_DenseToSparse.reserve(1000);
             m_Sparse.reserve(1000);
@@ -165,6 +168,23 @@ namespace Axle {
             size_t denseIdx = m_Sparse.at(id);
             return denseIdx != InvalidIndex && denseIdx < m_Dense.size() && m_DenseToSparse.at(denseIdx) == id;
         }
+
+#ifdef AX_DEBUG
+        /**
+         * Returns a raw pointer to a specific element of the specified id
+         *
+         * IMPORTANT: This method is only available on debug builds and it's not recommended to be used at all except if
+         * it's strictly necessary
+         *
+         * @returns A raw pointer to the specified element
+         */
+        void* GetRaw(size_t id) override {
+            AX_ASSERT(
+                Has(id), "Trying to retrieve a non-existent element of type: {0} from index {1}", typeid(T).name(), id);
+
+            return static_cast<void*>(&Get(id).Unwrap().get());
+        }
+#endif // AX_DEBUG
 
     private:
         /// A dense array of elements of type T
