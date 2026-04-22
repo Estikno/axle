@@ -1,7 +1,6 @@
 #include "axpch.hpp"
 
 #include "Core/Events/Event.hpp"
-#include "ECS/ECS.hpp"
 #include "Core/Events/EventHandler.hpp"
 #include "Core/Input/InputState.hpp"
 #include "Core/Logger/Log.hpp"
@@ -14,12 +13,6 @@
 
 #include "Debug/Console.hpp"
 #include "Debug/Overlay.hpp"
-
-struct Position {
-    int x;
-    int y;
-    float other;
-};
 
 namespace Axle {
     ImGuiLayer::ImGuiLayer()
@@ -77,14 +70,6 @@ namespace Axle {
             },
             EventType::KeyPressed,
             EventCategory::Input);
-
-        AX_REGISTER_COMPONENT(Position, {
-            ImGui::DragInt("Position x", &c.x);
-            ImGui::DragInt("Position y", &c.y);
-            ImGui::DragFloat("Other", &c.other);
-        });
-
-        ECS::GetInstance().CreateEntity().WithComponent<Position>(Position{.x = 12, .y = 3, .other = 4.3f});
     }
 
     void ImGuiLayer::OnRender(f64 DeltaTime) {

@@ -17,6 +17,8 @@ namespace Axle {
     struct ComponentDescriptorDebug {
         std::string name;
         std::function<void(void*)> drawImGui;
+        std::function<void(EntityID)> addToEntity;
+        std::function<void(EntityID)> removeFromEntity;
     };
 
 #endif // AX_DEBUG
@@ -67,8 +69,12 @@ namespace Axle {
             RegisterComponent<T>();
 
             ComponentType typeID = GetComponentType<T>();
-            m_ComponentDescriptorsDebug[typeID] = {.name = typeid(T).name(),
-                                                   .drawImGui = [editor](void* ptr) { editor(*static_cast<T*>(ptr)); }};
+            m_ComponentDescriptorsDebug[typeID] = {
+                .name = typeid(T).name(),
+                .drawImGui = [editor](void* ptr) { editor(*static_cast<T*>(ptr)); },
+                .addToEntity = [this](EntityID id) { Add(id, T{}); },
+                .removeFromEntity = [this](EntityID id) { Remove<T>(id); },
+            };
         }
 #endif // AX_DEBUG
 
@@ -597,7 +603,6 @@ namespace Axle {
 
 // All field helpers expand to nothing in release
 #    define AX_COMPONENT_FIELD_FLOAT(label, field)
-#    define AX_COMPONENT_FIELD_FLOAT3(label, field)
 #    define AX_COMPONENT_FIELD_BOOL(label, field)
 #    define AX_COMPONENT_FIELD_INT(label, field)
 #endif // AX_DEBUG
