@@ -19,7 +19,7 @@ namespace Axle {
         BUTTON_RIGHT,
         BUTTON_MIDDLE,
 
-        BUTTON_MAX_BUTTONS
+        MAX_BUTTONS
     };
 
     enum class Keys {
@@ -162,7 +162,7 @@ namespace Axle {
 
     struct MouseState {
         glm::vec2 position;
-        bool buttons[static_cast<i32>(MouseButtons::BUTTON_MAX_BUTTONS)];
+        bool buttons[static_cast<i32>(MouseButtons::MAX_BUTTONS)];
     };
 
     struct InputState {

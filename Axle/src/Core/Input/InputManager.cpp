@@ -5,6 +5,7 @@
 #include "../Logger/Log.hpp"
 #include "../Events/EventHandler.hpp"
 #include "Core/Events/Event.hpp"
+#include "Core/Input/InputState.hpp"
 
 #include <array>
 #include <glm/vec2.hpp>
@@ -33,6 +34,15 @@ namespace Axle {
         for (u16 i = 0; i < static_cast<u16>(Keys::MaxKeys); ++i) {
             if (GetKey(static_cast<Keys>(i))) {
                 Event event(EventType::KeyIsPressed, EventCategory::Input);
+                event.GetContext().raw_data = std::array<u16, 8>{i};
+                AX_ADD_EVENT(event);
+            }
+        }
+
+        // Same for mouse buttons
+        for (u16 i = 0; i < static_cast<u16>(MouseButtons::MAX_BUTTONS); ++i) {
+            if (GetMouseButton(static_cast<MouseButtons>(i))) {
+                Event event(EventType::MouseButtonIsPressed, EventCategory::Input);
                 event.GetContext().raw_data = std::array<u16, 8>{i};
                 AX_ADD_EVENT(event);
             }
