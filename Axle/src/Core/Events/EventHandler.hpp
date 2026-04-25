@@ -122,8 +122,5 @@ namespace Axle {
 
 /**
  * Macro that simplifies the addition of new events to the event handler
- *
- * @param event A pointer to the event added. This pointer will be entirely handled by this class, DO NOT DELETE IT
- * YOURSELF.
  */
 #define AX_ADD_EVENT(...) ::Axle::EventHandler::GetInstance().AddEvent(__VA_ARGS__)

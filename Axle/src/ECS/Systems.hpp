@@ -11,6 +11,12 @@
 #include "ECS.hpp"
 
 namespace Axle {
+    // NOTE: If two systems in the same Update call operate on overlapping component types, they'll execute sequentially
+    // here since you iterate m_Systems on a single thread — so no problem. But if you ever parallelize Update (e.g.
+    // running systems concurrently with std::async or a thread pool), systems touching the same components would race
+    // on the underlying SparseSet data. That's a future concern rather than a current bug, but worth keeping in mind as
+    // a constraint on any future parallelization.
+
     class AXLE_TEST_API Systems {
     public:
         /**
@@ -34,11 +40,10 @@ namespace Axle {
                 // The case: lambda with EntityID
                 m_Systems.emplace_back([func = std::forward<Func>(func)](ECS& entities) {
                     View<Components...> view(entities);
-                    std::vector<EntityID> entitiesList = view.GetEntities();
-                    std::vector<std::tuple<Components&...>> componentsList = view.GetComponents();
+                    std::pair<std::vector<EntityID>, std::vector<std::tuple<Components&...>>> all = view.GetAll();
 
-                    for (size_t i = 0; i < entitiesList.size(); ++i) {
-                        std::apply([&](Components&... comps) { func(entitiesList[i], comps...); }, componentsList[i]);
+                    for (size_t i = 0; i < all.first.size(); ++i) {
+                        std::apply([&](Components&... comps) { func(all.first[i], comps...); }, all.second[i]);
                     }
                 });
             } else {

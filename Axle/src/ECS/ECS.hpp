@@ -145,7 +145,7 @@ namespace Axle {
          *
          * @returns The ID of the last created entity.
          */
-        inline EntityID GetLastCreatedEntity() const noexcept {
+        inline EntityID GetLastCreatedEntity() noexcept {
             std::scoped_lock lock(m_EntitiesMutex);
             return m_InsertingIntoIndex;
         }
@@ -197,7 +197,7 @@ namespace Axle {
          *
          * @returns true if the entity is alive and false otherwise
          */
-        inline bool IsAlive(EntityID id) const noexcept {
+        inline bool IsAlive(EntityID id) noexcept {
             // If it's not a valid id don't event bother locking the mutex
             if (id >= MAX_ENTITIES)
                 return false;
