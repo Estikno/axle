@@ -34,12 +34,19 @@ TEST_CASE("Ecs View tests") {
         entities.RegisterComponent<Position>();
         entities.RegisterComponent<Velocity>();
 
-        entities.CreateEntity().WithComponent<Position>(Position(0.0f, 1.0f));
-        entities.CreateEntity()
-            .WithComponent<Position>(Position(2.0f, 3.0f))
-            .WithComponent<Velocity>(Velocity(2.0f, 3.0f));
-        entities.CreateEntity().WithComponent<Position>(Position(0.0f, 1.0f));
-        entities.CreateEntity().WithComponent<Velocity>(Velocity(0.0f, 1.0f));
+        EntityID id = entities.CreateEntity();
+        entities.Add<Position>(id, Position(0.0f, 1.0f));
+
+
+        EntityID id2 = entities.CreateEntity();
+        entities.Add<Position>(id2, Position(2.0f, 3.0f));
+        entities.Add<Velocity>(id2, Velocity(2.0f, 3.0f));
+
+        EntityID id3 = entities.CreateEntity();
+        entities.Add<Position>(id3, Position(0.0f, 1.0f));
+
+        EntityID id4 = entities.CreateEntity();
+        entities.Add<Velocity>(id4, Velocity(0.0f, 1.0f));
 
         View<Position, Velocity> view(&entities);
 

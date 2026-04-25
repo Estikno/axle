@@ -37,7 +37,7 @@ namespace Axle::Debug {
             ImGui::Text("Entities");
             ImGui::SameLine();
             if (ImGui::Button("New Entity")) {
-                m_SelectedEntity = ECS::GetInstance().CreateEntity().GetLastCreatedEntity();
+                m_SelectedEntity = ECS::GetInstance().CreateEntity();
             }
             ImGui::Separator();
 

@@ -6,7 +6,7 @@
 #include "Core/Types.hpp"
 #include "Core/Logger/Log.hpp"
 #include "Other/CustomTypes/SparseSet.hpp"
-
+#include "Core/Types.hpp"
 #include "Core/Error/Panic.hpp"
 #include "Other/CustomTypes/Expected.hpp"
 #include <stdexcept>
@@ -83,26 +83,11 @@ namespace Axle {
 #endif // AX_DEBUG
 
         /**
-         * Creates a new entity and returns a reference to the entities
-         * class so that you can add components to it via the WithComponent method.
+         * Creates a new entity and returns an the new created EntityID
          *
          * @returns A reference to the entities for immediate use
          */
-        AXLE_TEST_API ECS& CreateEntity();
-
-        /**
-         * Adds a component to the entity that is currently being created.
-         *
-         * @param component Component to be added.
-         *
-         * @returns A reference to the entities class so that you can chain calls to this method.
-         */
-        template <typename T>
-        inline ECS& WithComponent(T component) {
-            std::scoped_lock lock(m_EntitiesMutex, m_ComponentsMutex);
-            AddUnsafe<T>(m_InsertingIntoIndex, component);
-            return *this;
-        }
+        AXLE_TEST_API EntityID CreateEntity();
 
         // TODO: Optmize the way components are stored. Because now we double copy them.
         /**
@@ -211,7 +196,7 @@ namespace Axle {
             return m_ComponentArrays;
         }
 
-        inline std::array<ComponentMask, MAX_ENTITIES>& GetEntityMasksTEST() {
+        inline std::vector<ComponentMask>& GetEntityMasksTEST() {
             return m_EntityMasks;
         }
 
@@ -448,16 +433,12 @@ namespace Axle {
         /// entity.
         ///
         /// For example, if the entity has the first and third registered component, the bit set will be `101`.
-        std::array<ComponentMask, MAX_ENTITIES> m_EntityMasks;
+        std::vector<ComponentMask> m_EntityMasks;
 
-        /// An array that keeps track of which entities are alive and which are not.
-        // TODO: Change array to vector, or atleast consider it if there can be a lot of entities
-        std::array<bool, MAX_ENTITIES> m_LivingEntities;
+        /// A vector that keeps track of which entities are alive and which are not.
+        std::vector<bool> m_LivingEntities;
 
-        /// The index of the entity that is being inserted into.
-        ///
-        /// This is used to keep track of which entity is being inserted into when
-        /// creating and inserting components in it with the 'WithComponent' method.
+        /// The index of the last created entity
         EntityID m_InsertingIntoIndex = 0;
 
         /// A priority queue of available entity IDs.
@@ -611,17 +592,20 @@ namespace Axle {
         AXLE_TEST_API std::pair<std::vector<EntityID>, std::vector<std::tuple<Components&...>>> GetAll() {
             std::scoped_lock lock(m_Entities->m_ComponentsMutex, m_Entities->m_EntitiesMutex);
 
-            std::vector<EntityID> entities = GetEntitiesUnsafe();
+            std::vector<EntityID> temp = GetEntitiesUnsafe();
+            std::vector<EntityID> final;
+            final.reserve(temp.size());
             std::vector<std::tuple<Components&...>> components;
 
-            for (const EntityID& entity : entities) {
+            for (const EntityID& entity : temp) {
                 if (m_Entities->HasAllUnsafe<Components...>(entity)) {
                     // We can safely unwrap here because we already checked that the entity has all the components
                     components.emplace_back((m_Entities->GetUnsafe<Components>(entity)).Unwrap().get()...);
+                    final.push_back(entity);
                 }
             }
 
-            return {std::move(entities), std::move(components)};
+            return {std::move(final), std::move(components)};
         }
 
         /**
@@ -650,7 +634,7 @@ namespace Axle {
          * Returns the maximum number of entities which the given set of components
          *
          * IMPORANT: It's not guaranted for all entities to have all the components, it's
-         * just an estimation. If you want correct data call GetAll instead
+         * just the maximum number that could satisfy the condition. If you want correct data call GetAll instead
          *
          * @returns A vector of EntityIDs that are most likely to have all components specified
          */

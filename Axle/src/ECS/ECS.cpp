@@ -13,7 +13,9 @@ namespace Axle {
     std::unique_ptr<ECS> ECS::m_ECS;
     std::mutex ECS::s_StaticMutex;
 
-    ECS::ECS() {
+    ECS::ECS()
+        : m_EntityMasks(MAX_ENTITIES),
+          m_LivingEntities(MAX_ENTITIES, false) {
         for (EntityID entity = 0; entity < MAX_ENTITIES; ++entity) {
             m_AvailableEntities.push(entity);
         }
@@ -34,7 +36,7 @@ namespace Axle {
         AX_CORE_INFO("ECS deleted...");
     }
 
-    ECS& ECS::CreateEntity() {
+    EntityID ECS::CreateEntity() {
         std::scoped_lock lock(m_EntitiesMutex);
         AX_ENSURE(m_LivingEntityCount < MAX_ENTITIES,
                   "Cannot create more entities than the maximum allowed: {0}.",
@@ -50,7 +52,7 @@ namespace Axle {
         m_LivingEntityCount++;
 
         AX_CORE_TRACE("Entity {0} has been created.", id);
-        return *this;
+        return id;
     }
 
     void ECS::DeleteEntity(EntityID id) {

@@ -37,9 +37,16 @@ TEST_CASE("ECS - Systems") {
     entities.RegisterComponent<Position>();
     entities.RegisterComponent<Velocity>();
 
-    entities.CreateEntity().WithComponent<Position>(Position(0.0f, 0.0f)).WithComponent<Velocity>(Velocity(1.0f, 1.0f));
-    entities.CreateEntity().WithComponent<Position>(Position(0.0f, 0.0f)).WithComponent<Velocity>(Velocity(2.0f, 0.0f));
-    entities.CreateEntity().WithComponent<Position>(Position(5.0f, 5.0f));
+    EntityID id = entities.CreateEntity();
+    entities.Add<Position>(id, Position(0.0f, 0.0f));
+    entities.Add<Velocity>(id, Velocity(1.0f, 1.0f));
+
+    EntityID id2 = entities.CreateEntity();
+    entities.Add<Position>(id2, Position(0.0f, 0.0f));
+    entities.Add<Velocity>(id2, Velocity(2.0f, 0.0f));
+
+    EntityID id3 = entities.CreateEntity();
+    entities.Add<Position>(id3, Position(5.0f, 5.0f));
 
     SUBCASE("Add system with single component") {
         systems.Add<Position>([](Position& pos) {
