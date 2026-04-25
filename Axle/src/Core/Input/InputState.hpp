@@ -162,7 +162,7 @@ namespace Axle {
 
     struct MouseState {
         glm::vec2 position;
-        bool buttons[static_cast<i32>(MouseButtons::MAX_BUTTONS)];
+        bool buttons[static_cast<i32>(MouseButtons::MAX_BUTTONS)] = {false};
     };
 
     struct InputState {
