@@ -30,9 +30,11 @@ namespace Axle {
     }
 
     void InputManager::Update() {
+        std::scoped_lock lock(m_InputMutex);
+
         // Send events if keys are pressed
         for (u16 i = 0; i < static_cast<u16>(Keys::MaxKeys); ++i) {
-            if (GetKey(static_cast<Keys>(i))) {
+            if (GetKeyUnsafe(static_cast<Keys>(i))) {
                 Event event(EventType::KeyIsPressed, EventCategory::Input);
                 event.GetContext().raw_data = std::array<u16, 8>{i};
                 AX_ADD_EVENT(event);
@@ -41,37 +43,29 @@ namespace Axle {
 
         // Same for mouse buttons
         for (u16 i = 0; i < static_cast<u16>(MouseButtons::MAX_BUTTONS); ++i) {
-            if (GetMouseButton(static_cast<MouseButtons>(i))) {
+            if (GetMouseButtonUnsafe(static_cast<MouseButtons>(i))) {
                 Event event(EventType::MouseButtonIsPressed, EventCategory::Input);
                 event.GetContext().raw_data = std::array<u16, 8>{i};
                 AX_ADD_EVENT(event);
             }
         }
 
-        std::scoped_lock lock(m_InputMutex);
         m_InputState.keyboard_previous = m_InputState.keyboard_current;
         m_InputState.mouse_previous = m_InputState.mouse_current;
     }
 
     void InputManager::SetKey(Keys key, bool pressed) {
-        {
-            std::scoped_lock lock(m_InputMutex);
-            // Only handles if the state of the key has changed
-            if (m_InputState.keyboard_current.keys[static_cast<i32>(key)] != pressed) {
-                // Update internal state
-                m_InputState.keyboard_current.keys[static_cast<i32>(key)] = pressed;
-            }
-        }
+        std::scoped_lock lock(m_InputMutex);
+
+        // Only handles if the state of the key has changed
+        if (m_InputState.keyboard_current.keys[static_cast<i32>(key)] == pressed)
+            return;
+        // Update internal state
+        m_InputState.keyboard_current.keys[static_cast<i32>(key)] = pressed;
 
         // Fire off an event informing of the change in state
-        Event event(EventType::KeyIsPressed, EventCategory::Input);
-
-        if (GetKeyDown(key))
-            event = Event(EventType::KeyPressed, EventCategory::Input);
-        else if (GetKeyUp(key))
-            event = Event(EventType::KeyReleased, EventCategory::Input);
-        else
-            event = Event(EventType::KeyIsPressed, EventCategory::Input);
+        EventType type = pressed ? EventType::KeyPressed : EventType::KeyReleased;
+        Event event(type, EventCategory::Input);
 
         // event->GetContext().u16_values[0] = static_cast<u16>(key);
         event.GetContext().raw_data = std::array<u16, 8>{static_cast<u16>(key)};
@@ -80,24 +74,16 @@ namespace Axle {
     }
 
     void InputManager::SetMouseButton(MouseButtons button, bool pressed) {
-        {
-            std::scoped_lock lock(m_InputMutex);
-            // Only handles if the state of the key has changed
-            if (m_InputState.mouse_current.buttons[static_cast<i32>(button)] != pressed) {
-                // Update internal state
-                m_InputState.mouse_current.buttons[static_cast<i32>(button)] = pressed;
-            }
-        }
+        std::scoped_lock lock(m_InputMutex);
+        // Only handles if the state of the key has changed
+        if (m_InputState.mouse_current.buttons[static_cast<i32>(button)] == pressed)
+            return;
+        // Update internal state
+        m_InputState.mouse_current.buttons[static_cast<i32>(button)] = pressed;
 
         // Fire off an event informing of the change in state
-        Event event(EventType::MouseButtonIsPressed, EventCategory::Input);
-
-        if (GetMouseButtonDown(button))
-            event = Event(EventType::MouseButtonPressed, EventCategory::Input);
-        else if (GetMouseButtonUp(button))
-            event = Event(EventType::MouseButtonReleased, EventCategory::Input);
-        else
-            event = Event(EventType::MouseButtonIsPressed, EventCategory::Input);
+        EventType type = pressed ? EventType::MouseButtonPressed : EventType::MouseButtonReleased;
+        Event event(type, EventCategory::Input);
 
         // event->GetContext().u16_values[0] = static_cast<u16>(button);
         event.GetContext().raw_data = std::array<u16, 8>{static_cast<u16>(button)};
@@ -106,20 +92,14 @@ namespace Axle {
     }
 
     void InputManager::SetMousePosition(const glm::vec2& position) {
-        bool stateChange = false;
+        std::scoped_lock lock(m_InputMutex);
 
-        {
-            std::scoped_lock lock(m_InputMutex);
-            // Only handles if the state of the key has changed
-            if (m_InputState.mouse_current.position != position) {
-                // Update internal state
-                m_InputState.mouse_current.position = position;
-                stateChange = true;
-            }
-        }
-
-        if (!stateChange)
+        // Only handles if the state of the key has changed
+        if (m_InputState.mouse_current.position == position)
             return;
+
+        // Update internal state
+        m_InputState.mouse_current.position = position;
 
         // Fire off an event informing of the change in state
         Event event(EventType::MouseMoved, EventCategory::Input);
@@ -181,6 +161,16 @@ namespace Axle {
         return m_InputState.mouse_current.position;
     }
 
+    bool InputManager::GetKeyUnsafe(Keys key) {
+        return m_InputState.keyboard_current.keys[static_cast<i32>(key)] &&
+               m_InputState.keyboard_previous.keys[static_cast<i32>(key)];
+    }
+
+    bool InputManager::GetMouseButtonUnsafe(MouseButtons button) {
+        return m_InputState.mouse_current.buttons[static_cast<i32>(button)] &&
+               m_InputState.mouse_previous.buttons[static_cast<i32>(button)];
+    }
+
 #ifdef AXLE_TESTING
     void InputManager::SimulateKeyState(Keys key, bool pressed) {
         SetKey(key, pressed);
@@ -198,6 +188,7 @@ namespace Axle {
         Update();
     }
     void InputManager::SimulateReset() {
+        std::scoped_lock lock(m_InputMutex);
         m_InputState = InputState();
     }
 #endif // AXLE_TESTING

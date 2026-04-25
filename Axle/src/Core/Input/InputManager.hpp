@@ -14,6 +14,7 @@ namespace Axle {
         InputManager(const InputManager&) = delete;
         InputManager& operator=(const InputManager&) = delete;
 
+        // Constructors do nothing because the initialization/destruction is manual with Init/ShutDown
         InputManager() {}
         ~InputManager() {}
 
@@ -21,6 +22,7 @@ namespace Axle {
          * Initializes the Input manager and its singleton
          *
          * Important: This has to be called before using the macros and any other functionality
+         * This function is NOT thread safe so it must be called from only one thread and only once to be safe.
          *
          * It is safe to call multiple times, it simply displays a warning after the first call.
          */
@@ -28,6 +30,7 @@ namespace Axle {
 
         /**
          * Shutdowns the manager, important to call when no other component depends on it anymore
+         * This function is NOT thread safe so it must be called from only one thread and only once to be safe.
          */
         static void ShutDown();
 
@@ -166,9 +169,28 @@ namespace Axle {
 
 
     private:
+        /**
+         * This is the unsafe version of the GetKey method
+         * this shall be used only when you have already locked the mutex
+         * and want to make multiple calls at once
+         *
+         * @returns True if the key is currently being pressed, false otherwise.
+         */
+        bool GetKeyUnsafe(Keys key);
+
+        /**
+         * This is the unsafe version of the GetMouseButton method
+         * this shall be used only when you have already locked the mutex
+         * and want to make multiple calls at once
+         *
+         * @returns True if the mouse button is currently being pressed, false otherwise.
+         */
+        bool GetMouseButtonUnsafe(MouseButtons button);
+
         static std::unique_ptr<InputManager> m_InputManager;
 
         InputState m_InputState;
+        // TODO: See about making two mutexes, one for the keyboard and other for mouse state
         std::mutex m_InputMutex;
     };
 } // namespace Axle

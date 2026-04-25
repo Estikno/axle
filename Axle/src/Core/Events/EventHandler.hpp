@@ -31,6 +31,7 @@ namespace Axle {
          * Initializes the event handler and its singleton
          *
          * Important: This has to be called before using the macros and any other functionality
+         * This function is NOT thread safe so it must be called from only one thread and only once to be safe.
          *
          * It is safe to call multiple times, it simply displays a warning after the first call.
          */
@@ -38,6 +39,7 @@ namespace Axle {
 
         /**
          * Shutdowns the manager, important to call when no other component depends on it anymore
+         * This function is NOT thread safe so it must be called from only one thread and only once to be safe.
          */
         static void ShutDown();
 
@@ -56,9 +58,6 @@ namespace Axle {
         /**
          * Add an event to the event handler and it will be notified automatically.
          * This function is not recommended to be called manually, better by the macro.
-         *
-         * This is the only multithread safe method in this class. The other stuff should all be called form the same
-         * thread.
          *
          * @param event An event object
          */
@@ -110,7 +109,9 @@ namespace Axle {
         static std::unique_ptr<EventHandler> m_EventHandler;
 
         std::vector<Event> m_EventQueue;
+
         std::mutex m_EventMutex;
+        std::mutex m_HandlersMutex;
 
         /// Active handlers mapped by their ID
         std::unordered_map<size_t, std::tuple<HandlerType, EventCategory, EventType>> m_handlers;

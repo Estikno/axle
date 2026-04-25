@@ -26,23 +26,23 @@ namespace Axle {
     }
 
     void EventHandler::AddEvent(Event event) {
-        AX_CORE_TRACE("Added a new event of type: {}", (i32) (event.GetEventType()));
-
         std::scoped_lock lock(m_EventMutex);
+
+        AX_CORE_TRACE("Added a new event of type: {}", (i32) (event.GetEventType()));
         m_EventQueue.push_back(event);
     }
 
     size_t EventHandler::Subscribe(const HandlerType& handler, EventType type, EventCategory category) {
-        std::scoped_lock lock(m_EventMutex);
+        std::scoped_lock lock(m_HandlersMutex);
 
-        i32 id = m_nextId++;
+        size_t id = m_nextId++;
         m_handlers[id] = std::make_tuple(handler, category, type);
 
         return id;
     }
 
     void EventHandler::Unsubscribe(size_t id) {
-        std::scoped_lock lock(m_EventMutex);
+        std::scoped_lock lock(m_HandlersMutex);
 
         m_handlers.erase(id);
     }
@@ -51,14 +51,21 @@ namespace Axle {
         if (event.IsHandled())
             return;
 
-        for (auto it = m_handlers.begin(); it != m_handlers.end(); it++) {
-            auto& [handler, category, type] = it->second;
+        std::vector<HandlerType> snapshot;
 
-            if (category != event.GetEventCategory())
-                continue;
+        {
+            std::scoped_lock lock(m_HandlersMutex);
+            for (auto& [id, tuple] : m_handlers) {
+                auto& [handler, category, type] = tuple;
+                if (category == event.GetEventCategory() && (type == EventType::None || type == event.GetEventType()))
+                    snapshot.push_back(handler);
+            }
+        }
 
-            if (type == EventType::None || type == event.GetEventType())
-                handler(event);
+        for (auto& handler : snapshot) {
+            if (event.IsHandled())
+                return;
+            handler(event);
         }
     }
 

@@ -11,6 +11,7 @@
 
 namespace Axle {
     std::unique_ptr<ECS> ECS::m_ECS;
+    std::mutex ECS::s_StaticMutex;
 
     ECS::ECS() {
         for (EntityID entity = 0; entity < MAX_ENTITIES; ++entity) {
@@ -25,7 +26,6 @@ namespace Axle {
         }
 
         m_ECS = std::make_unique<ECS>();
-
         AX_CORE_INFO("ECS initialized...");
     }
 
@@ -35,6 +35,7 @@ namespace Axle {
     }
 
     ECS& ECS::CreateEntity() {
+        std::scoped_lock lock(m_EntitiesMutex);
         AX_ENSURE(m_LivingEntityCount < MAX_ENTITIES,
                   "Cannot create more entities than the maximum allowed: {0}.",
                   MAX_ENTITIES);
@@ -48,12 +49,16 @@ namespace Axle {
         m_InsertingIntoIndex = id;
         m_LivingEntityCount++;
 
-        return *this;
-
         AX_CORE_TRACE("Entity {0} has been created.", id);
+        return *this;
     }
 
     void ECS::DeleteEntity(EntityID id) {
+        std::scoped_lock lock(m_EntitiesMutex, m_ComponentsMutex);
+        DeleteEntityUnsafe(id);
+    }
+
+    void ECS::DeleteEntityUnsafe(EntityID id) {
         AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
         AX_ASSERT(m_LivingEntities.at(id), "Entity ID {0} is not alive.", id);
 
@@ -84,4 +89,5 @@ namespace Axle {
 
         AX_CORE_TRACE("Entity {0} has been deleted.", id);
     }
+
 } // namespace Axle
