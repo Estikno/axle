@@ -44,4 +44,7 @@ namespace Axle {
 
     using ComponentMask = std::bitset<MAX_COMPONENTS>;
     constexpr EntityID INVALID_ENTITY = std::numeric_limits<EntityID>::max();
+
+    // Job System
+    using Job = std::function<void()>;
 } // namespace Axle
