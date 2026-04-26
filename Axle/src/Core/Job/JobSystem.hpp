@@ -65,8 +65,8 @@ namespace Axle {
 
         Job wrappedJob = [s = std::move(settable), j = std::move(job)]() mutable { s.Set(j()); };
 
-        if (!t_WorkerThread->m_LocalBuffer->TryPush(wrappedJob))
-            std::move(wrappedJob)(); // buffer full — invoke immediately
+        while (!t_WorkerThread->m_LocalBuffer->TryPush(wrappedJob))
+            RunPendingJob();
 
         return future;
     }

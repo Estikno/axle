@@ -162,7 +162,7 @@ namespace Axle {
             return;
         }
 
-        if (!t_WorkerThread->m_LocalBuffer->TryPush(job))
-            std::move(job)();
+        while (!t_WorkerThread->m_LocalBuffer->TryPush(job))
+            RunPendingJob();
     }
 } // namespace Axle
