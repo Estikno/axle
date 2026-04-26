@@ -40,7 +40,7 @@
 
 Welcome to the Axle engine github page. This is just a small game engine that I'm creating in order to better understant how they work and how to program at a low level.
 
-If you’re curious about the process or want to follow along with the ups and downs of building a game engine, check out the [blog series][blog-series].
+<!--If you’re curious about the process or want to follow along with the ups and downs of building a game engine, check out the [blog series][blog-series].-->
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
