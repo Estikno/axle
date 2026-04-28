@@ -18,30 +18,103 @@ namespace Axle {
     template <typename T>
     class JobFuture;
 
+    /// Per thread variable that contains a pointer to the current WorkerThread struct of the thread
     inline thread_local WorkerThread* t_WorkerThread = nullptr;
 
     class JobSystem {
     public:
+        /**
+         * Simple method for initialising the system. Shall not be called more than once.
+         *
+         * Caution, this system depends on others, so they have to be initialized before this one.
+         * */
         static void Init(u32 threadCount, u8 bufferCapacity, u32 renderBufferCapacity);
+
+        /**
+         * Same as init but for destroying and cleaning everything.
+         * */
         static void Shutdown();
+
+        /**
+         * Simply gets the singleton instance. Call after initialization.
+         * */
         inline static JobSystem& GetInstance() {
             return *s_JobSystem;
         }
 
+        /**
+         * Excecutes a pending job on the caller thread
+         *
+         * The job may be from the woker's own buffer or solen from others.
+         * Render jobs are only to be taken by the render thread. As OpengGL is not Multi-Threaded.
+         * */
         void RunPendingJob();
+
+        /**
+         * Submits a job to the buffer of the calling thread.
+         * This job may be done by the same thread or others.
+         *
+         * Imporant: Do not submit render jobs via this method, use SubmitToRenderThread instead.
+         * */
         void Submit(Job job);
+
+        /**
+         * Same as the void Submit method but here retrns a JobFuture, allowing you to wait until
+         * the job is done.
+         * */
         template <typename T>
         JobFuture<T> Submit(std::function<T()> job);
+
+        /**
+         * Special submit function for render jobs.
+         *
+         * This shall not be used for submitting non render jobs as render jobs can't be stolen by
+         * other threads, so you might block the whole thread with non-render jobs. For this case use
+         * either the void Submit or JobFuture Submit methods.
+         * */
         void SubmitToRenderThread(Job job);
 
     private:
+        // Singleton
         static std::unique_ptr<JobSystem> s_JobSystem;
 
+        /**
+         * Automate setting up worker threads.
+         * */
         void SetupWorkerThread(u32 index, bool isRenderThread = false);
+
+        /**
+         * Defines the loop which every worker follows. That is, checking for available jobs
+         * and doing them when possible.
+         * */
         void WorkerLoop(u32 index);
+
+        /**
+         * The worker thread calling this method proceds to only doing jobs from their own buffer
+         * until this one is empty.
+         *
+         * Usefull when shutting down the system and want to finish all remaining tasks.
+         * */
         void EmptyBuffer();
 
+        /**
+         * Helper function that pops a job from the worker's thead own buffer.
+         *
+         * Also checks that the calling thread is in fact a working one and if that's not the case
+         * returns immediately logging the error.
+         *
+         * @returns An Expected type with the job if it succeeded.
+         * */
         Expected<Job> PopJob();
+
+        /**
+         * Helper funtion that steals a job from other worker threads buffer.
+         *
+         * Also checks that the calling thread is in fact a working one and if that's not the case
+         * returns immediately logging the error.
+         *
+         * @returns An Expected type with the job if it succeeded.
+         * */
         Expected<Job> StealJob();
 
         u32 m_NumThreads;

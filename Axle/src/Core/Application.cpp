@@ -9,6 +9,7 @@
 #include "Core/Events/Event.hpp"
 #include "Core/Layer/Layer.hpp"
 #include "Window/Window.hpp"
+#include "Core/Job/JobSystem.hpp"
 
 #include "ImGui/ImGuiLayer.hpp"
 

@@ -6,7 +6,11 @@
 #include <stdexcept>
 
 namespace Axle {
-    // Fairly basic RingBuffer
+    /**
+     * Fairly basic RingBuffer used by the JobSystem
+     *
+     * Important: This class is not thread safe if used incorrectly so read carefuly the methods comments
+     * */
     class JobBuffer {
     public:
         JobBuffer(u32 size)
@@ -20,25 +24,11 @@ namespace Axle {
          * If the mutex is blocked or the list itself is empty it fails.
          * Even if the pushed failed the job system can progress.
          *
+         * Important: Only the "owner" thread of the buffer may push jobs.
+         *
          * @returns true if it was able to push the job, false otherwise
          * */
-        bool TryPush(Job job) {
-            // No lock — only owner thread calls this
-            std::unique_lock<std::mutex> lock(m_Jobs[m_Head].m_Mutex, std::try_to_lock);
-
-            // If we can't acquire the lock we simply return
-            if (!lock.owns_lock())
-                return false;
-
-            // If the current pointing node has a valid job already then it means the queue is full and we can't append
-            // another job
-            if (m_Jobs[m_Head].value.has_value())
-                return false;
-
-            m_Jobs[m_Head].value = job;
-            m_Head = (m_Head + 1) % m_Jobs.size();
-            return true;
-        }
+        bool TryPush(Job job);
 
         /**
          * Pops a Job from the list
@@ -46,53 +36,22 @@ namespace Axle {
          * @returns An Expected value, it's valid if there was a job to pop and the value is that poped job, otherwise
          * it's invalid.
          * */
-        Expected<Job> Pop() {
-            u32 newHead = (m_Head == 0) ? m_Jobs.size() - 1 : m_Head - 1;
-
-            // A worker thread poping a job has nothing else to do so the best option is to block until we can access
-            // the node
-            std::scoped_lock lock(m_Jobs[newHead].m_Mutex);
-
-            if (!m_Jobs[newHead].value.has_value())
-                return Expected<Job>::FromException(std::logic_error("The job list is empty"));
-
-            Job job = std::move(*m_Jobs[newHead].value);
-            m_Jobs[newHead].value.reset();
-            m_Head = newHead;
-            return job;
-        }
+        Expected<Job> Pop();
 
         /**
          * Tries to steal a job from the list.
          *
          * If the mutex is blocked or the list itself is empty it fails.
          *
+         * Important: Only the "owner" thread of the buffer may pop jobs.
+         *
          * @returns An Expected value, it's valid if there was a job to steal and the value is that poped job, otherwise
          * it's invalid.
          * */
-        Expected<Job> TrySteal() {
-            std::unique_lock<std::mutex> lock(m_TailMutex, std::try_to_lock);
-
-            if (!lock.owns_lock())
-                return Expected<Job>::FromException(
-                    std::runtime_error("Can't access because the tail is currently locked"));
-
-            u32 oldTail = m_Tail;
-
-            std::unique_lock<std::mutex> nodeLock(m_Jobs[oldTail].m_Mutex, std::try_to_lock);
-            if (!nodeLock.owns_lock())
-                return Expected<Job>::FromException(std::runtime_error("Node blocked"));
-
-            if (!m_Jobs[oldTail].value.has_value())
-                return Expected<Job>::FromException(std::logic_error("The job list is empty"));
-
-            Job job = std::move(*m_Jobs[oldTail].value);
-            m_Jobs[oldTail].value.reset();
-            m_Tail = (oldTail + 1) % m_Jobs.size();
-            return job;
-        }
+        Expected<Job> TrySteal();
 
     private:
+        // Simple job wrapper so that we can have QOL stuff
         struct Node {
             Node() = default;
             Node(const Node&) = delete;
@@ -102,11 +61,14 @@ namespace Axle {
             std::optional<Job> value;
         };
 
+        // The head points to the side were jobs are pushed and poped
         u32 m_Head;
 
+        // The head points to the other end of the buffer, where jobs are stolen
         u32 m_Tail;
         std::mutex m_TailMutex;
 
+        // We don't need to change the size of the buffer so a simple vector is enough
         std::vector<Node> m_Jobs;
     };
 } // namespace Axle
