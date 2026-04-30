@@ -15,8 +15,8 @@ namespace Axle {
         }
 
 
-        // -1 for the main thread and -1 for the render thread (OpengGL is single threaded)
-        u32 totalThreads = std::thread::hardware_concurrency() - 2;
+        // -1 for the render thread (OpengGL is single threaded)
+        u32 totalThreads = std::thread::hardware_concurrency() - 1;
         // FIX: This error message is temporal, in such cases simply prevent the initialization or something
         AX_ENSURE(totalThreads > 0, "There are not sufficient threads to initialize the job system");
 
@@ -48,7 +48,7 @@ namespace Axle {
             js.WorkerLoop(js.m_RenderThreadIndex);
         });
 
-        AX_INFO("Created {0} worker threads (excluding the main one)", js.m_NumThreads + 1);
+        AX_INFO("Created {0} new worker threads (excluding the main one)", js.m_NumThreads);
 
         // Main thread is also a worker
         js.SetupWorkerThread(0);
@@ -71,12 +71,14 @@ namespace Axle {
     }
 
     void JobSystem::SetupWorkerThread(u32 index, bool isRenderThread) {
+        // Store basic info
         t_WorkerThread = new WorkerThread();
         t_WorkerThread->m_Index = index;
         t_WorkerThread->m_LocalBuffer = m_Buffers[index];
 
         AX_CORE_INFO("Hello from thread {0}", index);
 
+        // Computes stealing buffers
         for (u32 i = 1; i <= m_NumThreads; ++i) {
             u32 targetIndex = (index + i) % (m_NumThreads + 1);
 

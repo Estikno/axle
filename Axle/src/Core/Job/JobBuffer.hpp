@@ -3,7 +3,6 @@
 #include "axpch.hpp"
 #include "Core/Types.hpp"
 #include "Other/CustomTypes/Expected.hpp"
-#include <stdexcept>
 
 namespace Axle {
     /**
@@ -25,6 +24,8 @@ namespace Axle {
          * Even if the pushed failed the job system can progress.
          *
          * Important: Only the "owner" thread of the buffer may push jobs.
+         *
+         * @param job The Job to be pushed
          *
          * @returns true if it was able to push the job, false otherwise
          * */
