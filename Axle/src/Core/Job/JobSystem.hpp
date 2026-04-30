@@ -3,6 +3,7 @@
 #include "axpch.hpp"
 #include "Other/CustomTypes/Expected.hpp"
 #include "JobBuffer.hpp"
+#include "Core/Logger/Log.hpp"
 #include "Core/Types.hpp"
 
 // JobSystem based on Rismoch blog: https://www.rismosch.com/article?id=building-a-job-system
@@ -88,6 +89,24 @@ namespace Axle {
          * */
         void SubmitToRenderThread(Job job);
 
+#ifdef AXLE_TESTING
+        std::vector<std::shared_ptr<JobBuffer>>& GetBuffers() {
+            return m_Buffers;
+        }
+
+        std::vector<std::thread>& GetThreads() {
+            return m_Threads;
+        }
+
+        u32 GetNumThreads() {
+            return m_NumThreads;
+        }
+
+        u32 GetRenderIndex() {
+            return m_RenderThreadIndex;
+        }
+#endif // AXLE_TESTING
+
     private:
         // Singleton
         static std::unique_ptr<JobSystem> s_JobSystem;
@@ -156,17 +175,21 @@ namespace Axle {
             // Still need to return something valid
             auto [settable, future] = SettableJobFuture<T>::Make();
             settable.Set(job()); // invoke immediately
-            return future;
+            return std::move(future);
         }
 
         auto [settable, future] = SettableJobFuture<T>::Make();
 
-        Job wrappedJob = [s = std::move(settable), j = std::move(job)]() mutable { s.Set(j()); };
+        // Wrap in shared_ptr so the lambda is copyable
+        auto sharedState =
+            std::make_shared<std::pair<SettableJobFuture<T>, std::function<T()>>>(std::move(settable), std::move(job));
+
+        Job wrappedJob = [sharedState]() mutable { sharedState->first.Set(sharedState->second()); };
 
         while (!t_WorkerThread->m_LocalBuffer->TryPush(wrappedJob))
             RunPendingJob();
 
-        return future;
+        return std::move(future);
     }
 
     /**
@@ -174,7 +197,7 @@ namespace Axle {
      * */
     template <typename T>
     struct JobFutureInner {
-        std::atomic<bool> isReady{false};
+        bool isReady{false};
         std::optional<T> data;
         std::mutex mutex;
     };
@@ -208,13 +231,14 @@ namespace Axle {
          * */
         T Wait() {
             while (true) {
-                // If it fails to lock simply do other jobs and try later, do not block.
-                std::unique_lock<std::mutex> lock(m_Inner->mutex, std::try_to_lock);
-                if (lock.owns_lock() && m_Inner->isReady) {
-                    T value = std::move(*m_Inner->data);
-                    m_Inner->data.reset();
-                    return value;
-                }
+                {
+                    std::scoped_lock lock(m_Inner->mutex);
+                    if (m_Inner->isReady) {
+                        T value = std::move(*m_Inner->data);
+                        m_Inner->data.reset();
+                        return value;
+                    }
+                } // Release the lock
 
                 // Keep the system productive while waiting
                 JobSystem::GetInstance().RunPendingJob();
@@ -257,7 +281,7 @@ namespace Axle {
         void Set(T result) {
             std::scoped_lock lock(m_Inner->mutex);
             m_Inner->data = std::move(result);
-            m_Inner->isReady.store(true, std::memory_order_seq_cst);
+            m_Inner->isReady = true;
         }
 
     private:
@@ -265,4 +289,67 @@ namespace Axle {
             : m_Inner(std::move(inner)) {}
         JobFutureInnerPtr<T> m_Inner;
     };
+
+    // void specialization
+    // ------------------
+    template <>
+    struct JobFutureInner<void> {
+        bool isReady{false};
+        std::mutex mutex;
+        // no data field needed
+    };
+
+    template <>
+    class JobFuture<void> {
+    public:
+        JobFuture(JobFuture&&) = default;
+        JobFuture& operator=(JobFuture&&) = default;
+        JobFuture(const JobFuture&) = delete;
+        JobFuture& operator=(const JobFuture&) = delete;
+
+        explicit JobFuture(JobFutureInnerPtr<void> inner)
+            : m_Inner(std::move(inner)) {}
+
+        void Wait() {
+            while (true) {
+                {
+                    std::scoped_lock lock(m_Inner->mutex);
+                    if (m_Inner->isReady)
+                        return;
+                }
+                JobSystem::GetInstance().RunPendingJob();
+            }
+        }
+
+    private:
+        JobFutureInnerPtr<void> m_Inner;
+    };
+
+    template <>
+    class SettableJobFuture<void> {
+    public:
+        SettableJobFuture(SettableJobFuture&&) = default;
+        SettableJobFuture& operator=(SettableJobFuture&&) = default;
+        SettableJobFuture(const SettableJobFuture&) = delete;
+        SettableJobFuture& operator=(const SettableJobFuture&) = delete;
+
+        static std::pair<SettableJobFuture<void>, JobFuture<void>> Make() {
+            auto inner = std::make_shared<JobFutureInner<void>>();
+            return {SettableJobFuture<void>(inner), JobFuture<void>(inner)};
+        }
+
+        void Set() {
+            std::scoped_lock lock(m_Inner->mutex);
+            m_Inner->isReady = true;
+        }
+
+    private:
+        explicit SettableJobFuture(JobFutureInnerPtr<void> inner)
+            : m_Inner(std::move(inner)) {}
+        JobFutureInnerPtr<void> m_Inner;
+    };
+
+    template <>
+    JobFuture<void> JobSystem::Submit(std::function<void()> job);
+    // ------------------
 } // namespace Axle

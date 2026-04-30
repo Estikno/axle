@@ -51,6 +51,12 @@ namespace Axle {
          * */
         Expected<Job> TrySteal();
 
+#ifdef AXLE_TESTING
+        u32 GetSize() {
+            return m_Jobs.size();
+        }
+#endif // AXLE_TESTING
+
     private:
         // Simple job wrapper so that we can have QOL stuff
         struct Node {

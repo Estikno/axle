@@ -167,4 +167,33 @@ namespace Axle {
         while (!t_WorkerThread->m_LocalBuffer->TryPush(job))
             RunPendingJob();
     }
+
+    // void specialization
+    // ------------------
+    template <>
+    JobFuture<void> JobSystem::Submit(std::function<void()> job) {
+        if (!t_WorkerThread) {
+            AX_CORE_ERROR("Submit called from non-worker thread");
+            auto [settable, future] = SettableJobFuture<void>::Make();
+            job();
+            settable.Set();
+            return std::move(future);
+        }
+
+        auto [settable, future] = SettableJobFuture<void>::Make();
+
+        auto sharedState = std::make_shared<std::pair<SettableJobFuture<void>, std::function<void()>>>(
+            std::move(settable), std::move(job));
+
+        Job wrappedJob = [sharedState]() mutable {
+            sharedState->second();
+            sharedState->first.Set();
+        };
+
+        while (!t_WorkerThread->m_LocalBuffer->TryPush(wrappedJob))
+            RunPendingJob();
+
+        return std::move(future);
+    }
+    // ------------------
 } // namespace Axle

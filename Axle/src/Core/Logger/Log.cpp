@@ -10,7 +10,7 @@ namespace Axle {
     std::shared_ptr<spdlog::logger> Log::s_ClientLogger;
 
     void Log::Init() {
-        if (s_CoreLogger != nullptr) {
+        if (s_CoreLogger != nullptr && s_ClientLogger != nullptr) {
             AX_CORE_WARN("Init method of the logger has been called a second time. IGNORING");
             return;
         }
