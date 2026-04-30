@@ -219,83 +219,115 @@ TEST_CASE("JobSystem - nested futures resolve correctly") {
 // Render thread
 // ─────────────────────────────────────────────
 
-// TEST_CASE("JobSystem - render thread executes submitted jobs") {
-//     InitJS();
-//
-//     std::atomic<bool> executed{false};
-//     JobSystem::GetInstance().SubmitToRenderThread([&executed]() { executed = true; });
-//
-//     auto start = std::chrono::steady_clock::now();
-//     while (!executed) {
-//         JobSystem::GetInstance().RunPendingJob();
-//         auto elapsed = std::chrono::steady_clock::now() - start;
-//         REQUIRE(elapsed < std::chrono::seconds(5));
-//     }
-//
-//     CHECK(executed);
-//     ShutdownJS();
-// }
-//
-// TEST_CASE("JobSystem - render thread jobs execute in order") {
-//     InitJS();
-//
-//     constexpr int jobCount = 20;
-//     std::vector<int> order;
-//     std::mutex orderMutex;
-//     std::atomic<int> done{0};
-//
-//     for (int i = 0; i < jobCount; ++i) {
-//         JobSystem::GetInstance().SubmitToRenderThread([i, &order, &orderMutex, &done]() {
-//             {
-//                 std::scoped_lock lock(orderMutex);
-//                 order.push_back(i);
-//             }
-//             done.fetch_add(1);
-//         });
-//     }
-//
-//     auto start = std::chrono::steady_clock::now();
-//     while (done < jobCount) {
-//         JobSystem::GetInstance().RunPendingJob();
-//         auto elapsed = std::chrono::steady_clock::now() - start;
-//         REQUIRE(elapsed < std::chrono::seconds(5));
-//     }
-//
-//     // Render jobs should execute in submission order since it's a single thread
-//     for (int i = 0; i < jobCount; ++i)
-//         CHECK(order[i] == i);
-//
-//     ShutdownJS();
-// }
-//
-// // ─────────────────────────────────────────────
-// // Shutdown
-// // ─────────────────────────────────────────────
-//
-// TEST_CASE("JobSystem - shutdown drains remaining jobs") {
-//     InitJS();
-//
-//     std::atomic<int> counter{0};
-//     constexpr int jobCount = 50;
-//
-//     for (int i = 0; i < jobCount; ++i) {
-//         JobSystem::GetInstance().Submit([&counter]() { counter.fetch_add(1); });
-//     }
-//
-//     // Shutdown should drain everything before returning
-//     ShutdownJS();
-//
-//     CHECK(counter == jobCount);
-// }
-//
-// TEST_CASE("JobSystem - double init is ignored") {
-//     InitJS();
-//     InitJS(); // should warn and return, not crash
-//     ShutdownJS();
-// }
-//
-// TEST_CASE("JobSystem - double shutdown is safe") {
-//     InitJS();
-//     ShutdownJS();
-//     ShutdownJS(); // should be a no-op
-// }
+TEST_CASE("JobSystem - render thread executes submitted jobs") {
+    InitJS();
+
+    std::atomic<bool> executed{false};
+    JobSystem::GetInstance().SubmitToRenderThread([&]() {
+        executed = true;
+        // Verify it's the actual render thread
+        REQUIRE(t_WorkerThread->m_Index == 3);
+    });
+
+    auto start = std::chrono::steady_clock::now();
+    while (!executed) {
+        JobSystem::GetInstance().RunPendingJob();
+        auto elapsed = std::chrono::steady_clock::now() - start;
+        REQUIRE(elapsed < std::chrono::seconds(5));
+    }
+
+    CHECK(executed);
+    ShutdownJS();
+}
+
+TEST_CASE("JobSystem - render thread executes all submitted jobs") {
+    InitJS();
+
+    constexpr int jobCount = 50;
+    std::atomic<int> done{0};
+
+    for (int i = 0; i < jobCount; ++i) {
+        JobSystem::GetInstance().SubmitToRenderThread([&done]() { done.fetch_add(1); });
+    }
+
+    auto start = std::chrono::steady_clock::now();
+    while (done < jobCount) {
+        JobSystem::GetInstance().RunPendingJob();
+        REQUIRE(std::chrono::steady_clock::now() - start < std::chrono::seconds(5));
+    }
+
+    CHECK(done == jobCount);
+    ShutdownJS();
+}
+
+TEST_CASE("JobSystem - render thread jobs execute in order") {
+    InitJS();
+
+    constexpr int jobCount = 20;
+    std::vector<int> order;
+    std::mutex orderMutex;
+    std::atomic<int> done{0};
+
+    for (int i = 0; i < jobCount; ++i) {
+        JobSystem::GetInstance().SubmitToRenderThread([i, &order, &orderMutex, &done]() {
+            {
+                std::scoped_lock lock(orderMutex);
+                order.push_back(i);
+                // simulate work
+                std::this_thread::sleep_for(std::chrono::milliseconds(5));
+            }
+            done.fetch_add(1);
+        });
+    }
+
+    auto start = std::chrono::steady_clock::now();
+    while (done < jobCount) {
+        JobSystem::GetInstance().RunPendingJob();
+        auto elapsed = std::chrono::steady_clock::now() - start;
+        REQUIRE(elapsed < std::chrono::seconds(10));
+    }
+
+    // Render jobs should execute in submission order since it's a single thread
+    for (int i = 0; i < jobCount; ++i)
+        CHECK(order[i] == i);
+
+    ShutdownJS();
+}
+
+// ─────────────────────────────────────────────
+// Shutdown
+// ─────────────────────────────────────────────
+
+TEST_CASE("JobSystem - shutdown drains remaining jobs") {
+    InitJS();
+
+    std::atomic<int> counter{0};
+    constexpr int jobCount = 100;
+
+    for (int i = 0; i < jobCount; ++i) {
+        JobSystem::GetInstance().Submit([&counter]() { counter.fetch_add(1); });
+    }
+
+    JobSystem::GetInstance().SubmitToRenderThread([&]() {
+        for (int i = 0; i < 500; i++) {
+            JobSystem::GetInstance().Submit([&counter]() { counter.fetch_add(1); });
+        }
+    });
+
+    // Shutdown should drain everything before returning
+    ShutdownJS();
+
+    CHECK(counter == 600);
+}
+
+TEST_CASE("JobSystem - double init is ignored") {
+    InitJS();
+    CHECK_NOTHROW(InitJS()); // should warn and return, not crash
+    ShutdownJS();
+}
+
+TEST_CASE("JobSystem - double shutdown is safe") {
+    InitJS();
+    ShutdownJS();
+    CHECK_NOTHROW(ShutdownJS());
+}

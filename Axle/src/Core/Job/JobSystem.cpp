@@ -55,8 +55,10 @@ namespace Axle {
     }
 
     void JobSystem::Shutdown() {
-        if (s_JobSystem == nullptr)
+        if (s_JobSystem == nullptr) {
+            AX_CORE_WARN("JobSystem Shutdown method was called more than once. IGNORING");
             return;
+        }
 
         s_JobSystem->m_Running.store(false, std::memory_order_seq_cst);
         s_JobSystem->EmptyBuffer(); // drain main thread's buffer
@@ -113,6 +115,11 @@ namespace Axle {
             return Expected<Job>::FromException(std::runtime_error("Not a worker thread"));
         }
 
+        // Render thread steals (blocking just like Pop) to preserve submission order
+        if (t_WorkerThread->m_Index == m_RenderThreadIndex) {
+            return t_WorkerThread->m_LocalBuffer->Steal();
+        }
+
         return t_WorkerThread->m_LocalBuffer->Pop();
     }
 
@@ -148,7 +155,8 @@ namespace Axle {
 
     void JobSystem::SubmitToRenderThread(Job job) {
         if (!t_WorkerThread) {
-            AX_CORE_ERROR("SubmitToRenderThread called from non-worker thread");
+            AX_CORE_ERROR(
+                "SubmitToRenderThread called from a non-worker thread. Cannot excecute the job because OpengGL works exclusively on its render thread.");
             return;
         }
 
@@ -163,6 +171,8 @@ namespace Axle {
             job();
             return;
         }
+
+        // FIX: If the render thread submits a non render related job it will still go to it's render buffer
 
         while (!t_WorkerThread->m_LocalBuffer->TryPush(job))
             RunPendingJob();

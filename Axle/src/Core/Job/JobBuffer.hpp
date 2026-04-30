@@ -44,12 +44,23 @@ namespace Axle {
         /**
          * Tries to steal a job from the list.
          *
-         * If the mutex is blocked or the list itself is empty it fails.
+         * If the mutex is blocked or the list itself is empty it fails without blocking.
          *
          * @returns An Expected value, it's valid if there was a job to steal and the value is that poped job, otherwise
          * it's invalid.
          * */
         Expected<Job> TrySteal();
+
+        /**
+         * It acts like TrySteal but this function will block until it acquires the necessary mutexes.
+         *
+         * This method should not be the default one, it is highly recommended to use TrySteal unless it's strictly
+         * necessary to block.
+         *
+         * @returns An Expected value, it's valid if there was a job to steal and the value is that poped job, otherwise
+         * it's invalid.
+         * */
+        Expected<Job> Steal();
 
 #ifdef AXLE_TESTING
         u32 GetSize() {

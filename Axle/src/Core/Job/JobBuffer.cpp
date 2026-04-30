@@ -63,4 +63,19 @@ namespace Axle {
         m_Tail = (oldTail + 1) % m_Jobs.size();
         return job;
     }
+
+    Expected<Job> JobBuffer::Steal() {
+        std::scoped_lock lock(m_TailMutex);
+        u32 oldTail = m_Tail;
+
+        std::scoped_lock node_lock(m_Jobs[oldTail].m_Mutex);
+
+        if (!m_Jobs[oldTail].m_Value.has_value())
+            return Expected<Job>::FromException(std::logic_error("The job list is empty"));
+
+        Job job = std::move(*m_Jobs[oldTail].m_Value);
+        m_Jobs[oldTail].m_Value.reset();
+        m_Tail = (oldTail + 1) % m_Jobs.size();
+        return job;
+    }
 } // namespace Axle
