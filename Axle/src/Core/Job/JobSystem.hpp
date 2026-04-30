@@ -5,6 +5,8 @@
 #include "JobBuffer.hpp"
 #include "Core/Types.hpp"
 
+// JobSystem based on Rismoch blog: https://www.rismosch.com/article?id=building-a-job-system
+
 namespace Axle {
     struct WorkerThread {
         std::shared_ptr<JobBuffer> m_LocalBuffer;

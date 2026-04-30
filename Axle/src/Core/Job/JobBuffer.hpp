@@ -34,6 +34,8 @@ namespace Axle {
         /**
          * Pops a Job from the list
          *
+         * Important: Only the "owner" thread of the buffer may pop jobs.
+         *
          * @returns An Expected value, it's valid if there was a job to pop and the value is that poped job, otherwise
          * it's invalid.
          * */
@@ -43,8 +45,6 @@ namespace Axle {
          * Tries to steal a job from the list.
          *
          * If the mutex is blocked or the list itself is empty it fails.
-         *
-         * Important: Only the "owner" thread of the buffer may pop jobs.
          *
          * @returns An Expected value, it's valid if there was a job to steal and the value is that poped job, otherwise
          * it's invalid.
