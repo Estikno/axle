@@ -59,7 +59,7 @@ namespace Axle {
             Node& operator=(const Node&) = delete;
 
             std::mutex m_Mutex;
-            std::optional<Job> value;
+            std::optional<Job> m_Value;
         };
 
         // The head points to the side were jobs are pushed and poped

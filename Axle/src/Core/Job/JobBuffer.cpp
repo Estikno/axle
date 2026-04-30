@@ -14,10 +14,10 @@ namespace Axle {
 
         // If the current pointing node has a valid job already then it means the queue is full and we can't append
         // another job
-        if (m_Jobs[m_Head].value.has_value())
+        if (m_Jobs[m_Head].m_Value.has_value())
             return false;
 
-        m_Jobs[m_Head].value = job;
+        m_Jobs[m_Head].m_Value = job;
         m_Head = (m_Head + 1) % m_Jobs.size();
         return true;
     }
@@ -30,11 +30,11 @@ namespace Axle {
         // the node
         std::scoped_lock lock(m_Jobs[newHead].m_Mutex);
 
-        if (!m_Jobs[newHead].value.has_value())
+        if (!m_Jobs[newHead].m_Value.has_value())
             return Expected<Job>::FromException(std::logic_error("The job list is empty"));
 
-        Job job = std::move(*m_Jobs[newHead].value);
-        m_Jobs[newHead].value.reset();
+        Job job = std::move(*m_Jobs[newHead].m_Value);
+        m_Jobs[newHead].m_Value.reset();
         m_Head = newHead;
         return job;
     }
@@ -55,11 +55,11 @@ namespace Axle {
         if (!nodeLock.owns_lock())
             return Expected<Job>::FromException(std::runtime_error("Node blocked"));
 
-        if (!m_Jobs[oldTail].value.has_value())
+        if (!m_Jobs[oldTail].m_Value.has_value())
             return Expected<Job>::FromException(std::logic_error("The job list is empty"));
 
-        Job job = std::move(*m_Jobs[oldTail].value);
-        m_Jobs[oldTail].value.reset();
+        Job job = std::move(*m_Jobs[oldTail].m_Value);
+        m_Jobs[oldTail].m_Value.reset();
         m_Tail = (oldTail + 1) % m_Jobs.size();
         return job;
     }
