@@ -93,7 +93,7 @@ namespace Axle {
 
     void JobSystem::WorkerLoop(u32 index) {
         while (m_Running.load(std::memory_order_seq_cst))
-            RunPendingJob();
+            RunPendingJobYielding();
 
         EmptyBuffer();
         delete t_WorkerThread;
@@ -141,16 +141,25 @@ namespace Axle {
         auto popped = PopJob();
         if (popped.IsValid()) {
             popped.Unwrap()();
+            m_AvailableJobs.fetch_add(-1);
             return;
         }
 
         auto stolen = StealJob();
         if (stolen.IsValid()) {
             stolen.Unwrap()();
+            m_AvailableJobs.fetch_add(-1);
             return;
         }
 
         std::this_thread::yield();
+    }
+
+    void JobSystem::RunPendingJobYielding() {
+        if (m_AvailableJobs > 0)
+            RunPendingJob();
+        else
+            std::this_thread::yield();
     }
 
     void JobSystem::SubmitToRenderThread(Job job) {
@@ -162,7 +171,9 @@ namespace Axle {
 
         // Block until there is space — render jobs cannot be invoked on the wrong thread
         while (!m_Buffers[m_RenderThreadIndex]->TryPush(job))
-            RunPendingJob(); // stay productive while waiting for space
+            RunPendingJobYielding(); // stay productive while waiting for space
+
+        m_AvailableJobs.fetch_add(1);
     }
 
     void JobSystem::Submit(Job job) {
@@ -175,7 +186,9 @@ namespace Axle {
         // FIX: If the render thread submits a non render related job it will still go to it's render buffer
 
         while (!t_WorkerThread->m_LocalBuffer->TryPush(job))
-            RunPendingJob();
+            RunPendingJobYielding(); // stay productive while waiting for space
+
+        m_AvailableJobs.fetch_add(1);
     }
 
     // void specialization
@@ -201,7 +214,9 @@ namespace Axle {
         };
 
         while (!t_WorkerThread->m_LocalBuffer->TryPush(wrappedJob))
-            RunPendingJob();
+            RunPendingJobYielding();
+
+        m_AvailableJobs.fetch_add(1);
 
         return std::move(future);
     }

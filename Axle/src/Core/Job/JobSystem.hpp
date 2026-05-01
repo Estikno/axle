@@ -60,6 +60,12 @@ namespace Axle {
         void RunPendingJob();
 
         /**
+         * Same as RunPendingJob but checks the global number of available jobs. If it sees that there are none
+         * it simply yields.
+         * */
+        void RunPendingJobYielding();
+
+        /**
          * Submits a job to the buffer of the calling thread.
          * This job may be done by the same thread or others.
          *
@@ -88,6 +94,15 @@ namespace Axle {
          * @param Job The job to be done
          * */
         void SubmitToRenderThread(Job job);
+
+        /**
+         * Gets how many jobs are available in the whole JobSystem
+         *
+         * @returns A u32 with how many jobs there currently are
+         * */
+        u32 GetAvailableJobs() {
+            return m_AvailableJobs.load();
+        }
 
 #ifdef AXLE_TESTING
         std::vector<std::shared_ptr<JobBuffer>>& GetBuffers() {
@@ -165,6 +180,8 @@ namespace Axle {
         std::vector<std::shared_ptr<JobBuffer>> m_Buffers;
         /// Handy variable to help shutting down the system
         std::atomic<bool> m_Running{false};
+
+        std::atomic<u32> m_AvailableJobs{0};
     };
 
     template <typename T>
@@ -187,8 +204,9 @@ namespace Axle {
         Job wrappedJob = [sharedState]() mutable { sharedState->first.Set(sharedState->second()); };
 
         while (!t_WorkerThread->m_LocalBuffer->TryPush(wrappedJob))
-            RunPendingJob();
+            RunPendingJobYielding();
 
+        m_AvailableJobs.fetch_add(1);
         return std::move(future);
     }
 
@@ -241,7 +259,7 @@ namespace Axle {
                 } // Release the lock
 
                 // Keep the system productive while waiting
-                JobSystem::GetInstance().RunPendingJob();
+                JobSystem::GetInstance().RunPendingJobYielding();
             }
         }
 
@@ -317,7 +335,8 @@ namespace Axle {
                     if (m_Inner->isReady)
                         return;
                 }
-                JobSystem::GetInstance().RunPendingJob();
+                // Keep the system productive while waiting
+                JobSystem::GetInstance().RunPendingJobYielding();
             }
         }
 
