@@ -53,7 +53,6 @@ namespace Axle {
          * Excecutes a pending job on the caller thread
          *
          * The job may be from the woker's own buffer or solen from others.
-         * Render jobs are only to be taken by the render thread. As OpengGL is not Multi-Threaded.
          * */
         void RunPendingJob();
 
@@ -68,8 +67,6 @@ namespace Axle {
          * This job may be done by the same thread or others.
          *
          * @param Job The job to be done
-         *
-         * Imporant: Do not submit render jobs via this method, use SubmitToRenderThread instead.
          * */
         void Submit(Job job);
 
