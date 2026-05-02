@@ -91,7 +91,7 @@ namespace Axle {
             return m_Threads;
         }
 
-        u32 GetNumThreads() {
+        i32 GetNumThreads() {
             return m_NumThreads;
         }
 #endif // AXLE_TESTING
@@ -152,7 +152,7 @@ namespace Axle {
         /// Handy variable to help shutting down the system
         std::atomic<bool> m_Running{false};
         /// Keeps track of how many non-render jobs are available to be picked up
-        std::atomic<u32> m_AvailableJobs{0};
+        std::atomic<i32> m_AvailableJobs{0};
         /// Allows worker threads to sleep while there is not work to do
         std::condition_variable m_CV;
         std::mutex m_CVMutex;
@@ -180,7 +180,10 @@ namespace Axle {
         while (!t_WorkerThread->m_LocalBuffer->TryPush(wrappedJob))
             RunPendingJob();
 
-        m_AvailableJobs.fetch_add(1);
+        {
+            std::scoped_lock lock(m_CVMutex); // hold mutex while notifying
+            m_AvailableJobs.fetch_add(1, std::memory_order_release);
+        }
         m_CV.notify_one();
         return std::move(future);
     }

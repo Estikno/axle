@@ -87,13 +87,11 @@ namespace Axle {
         while (m_Running.load(std::memory_order_seq_cst)) {
             RunPendingJob();
 
-            if (m_AvailableJobs.load(std::memory_order_acquire) == 0) {
-                std::unique_lock lock(m_CVMutex);
-                m_CV.wait(lock, [this] {
-                    return m_AvailableJobs.load(std::memory_order_acquire) > 0 ||
-                           !m_Running.load(std::memory_order_acquire);
-                });
-            }
+            std::unique_lock lock(m_CVMutex);
+            m_CV.wait(lock, [this] {
+                return m_AvailableJobs.load(std::memory_order_acquire) > 0 ||
+                       !m_Running.load(std::memory_order_acquire);
+            });
         }
 
         EmptyBuffer();
@@ -146,14 +144,14 @@ namespace Axle {
 
         auto popped = PopJob();
         if (popped.IsValid()) {
-            m_AvailableJobs.fetch_add(-1);
+            m_AvailableJobs.fetch_sub(1, std::memory_order_relaxed);
             popped.Unwrap()();
             return;
         }
 
         auto stolen = StealJob();
         if (stolen.IsValid()) {
-            m_AvailableJobs.fetch_add(-1);
+            m_AvailableJobs.fetch_sub(1, std::memory_order_relaxed);
             stolen.Unwrap()();
             return;
         }
@@ -169,7 +167,10 @@ namespace Axle {
         while (!t_WorkerThread->m_LocalBuffer->TryPush(job))
             RunPendingJob(); // stay productive while waiting for space
 
-        m_AvailableJobs.fetch_add(1, std::memory_order_release);
+        {
+            std::scoped_lock lock(m_CVMutex); // hold mutex while notifying
+            m_AvailableJobs.fetch_add(1, std::memory_order_release);
+        }
         m_CV.notify_one();
     }
 
@@ -198,7 +199,10 @@ namespace Axle {
         while (!t_WorkerThread->m_LocalBuffer->TryPush(wrappedJob))
             RunPendingJob();
 
-        m_AvailableJobs.fetch_add(1);
+        {
+            std::scoped_lock lock(m_CVMutex); // hold mutex while notifying
+            m_AvailableJobs.fetch_add(1, std::memory_order_release);
+        }
         m_CV.notify_one();
 
         return std::move(future);
