@@ -4,6 +4,7 @@
 #include "Core/Logger/Log.hpp"
 #include <atomic>
 #include <chrono>
+#include <ratio>
 #include <thread>
 
 using namespace Axle;
@@ -14,9 +15,8 @@ using namespace Axle;
 
 static void InitJS() {
     Log::Init();
-    JobSystem::Init(3,  // use 2 dedicated threads
-                    64, // buffer capacity
-                    128 // render buffer capacity
+    JobSystem::Init(3, // use 2 dedicated threads
+                    64 // buffer capacity
     );
 }
 
@@ -31,16 +31,14 @@ TEST_CASE("JobSystem - Created correctly") {
     std::vector<std::shared_ptr<JobBuffer>>& buffers = JobSystem::GetInstance().GetBuffers();
 
     // Check dimensions
-    REQUIRE(buffers.size() == 4);
+    REQUIRE(buffers.size() == 3);
     CHECK(buffers[0]->GetSize() == 64);
     CHECK(buffers[1]->GetSize() == 64);
     CHECK(buffers[2]->GetSize() == 64);
-    CHECK(buffers[3]->GetSize() == 128);
 
-    CHECK(JobSystem::GetInstance().GetThreads().size() == 3);
+    CHECK(JobSystem::GetInstance().GetThreads().size() == 2);
 
     CHECK(JobSystem::GetInstance().GetNumThreads() == 3);
-    CHECK(JobSystem::GetInstance().GetNumThreads() == JobSystem::GetInstance().GetRenderIndex());
 
     // If t_WorkerThread of the main thread is correct we assume everything else is also in order
     CHECK(t_WorkerThread->m_Index == 0);
@@ -216,85 +214,6 @@ TEST_CASE("JobSystem - nested futures resolve correctly") {
 }
 
 // ─────────────────────────────────────────────
-// Render thread
-// ─────────────────────────────────────────────
-
-TEST_CASE("JobSystem - render thread executes submitted jobs") {
-    InitJS();
-
-    std::atomic<bool> executed{false};
-    JobSystem::GetInstance().SubmitToRenderThread([&]() {
-        executed = true;
-        // Verify it's the actual render thread
-        REQUIRE(t_WorkerThread->m_Index == 3);
-    });
-
-    auto start = std::chrono::steady_clock::now();
-    while (!executed) {
-        JobSystem::GetInstance().RunPendingJobYielding();
-        auto elapsed = std::chrono::steady_clock::now() - start;
-        REQUIRE(elapsed < std::chrono::seconds(5));
-    }
-
-    CHECK(executed);
-    ShutdownJS();
-}
-
-TEST_CASE("JobSystem - render thread executes all submitted jobs") {
-    InitJS();
-
-    constexpr int jobCount = 50;
-    std::atomic<int> done{0};
-
-    for (int i = 0; i < jobCount; ++i) {
-        JobSystem::GetInstance().SubmitToRenderThread([&done]() { done.fetch_add(1); });
-    }
-
-    auto start = std::chrono::steady_clock::now();
-    while (done < jobCount) {
-        JobSystem::GetInstance().RunPendingJobYielding();
-        REQUIRE(std::chrono::steady_clock::now() - start < std::chrono::seconds(5));
-    }
-
-    CHECK(done == jobCount);
-    ShutdownJS();
-}
-
-TEST_CASE("JobSystem - render thread jobs execute in order") {
-    InitJS();
-
-    constexpr int jobCount = 20;
-    std::vector<int> order;
-    std::mutex orderMutex;
-    std::atomic<int> done{0};
-
-    for (int i = 0; i < jobCount; ++i) {
-        JobSystem::GetInstance().SubmitToRenderThread([i, &order, &orderMutex, &done]() {
-            {
-                std::scoped_lock lock(orderMutex);
-                order.push_back(i);
-                // simulate work
-                std::this_thread::sleep_for(std::chrono::milliseconds(5));
-            }
-            done.fetch_add(1);
-        });
-    }
-
-    auto start = std::chrono::steady_clock::now();
-    while (done < jobCount) {
-        JobSystem::GetInstance().RunPendingJobYielding();
-        auto elapsed = std::chrono::steady_clock::now() - start;
-        REQUIRE(elapsed < std::chrono::seconds(10));
-    }
-
-    // Render jobs should execute in submission order since it's a single thread
-    for (int i = 0; i < jobCount; ++i)
-        CHECK(order[i] == i);
-
-    ShutdownJS();
-}
-
-// ─────────────────────────────────────────────
 // Shutdown
 // ─────────────────────────────────────────────
 
@@ -308,7 +227,7 @@ TEST_CASE("JobSystem - shutdown drains remaining jobs") {
         JobSystem::GetInstance().Submit([&counter]() { counter.fetch_add(1); });
     }
 
-    JobSystem::GetInstance().SubmitToRenderThread([&]() {
+    JobSystem::GetInstance().Submit([&]() {
         for (int i = 0; i < 500; i++) {
             JobSystem::GetInstance().Submit([&counter]() { counter.fetch_add(1); });
         }

@@ -9,7 +9,6 @@
 #include "Core/Events/Event.hpp"
 #include "Core/Layer/Layer.hpp"
 #include "Window/Window.hpp"
-#include "Core/Job/JobSystem.hpp"
 
 #include "ImGui/ImGuiLayer.hpp"
 
@@ -107,6 +106,7 @@ namespace Axle {
     void Application::Render() {
         AX_CORE_INFO("Welcome from thread {0}", std::hash<std::thread::id>{}(std::this_thread::get_id()));
 
+        // Sets up imporant stuff
         m_Window = std::unique_ptr<Window>(Window::Create());
 
         for (Layer* layer : *m_LayerStack)
@@ -120,6 +120,9 @@ namespace Axle {
             f64 elapsed = current - previous;
             previous = current;
 
+            // Render logic
+            // --------------------------
+
             // Temporary background color
             glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
@@ -128,6 +131,7 @@ namespace Axle {
                 layer->OnRender(elapsed);
 
             m_Window->OnUpdate();
+            // --------------------------
         }
 
         for (Layer* layer : *m_LayerStack)

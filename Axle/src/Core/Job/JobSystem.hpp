@@ -6,7 +6,7 @@
 #include "Core/Logger/Log.hpp"
 #include "Core/Types.hpp"
 
-// JobSystem based on Rismoch blog: https://www.rismosch.com/article?id=building-a-job-system
+// JobSystem inspired on Rismoch blog: https://www.rismosch.com/article?id=building-a-job-system
 
 namespace Axle {
     struct WorkerThread {
@@ -32,12 +32,10 @@ namespace Axle {
          * @param threadCount How many working threads you need. The render thread is excluded from this count. However,
          * the main one is included. So if you want 2 additional dedicated working threads you would pass a 3.
          * @param bufferCapacity How many jobs are each working thread going to be able to store.
-         * @param renderBufferCapacity Same as bufferCapacity but for the render thread. It's recommended to make the
-         * render buffer larger than the normal ones.
          *
          * Caution, this system depends on others, so they have to be initialized before this one.
          * */
-        static void Init(u32 threadCount, u8 bufferCapacity, u32 renderBufferCapacity);
+        static void Init(u32 threadCount, u8 bufferCapacity);
 
         /**
          * Same as init but for destroying and cleaning everything.
@@ -85,17 +83,6 @@ namespace Axle {
         JobFuture<T> Submit(std::function<T()> job);
 
         /**
-         * Special submit function for render jobs.
-         *
-         * This shall not be used for submitting non render jobs as render jobs can't be stolen by
-         * other threads, so you might block the whole thread with non-render jobs. For this case use
-         * either the void Submit or JobFuture Submit methods.
-         *
-         * @param Job The job to be done
-         * */
-        void SubmitToRenderThread(Job job);
-
-        /**
          * Gets how many jobs are available in the whole JobSystem
          *
          * @returns A u32 with how many jobs there currently are
@@ -116,10 +103,6 @@ namespace Axle {
         u32 GetNumThreads() {
             return m_NumThreads;
         }
-
-        u32 GetRenderIndex() {
-            return m_RenderThreadIndex;
-        }
 #endif // AXLE_TESTING
 
     private:
@@ -130,17 +113,8 @@ namespace Axle {
          * Automate setting up worker threads.
          *
          * @param index Which worker index to setup
-         * @param isRenderThread Indicates if the thread to be set up is the working thread or not
          * */
-        void SetupWorkerThread(u32 index, bool isRenderThread = false);
-
-        /**
-         * Defines the loop which every worker follows. That is, checking for available jobs
-         * and doing them when possible.
-         *
-         * @param index Which worker index to setup
-         * */
-        void WorkerLoop(u32 index);
+        void SetupWorkerThread(u32 index);
 
         /**
          * The worker thread calling this method proceds to only doing jobs from their own buffer
@@ -149,6 +123,14 @@ namespace Axle {
          * Usefull when shutting down the system and want to finish all remaining tasks.
          * */
         void EmptyBuffer();
+
+        /**
+         * Defines the loop which every worker follows. That is, checking for available jobs
+         * and doing them when possible.
+         *
+         * @param index Which worker index to setup
+         * */
+        void WorkerLoop(u32 index);
 
         /**
          * Helper function that pops a job from the worker's thead own buffer.
@@ -172,15 +154,13 @@ namespace Axle {
 
         /// Stores the number of working threads (exlcuding the Render one)
         u32 m_NumThreads;
-        /// Index of the render thread in the m_Buffers vector
-        u32 m_RenderThreadIndex;
         /// All additional threads spwaned
         std::vector<std::thread> m_Threads;
         /// All job buffers
         std::vector<std::shared_ptr<JobBuffer>> m_Buffers;
         /// Handy variable to help shutting down the system
         std::atomic<bool> m_Running{false};
-
+        /// Keeps track of how many non-render jobs are available to be picked up
         std::atomic<u32> m_AvailableJobs{0};
     };
 
