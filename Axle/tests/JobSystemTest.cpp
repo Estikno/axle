@@ -63,7 +63,7 @@ TEST_CASE("JobSystem - fire and forget job executes") {
     // Help process while waiting
     auto start = std::chrono::steady_clock::now();
     while (!executed) {
-        JobSystem::GetInstance().RunPendingJobYielding();
+        JobSystem::GetInstance().RunPendingJob();
         auto elapsed = std::chrono::steady_clock::now() - start;
         REQUIRE(elapsed < std::chrono::seconds(5)); // fail if takes too long
     }
@@ -84,7 +84,7 @@ TEST_CASE("JobSystem - multiple fire and forget jobs all execute") {
 
     auto start = std::chrono::steady_clock::now();
     while (counter < jobCount) {
-        JobSystem::GetInstance().RunPendingJobYielding();
+        JobSystem::GetInstance().RunPendingJob();
         auto elapsed = std::chrono::steady_clock::now() - start;
         REQUIRE(elapsed < std::chrono::seconds(5));
     }
@@ -105,7 +105,7 @@ TEST_CASE("JobSystem - multiple fire and forget jobs all execute (more stressful
 
     auto start = std::chrono::steady_clock::now();
     while (counter < jobCount) {
-        JobSystem::GetInstance().RunPendingJobYielding();
+        JobSystem::GetInstance().RunPendingJob();
         auto elapsed = std::chrono::steady_clock::now() - start;
         REQUIRE(elapsed < std::chrono::seconds(5));
     }

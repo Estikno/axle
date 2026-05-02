@@ -57,12 +57,6 @@ namespace Axle {
         void RunPendingJob();
 
         /**
-         * Same as RunPendingJob but checks the global number of available jobs. If it sees that there are none
-         * it simply yields.
-         * */
-        void RunPendingJobYielding();
-
-        /**
          * Submits a job to the buffer of the calling thread.
          * This job may be done by the same thread or others.
          *
@@ -159,6 +153,9 @@ namespace Axle {
         std::atomic<bool> m_Running{false};
         /// Keeps track of how many non-render jobs are available to be picked up
         std::atomic<u32> m_AvailableJobs{0};
+        /// Allows worker threads to sleep while there is not work to do
+        std::condition_variable m_CV;
+        std::mutex m_CVMutex;
     };
 
     template <typename T>
@@ -181,9 +178,10 @@ namespace Axle {
         Job wrappedJob = [sharedState]() mutable { sharedState->first.Set(sharedState->second()); };
 
         while (!t_WorkerThread->m_LocalBuffer->TryPush(wrappedJob))
-            RunPendingJobYielding();
+            RunPendingJob();
 
         m_AvailableJobs.fetch_add(1);
+        m_CV.notify_one();
         return std::move(future);
     }
 
@@ -236,7 +234,10 @@ namespace Axle {
                 } // Release the lock
 
                 // Keep the system productive while waiting
-                JobSystem::GetInstance().RunPendingJobYielding();
+                if (t_WorkerThread)
+                    JobSystem::GetInstance().RunPendingJob();
+                else
+                    std::this_thread::yield();
             }
         }
 
@@ -313,7 +314,10 @@ namespace Axle {
                         return;
                 }
                 // Keep the system productive while waiting
-                JobSystem::GetInstance().RunPendingJobYielding();
+                if (t_WorkerThread)
+                    JobSystem::GetInstance().RunPendingJob();
+                else
+                    std::this_thread::yield();
             }
         }
 

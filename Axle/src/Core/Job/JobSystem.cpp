@@ -50,6 +50,8 @@ namespace Axle {
         }
 
         s_JobSystem->m_Running.store(false, std::memory_order_seq_cst);
+        s_JobSystem->m_CV.notify_all();
+
         s_JobSystem->EmptyBuffer(); // drain main thread's buffer
 
         for (auto& thread : s_JobSystem->m_Threads)
@@ -82,8 +84,17 @@ namespace Axle {
     }
 
     void JobSystem::WorkerLoop(u32 index) {
-        while (m_Running.load(std::memory_order_seq_cst))
-            RunPendingJobYielding();
+        while (m_Running.load(std::memory_order_seq_cst)) {
+            RunPendingJob();
+
+            if (m_AvailableJobs.load(std::memory_order_acquire) == 0) {
+                std::unique_lock lock(m_CVMutex);
+                m_CV.wait(lock, [this] {
+                    return m_AvailableJobs.load(std::memory_order_acquire) > 0 ||
+                           !m_Running.load(std::memory_order_acquire);
+                });
+            }
+        }
 
         EmptyBuffer();
         delete t_WorkerThread;
@@ -146,20 +157,6 @@ namespace Axle {
             stolen.Unwrap()();
             return;
         }
-
-        std::this_thread::yield();
-    }
-
-    void JobSystem::RunPendingJobYielding() {
-        if (!t_WorkerThread) {
-            AX_CORE_ERROR("RunPendingJobYielding callend from a non-working thread.");
-            return;
-        }
-
-        if (m_AvailableJobs > 0)
-            RunPendingJob();
-        else
-            std::this_thread::yield();
     }
 
     void JobSystem::Submit(Job job) {
@@ -170,9 +167,10 @@ namespace Axle {
         }
 
         while (!t_WorkerThread->m_LocalBuffer->TryPush(job))
-            RunPendingJobYielding(); // stay productive while waiting for space
+            RunPendingJob(); // stay productive while waiting for space
 
-        m_AvailableJobs.fetch_add(1);
+        m_AvailableJobs.fetch_add(1, std::memory_order_release);
+        m_CV.notify_one();
     }
 
     // void specialization
@@ -198,9 +196,10 @@ namespace Axle {
         };
 
         while (!t_WorkerThread->m_LocalBuffer->TryPush(wrappedJob))
-            RunPendingJobYielding();
+            RunPendingJob();
 
         m_AvailableJobs.fetch_add(1);
+        m_CV.notify_one();
 
         return std::move(future);
     }
