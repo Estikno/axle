@@ -84,7 +84,7 @@ namespace Axle {
         // The head points to the other end of the buffer, where jobs are stolen
         alignas(std::hardware_destructive_interference_size) std::atomic<u32> m_Tail;
 
-        // Cached values
+        // Cached values (we can't cache the head because it can move both formward and backward, unlike the tail)
         alignas(std::hardware_destructive_interference_size) u32 m_TailCached;
 
         std::array<std::optional<Job>, N> m_Jobs;
@@ -142,19 +142,22 @@ namespace Axle {
             }
 
             // We secured the last job
+            m_Head.store(nextHead, std::memory_order_release);
+
+            AX_ASSERT(m_Jobs[nextHead].has_value(), "Trying to dereference an optional with no value inside.");
             Job job = std::move(*m_Jobs[nextHead]);
             m_Jobs[nextHead].reset();
-            m_Head.store(nextHead, std::memory_order_release);
 
             m_StealSemaphore.release();
             return job;
         }
 
+        m_Head.store(nextHead, std::memory_order_release);
+
         AX_ASSERT(m_Jobs[nextHead].has_value(), "Trying to dereference an optional with no value inside.");
         // There is more than one job, so no locks needed
         Job job = std::move(*m_Jobs[nextHead]);
         m_Jobs[nextHead].reset();
-        m_Head.store(nextHead, std::memory_order_release);
         return job;
     }
 

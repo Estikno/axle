@@ -136,25 +136,27 @@ namespace Axle {
         return Expected<Job>::FromException(std::runtime_error("Nothing to steal"));
     }
 
-    void JobSystem::RunPendingJob() {
+    bool JobSystem::RunPendingJob() {
         if (!t_WorkerThread) {
             AX_CORE_ERROR("RunPendingJob callend from a non-working thread.");
-            return;
+            return false;
         }
 
         auto popped = PopJob();
         if (popped.IsValid()) {
             m_AvailableJobs.fetch_sub(1, std::memory_order_relaxed);
             popped.Unwrap()();
-            return;
+            return true;
         }
 
         auto stolen = StealJob();
         if (stolen.IsValid()) {
             m_AvailableJobs.fetch_sub(1, std::memory_order_relaxed);
             stolen.Unwrap()();
-            return;
+            return true;
         }
+
+        return false;
     }
 
     void JobSystem::Submit(Job job) {

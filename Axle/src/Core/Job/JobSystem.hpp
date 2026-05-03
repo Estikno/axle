@@ -54,8 +54,10 @@ namespace Axle {
          * Excecutes a pending job on the caller thread
          *
          * The job may be from the woker's own buffer or solen from others.
+         *
+         * @returns True if a job was done, false otherwhise
          * */
-        void RunPendingJob();
+        bool RunPendingJob();
 
         /**
          * Submits a job to the buffer of the calling thread.
@@ -152,7 +154,7 @@ namespace Axle {
         std::vector<std::shared_ptr<JobBuffer<BufferCapacity>>> m_Buffers;
         /// Handy variable to help shutting down the system
         std::atomic<bool> m_Running{false};
-        /// Keeps track of how many non-render jobs are available to be picked up
+        /// Keeps track of how many jobs are available to be picked up
         std::atomic<i32> m_AvailableJobs{0};
         /// Allows worker threads to sleep while there is not work to do
         std::condition_variable m_CV;
