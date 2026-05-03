@@ -6,22 +6,23 @@
 
 namespace Axle {
     /**
-     * Fairly basic RingBuffer used by the JobSystem
+     * Fairly basic RingBuffer used by the JobSystem. The size must be a power of 2.
      *
+     * We leave one slot permanently unused to distinguish “full” from “empty".
      * Important: This class is not thread safe if used incorrectly so read carefuly the methods comments
      * */
+    template <std::size_t N>
     class JobBuffer {
     public:
-        JobBuffer(u32 size)
-            : m_Jobs(size),
-              m_Head(0),
-              m_Tail(0) {}
+        JobBuffer()
+            : m_Head(0),
+              m_Tail(0),
+              m_HeadCached(0),
+              m_TailCached(0),
+              m_StealSemaphore(1) {}
 
         /**
-         * Tries to push a job to the list.
-         *
-         * If the mutex is blocked or the list itself is empty it fails.
-         * Even if the pushed failed the job system can progress.
+         * Tries to push a job to the list. Returns without blocking if fails.
          *
          * Important: Only the "owner" thread of the buffer may push jobs.
          *
@@ -44,7 +45,7 @@ namespace Axle {
         /**
          * Tries to steal a job from the list.
          *
-         * If the mutex is blocked or the list itself is empty it fails without blocking.
+         * If it can't steal it will return without blocking
          *
          * @returns An Expected value, it's valid if there was a job to steal and the value is that poped job, otherwise
          * it's invalid.
@@ -52,7 +53,7 @@ namespace Axle {
         Expected<Job> TrySteal();
 
         /**
-         * It acts like TrySteal but this function will block until it acquires the necessary mutexes.
+         * It acts like TrySteal but this function will block until it can continue
          *
          * This method should not be the default one, it is highly recommended to use TrySteal unless it's strictly
          * necessary to block.
@@ -69,24 +70,137 @@ namespace Axle {
 #endif // AXLE_TESTING
 
     private:
-        // Simple job wrapper so that we can have QOL stuff
-        struct Node {
-            Node() = default;
-            Node(const Node&) = delete;
-            Node& operator=(const Node&) = delete;
-
-            std::mutex m_Mutex;
-            std::optional<Job> m_Value;
-        };
-
         // The head points to the side were jobs are pushed and poped
-        u32 m_Head;
+        alignas(std::hardware_destructive_interference_size) std::atomic<u32> m_Head;
 
         // The head points to the other end of the buffer, where jobs are stolen
-        u32 m_Tail;
-        std::mutex m_TailMutex;
+        alignas(std::hardware_destructive_interference_size) std::atomic<u32> m_Tail;
 
-        // We don't need to change the size of the buffer so a simple vector is enough
-        std::vector<Node> m_Jobs;
+        // Cached values
+        alignas(std::hardware_destructive_interference_size) u32 m_HeadCached;
+        alignas(std::hardware_destructive_interference_size) u32 m_TailCached;
+
+        std::array<std::optional<Job>, N> m_Jobs;
+        static_assert((N & (N - 1)) == 0, "Size of the JobBuffer must be a power of 2");
+
+        // Semaphore that ensures only one thread steals at a time
+        std::binary_semaphore m_StealSemaphore;
     };
+
+
+    template <std::size_t N>
+    bool JobBuffer<N>::TryPush(Job job) {
+        const u32 head = m_Head.load(std::memory_order_relaxed);
+        u32 nextHead = (head + 1) & (N - 1);
+
+        // The RingBuffer is full
+        if (nextHead == m_TailCached) [[unlikely]] {
+            m_TailCached = m_Tail.load(std::memory_order_acquire);
+            if (nextHead == m_TailCached)
+                return false;
+        }
+
+        m_Jobs[head] = std::move(job);
+        m_Head.store(nextHead, std::memory_order_release);
+        return true;
+    }
+
+    template <std::size_t N>
+    Expected<Job> JobBuffer<N>::Pop() {
+        const u32 head = m_Head.load(std::memory_order_relaxed);
+        // There might be a problem if we use the cached value as we basically advance in
+        // reverse, so for now we load the real tail.
+        u32 tail = m_Tail.load(std::memory_order_acquire);
+
+        u32 size = (head - tail) & (N - 1);
+        if (size == 0) [[unlikely]] {
+            return Expected<Job>::FromException(std::logic_error("The job list is empty"));
+        }
+
+        u32 nextHead = (head - 1) & (N - 1);
+
+        // CRITICAL: The queue has exactly 1 item. We might collide with a Stealer.
+        if (size == 1) {
+            // Grab the semaphore to lock out any thieves
+            m_StealSemaphore.acquire();
+
+            // The thief might have stolen the last job so we need to re-read the tail
+            tail = m_Tail.load(std::memory_order_acquire);
+            size = (head - tail) & (N - 1);
+
+            // The thief stole the last job, the buffer is now empty
+            if (size == 0) {
+                m_StealSemaphore.release();
+                return Expected<Job>::FromException(std::logic_error("The job list is empty"));
+            }
+
+            // We secured the last job
+            Job job = std::move(*m_Jobs[nextHead]);
+            m_Jobs[nextHead].reset();
+            m_Head.store(nextHead, std::memory_order_release);
+
+            m_StealSemaphore.release();
+            return job;
+        }
+
+        // There is more than one job, so no locks needed
+        Job job = std::move(*m_Jobs[nextHead]);
+        m_Jobs[nextHead].reset();
+        m_Head.store(nextHead, std::memory_order_release);
+        return job;
+    }
+
+    template <std::size_t N>
+    Expected<Job> JobBuffer<N>::TrySteal() {
+        // There is already a thread trying to steal, return
+        if (!m_StealSemaphore.try_acquire())
+            return Expected<Job>::FromException(
+                std::runtime_error("Can't access because the tail is currently locked"));
+
+        const u32 tail = m_Tail.load(std::memory_order_relaxed);
+
+        // The buffer is empty
+        if (tail == m_HeadCached) [[unlikely]] {
+            m_HeadCached = m_Head.load(std::memory_order_acquire);
+            if (tail == m_HeadCached) {
+                m_StealSemaphore.release();
+                return Expected<Job>::FromException(std::logic_error("The job list is empty"));
+            }
+        }
+
+        Job job = std::move(*m_Jobs[tail]);
+        m_Jobs[tail].reset();
+
+        u32 nextTail = (tail + 1) & (N - 1);
+        m_Tail.store(nextTail, std::memory_order_release);
+
+        m_StealSemaphore.release();
+        return job;
+    }
+
+    template <std::size_t N>
+    Expected<Job> JobBuffer<N>::Steal() {
+        // Blocks until acquires the semaphore
+        m_StealSemaphore.acquire();
+
+        const u32 tail = m_Tail.load(std::memory_order_relaxed);
+
+        // The buffer is empty
+        if (tail == m_HeadCached) [[unlikely]] {
+            m_HeadCached = m_Head.load(std::memory_order_acquire);
+            if (tail == m_HeadCached) {
+                m_StealSemaphore.release();
+                return Expected<Job>::FromException(std::logic_error("The job list is empty"));
+            }
+        }
+
+        Job job = std::move(*m_Jobs[tail]);
+        m_Jobs[tail].reset();
+
+        u32 nextTail = (tail + 1) & (N - 1);
+        m_Tail.store(nextTail, std::memory_order_release);
+
+        m_StealSemaphore.release();
+        return job;
+    }
 } // namespace Axle
