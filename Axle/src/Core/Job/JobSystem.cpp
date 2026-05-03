@@ -8,7 +8,7 @@
 namespace Axle {
     std::unique_ptr<JobSystem> JobSystem::s_JobSystem;
 
-    void JobSystem::Init(u32 threadCount, u8 bufferCapacity) {
+    void JobSystem::Init(u32 threadCount) {
         if (s_JobSystem != nullptr) {
             AX_CORE_WARN("Init method of the JobSystem has been called a second time. IGNORING");
             return;
@@ -27,7 +27,7 @@ namespace Axle {
 
         // Create one buffer per worker
         for (u32 i = 0; i < js.m_NumThreads; ++i)
-            js.m_Buffers.push_back(std::make_shared<JobBuffer>(bufferCapacity));
+            js.m_Buffers.push_back(std::make_shared<JobBuffer<BufferCapacity>>());
 
         // Spawn worker threads (skip 0, that's the main thread)
         for (u32 i = 1; i < js.m_NumThreads; ++i) {

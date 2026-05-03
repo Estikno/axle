@@ -9,9 +9,11 @@
 // JobSystem inspired on Rismoch blog: https://www.rismosch.com/article?id=building-a-job-system
 
 namespace Axle {
+    inline static constexpr u32 BufferCapacity = 64;
+
     struct WorkerThread {
-        std::shared_ptr<JobBuffer> m_LocalBuffer;
-        std::vector<std::shared_ptr<JobBuffer>> m_StealBuffers;
+        std::shared_ptr<JobBuffer<BufferCapacity>> m_LocalBuffer;
+        std::vector<std::shared_ptr<JobBuffer<BufferCapacity>>> m_StealBuffers;
         u32 m_Index;
     };
 
@@ -31,11 +33,10 @@ namespace Axle {
          *
          * @param threadCount How many working threads you need. The render thread is excluded from this count. However,
          * the main one is included. So if you want 2 additional dedicated working threads you would pass a 3.
-         * @param bufferCapacity How many jobs are each working thread going to be able to store.
          *
          * Caution, this system depends on others, so they have to be initialized before this one.
          * */
-        static void Init(u32 threadCount, u8 bufferCapacity);
+        static void Init(u32 threadCount);
 
         /**
          * Same as init but for destroying and cleaning everything.
@@ -83,7 +84,7 @@ namespace Axle {
         }
 
 #ifdef AXLE_TESTING
-        std::vector<std::shared_ptr<JobBuffer>>& GetBuffers() {
+        std::vector<std::shared_ptr<JobBuffer<BufferCapacity>>>& GetBuffers() {
             return m_Buffers;
         }
 
@@ -148,7 +149,7 @@ namespace Axle {
         /// All additional threads spwaned
         std::vector<std::thread> m_Threads;
         /// All job buffers
-        std::vector<std::shared_ptr<JobBuffer>> m_Buffers;
+        std::vector<std::shared_ptr<JobBuffer<BufferCapacity>>> m_Buffers;
         /// Handy variable to help shutting down the system
         std::atomic<bool> m_Running{false};
         /// Keeps track of how many non-render jobs are available to be picked up

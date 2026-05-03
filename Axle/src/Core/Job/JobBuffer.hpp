@@ -1,6 +1,7 @@
 #pragma once
 
 #include "axpch.hpp"
+#include "Core/Error/Panic.hpp"
 #include "Core/Types.hpp"
 #include "Other/CustomTypes/Expected.hpp"
 
@@ -17,7 +18,6 @@ namespace Axle {
         JobBuffer()
             : m_Head(0),
               m_Tail(0),
-              m_HeadCached(0),
               m_TailCached(0),
               m_StealSemaphore(1) {}
 
@@ -70,14 +70,21 @@ namespace Axle {
 #endif // AXLE_TESTING
 
     private:
+        /**
+         * Assumes that the semaphore has been acquired and proceeds to steal if it can.
+         * This is obiosly thread unsafe if the semaphore hasn't been acquired.
+         *
+         * @returns An Expected value, it's valid if there was a job to steal and the value is that poped job, otherwise
+         * it's invalid.
+         * */
+        Expected<Job> StealUnsafe();
+
         // The head points to the side were jobs are pushed and poped
         alignas(std::hardware_destructive_interference_size) std::atomic<u32> m_Head;
-
         // The head points to the other end of the buffer, where jobs are stolen
         alignas(std::hardware_destructive_interference_size) std::atomic<u32> m_Tail;
 
         // Cached values
-        alignas(std::hardware_destructive_interference_size) u32 m_HeadCached;
         alignas(std::hardware_destructive_interference_size) u32 m_TailCached;
 
         std::array<std::optional<Job>, N> m_Jobs;
@@ -143,10 +150,32 @@ namespace Axle {
             return job;
         }
 
+        AX_ASSERT(m_Jobs[nextHead].has_value(), "Trying to dereference an optional with no value inside.");
         // There is more than one job, so no locks needed
         Job job = std::move(*m_Jobs[nextHead]);
         m_Jobs[nextHead].reset();
         m_Head.store(nextHead, std::memory_order_release);
+        return job;
+    }
+
+    template <std::size_t N>
+    Expected<Job> JobBuffer<N>::StealUnsafe() {
+        const u32 tail = m_Tail.load(std::memory_order_relaxed);
+
+        // The buffer is empty
+        if (tail == m_Head.load(std::memory_order_acquire)) [[unlikely]] {
+            m_StealSemaphore.release();
+            return Expected<Job>::FromException(std::logic_error("The job list is empty"));
+        }
+
+        AX_ASSERT(m_Jobs[tail].has_value(), "Trying to dereference an optional with no value inside.");
+        Job job = std::move(*m_Jobs[tail]);
+        m_Jobs[tail].reset();
+
+        u32 nextTail = (tail + 1) & (N - 1);
+        m_Tail.store(nextTail, std::memory_order_release);
+
+        m_StealSemaphore.release();
         return job;
     }
 
@@ -157,25 +186,7 @@ namespace Axle {
             return Expected<Job>::FromException(
                 std::runtime_error("Can't access because the tail is currently locked"));
 
-        const u32 tail = m_Tail.load(std::memory_order_relaxed);
-
-        // The buffer is empty
-        if (tail == m_HeadCached) [[unlikely]] {
-            m_HeadCached = m_Head.load(std::memory_order_acquire);
-            if (tail == m_HeadCached) {
-                m_StealSemaphore.release();
-                return Expected<Job>::FromException(std::logic_error("The job list is empty"));
-            }
-        }
-
-        Job job = std::move(*m_Jobs[tail]);
-        m_Jobs[tail].reset();
-
-        u32 nextTail = (tail + 1) & (N - 1);
-        m_Tail.store(nextTail, std::memory_order_release);
-
-        m_StealSemaphore.release();
-        return job;
+        return StealUnsafe();
     }
 
     template <std::size_t N>
@@ -183,24 +194,6 @@ namespace Axle {
         // Blocks until acquires the semaphore
         m_StealSemaphore.acquire();
 
-        const u32 tail = m_Tail.load(std::memory_order_relaxed);
-
-        // The buffer is empty
-        if (tail == m_HeadCached) [[unlikely]] {
-            m_HeadCached = m_Head.load(std::memory_order_acquire);
-            if (tail == m_HeadCached) {
-                m_StealSemaphore.release();
-                return Expected<Job>::FromException(std::logic_error("The job list is empty"));
-            }
-        }
-
-        Job job = std::move(*m_Jobs[tail]);
-        m_Jobs[tail].reset();
-
-        u32 nextTail = (tail + 1) & (N - 1);
-        m_Tail.store(nextTail, std::memory_order_release);
-
-        m_StealSemaphore.release();
-        return job;
+        return StealUnsafe();
     }
 } // namespace Axle

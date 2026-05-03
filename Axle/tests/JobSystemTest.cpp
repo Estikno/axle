@@ -15,8 +15,7 @@ using namespace Axle;
 
 static void InitJS() {
     Log::Init();
-    JobSystem::Init(3, // use 2 dedicated threads
-                    64 // buffer capacity
+    JobSystem::Init(3 // use 2 dedicated threads
     );
 }
 
@@ -28,7 +27,7 @@ static void ShutdownJS() {
 TEST_CASE("JobSystem - Created correctly") {
     InitJS();
 
-    std::vector<std::shared_ptr<JobBuffer>>& buffers = JobSystem::GetInstance().GetBuffers();
+    std::vector<std::shared_ptr<JobBuffer<BufferCapacity>>>& buffers = JobSystem::GetInstance().GetBuffers();
 
     // Check dimensions
     REQUIRE(buffers.size() == 3);
