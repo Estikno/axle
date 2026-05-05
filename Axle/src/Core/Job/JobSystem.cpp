@@ -14,7 +14,6 @@ namespace Axle {
             return;
         }
 
-
         u32 totalThreads = std::thread::hardware_concurrency();
         // FIX: This error message is temporal, in such cases simply prevent the initialization or something
         AX_ENSURE(totalThreads > 0, "There are not sufficient threads to initialize the job system");
@@ -37,10 +36,12 @@ namespace Axle {
             });
         }
 
-        AX_INFO("Created {0} new worker threads (excluding the main one)", js.m_NumThreads);
+        AX_INFO("Created {0} new worker threads (excluding the main one)", js.m_NumThreads - 1);
 
         // Main thread is also a worker
         js.SetupWorkerThread(0);
+
+        AX_CORE_INFO("JobSystem initalized...");
     }
 
     void JobSystem::Shutdown() {
@@ -61,6 +62,8 @@ namespace Axle {
         delete t_WorkerThread; // clean up main thread's WorkerThread
         t_WorkerThread = nullptr;
         s_JobSystem.reset();
+
+        AX_CORE_INFO("JobSystem deleted...");
     }
 
     void JobSystem::SetupWorkerThread(u32 index) {

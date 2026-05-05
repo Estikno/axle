@@ -6,6 +6,7 @@
 #include "Core/Logger/Log.hpp"
 #include "ImGuiLayer.hpp"
 #include "Core/Application.hpp"
+#include "Core/Job/JobSystem.hpp"
 
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
@@ -85,7 +86,7 @@ namespace Axle {
             m_Console.Draw("Debug console", &m_Console.Open);
         // Debug Information
         if (m_OpenOverlay)
-            Debug::ShowSimpleOverlay(&m_OpenOverlay, DeltaTime);
+            Debug::ShowSimpleOverlay(&m_OpenOverlay, DeltaTime, JobSystem::GetInstance().GetAvailableJobs());
         // ECS Editor
         if (m_ECSEditor.m_Open)
             m_ECSEditor.Draw("ECS Editor", &m_ECSEditor.m_Open);

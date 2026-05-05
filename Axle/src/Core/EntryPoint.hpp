@@ -8,6 +8,7 @@
 #include "Logger/Log.hpp"
 #include "Core/Input/InputManager.hpp"
 #include "Core/Resource/ResourceManager.hpp"
+#include "Core/Job/JobSystem.hpp"
 
 #ifdef AX_PLATFORM_WINDOWS
 
@@ -26,12 +27,14 @@ int main(int argc, char** argv) {
     Axle::InputManager::Init();
     Axle::ResourceManager::Init();
     Axle::ECS::Init();
+    Axle::JobSystem::Init(3);
 
     // Main application loop
     Axle::Application* app = Axle::CreateApplication();
     app->Run();
     delete app;
 
+    Axle::JobSystem::Shutdown();
     Axle::ECS::ShutDown();
     Axle::ResourceManager::ShutDown();
     Axle::InputManager::ShutDown();
@@ -60,12 +63,14 @@ int main(int argc, char** argv) {
     Axle::InputManager::Init();
     Axle::ResourceManager::Init();
     Axle::ECS::Init();
+    Axle::JobSystem::Init(3);
 
     // Main application loop
     Axle::Application* app = Axle::CreateApplication();
     app->Run();
     delete app;
 
+    Axle::JobSystem::Shutdown();
     Axle::ECS::ShutDown();
     Axle::ResourceManager::ShutDown();
     Axle::InputManager::ShutDown();

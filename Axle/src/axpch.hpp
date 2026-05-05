@@ -13,6 +13,7 @@
 #include <vector>
 #include <array>
 #include <unordered_map>
+#include <set>
 #include <typeindex>
 #include <typeinfo>
 #include <limits>
