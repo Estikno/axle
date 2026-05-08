@@ -443,6 +443,9 @@ namespace Axle {
 
         /// A priority queue of available entity IDs.
         /// When creating an entity the EntityID assigned to it is retrieved from this.
+        // TODO: Instead of storing all posible entities values that are available keep a counter of the maximum ID and
+        // store in the queue those that are lower, i.e. some entity has been deleted. If the queue is empty all new
+        // entities id get the counter's one
         std::priority_queue<EntityID, std::vector<EntityID>, std::greater<EntityID>> m_AvailableEntities;
         std::mutex m_EntitiesMutex;
 

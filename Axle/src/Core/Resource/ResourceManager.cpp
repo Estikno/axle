@@ -4,37 +4,31 @@
 #include "../Types.hpp"
 #include "../Logger/Log.hpp"
 
-#include <fstream>
-#include <sstream>
+#include <mio/mmap.hpp>
+#include <system_error>
 
 namespace Axle {
-    std::unique_ptr<ResourceManager> ResourceManager::m_ResourceManager;
+    std::unique_ptr<ResourceManager> ResourceManager::s_ResourceManager;
 
     void ResourceManager::Init() {
-        if (m_ResourceManager != nullptr) {
+        if (s_ResourceManager != nullptr) {
             AX_CORE_WARN("Init method of the Resource Manager has been called a second time. IGNORING");
             return;
         }
 
-        m_ResourceManager = std::make_unique<ResourceManager>();
+        s_ResourceManager = std::make_unique<ResourceManager>();
 
         AX_CORE_INFO("Resource Manager initialized...");
     }
 
     void ResourceManager::ShutDown() {
-        m_ResourceManager.reset();
+        s_ResourceManager.reset();
         AX_CORE_INFO("Resource Manager deleted...");
     }
 
-    TextFileHandle ResourceManager::LoadText(std::string path) {
-        std::ifstream file(path);
-        if (!file.is_open()) {
-            AX_CORE_ERROR("Failed to open file {0}", path);
-        }
-        std::stringstream ss;
-        ss << file.rdbuf();
-        AX_CORE_INFO(ss.str());
 
-        return {0};
+    void ResourceManager::LoadFile(std::string path) {
+        std::error_code error;
+        mio::mmap_source mmap = mio::make_mmap_source(path, error);
     }
 } // namespace Axle

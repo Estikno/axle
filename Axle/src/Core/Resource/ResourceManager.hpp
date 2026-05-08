@@ -3,15 +3,14 @@
 #include "axpch.hpp"
 #include "Core/Core.hpp"
 #include "Core/Types.hpp"
+#include "Other/CustomTypes/SparseSet.hpp"
 
 namespace Axle {
-    struct TextFileHandle final {
-        u32 handle;
-    };
-
     // TODO: Make the class thread safety
     class AXLE_API ResourceManager {
     public:
+        using FileHandle = u32;
+
         ResourceManager(const ResourceManager&) = delete;
         ResourceManager& operator=(const ResourceManager&) = delete;
 
@@ -33,29 +32,45 @@ namespace Axle {
         static void ShutDown();
 
         inline static ResourceManager& GetInstance() {
-            return *m_ResourceManager;
+            return *s_ResourceManager;
         }
 
-        TextFileHandle LoadText(std::string path);
-        std::string GetText(const TextFileHandle& handle);
+        void LoadFile(std::string path);
 
     private:
-        template <typename T>
-        inline u32 GetIndexFromHandle(const T h) {
+        struct Resource {
+            u16 magic;
+            bool is_shared;
+        };
+
+        inline u16 GetIndexFromHandle(FileHandle h) {
             constexpr u32 indexMask = (1 << 16) - 1;
-            return h.handle & indexMask;
+            return h & indexMask;
         }
 
-        template <typename T>
-        inline u32 GetMagicFromHandle(const T h) {
+        inline u16 GetMagicFromHandle(FileHandle h) {
             constexpr u32 magicMask = ~((1 << 16) - 1);
-            return (h.handle & magicMask) >> 16;
+            return (h & magicMask) >> 16;
         }
 
+        inline void SetMagicToHandle(FileHandle& h, u16 magic) {
+            constexpr u32 indexMask = (1 << 16) - 1;
+            h = (h & indexMask) | (u32(magic) << 16);
+        }
 
-        static std::unique_ptr<ResourceManager> m_ResourceManager;
+        inline void SetIndexToHandle(FileHandle& h, u16 index) {
+            constexpr u32 magicMask = ~((1 << 16) - 1);
+            h = (h & magicMask) | u32(index);
+        }
 
-        // Just for testing
-        std::vector<std::string> m_TextResource;
+        static std::unique_ptr<ResourceManager> s_ResourceManager;
+
+        /// A counter that stores the largest available index
+        u16 m_LargestAvailableIndex = 0;
+        /// Contains the deleted indexes that are available once again to be used
+        std::priority_queue<u16, std::vector<u16>, std::greater<u16>> m_AvailableIndexes;
+
+        u16 m_MagicNumberCounter = 0;
+        SparseSet<Resource> m_Resources;
     };
 } // namespace Axle
