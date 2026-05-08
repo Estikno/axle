@@ -12,7 +12,7 @@ set(INC_SPDLOG  "${VENDOR}/spdlog/include")
 set(INC_GLM     "${VENDOR}/glm")
 set(INC_IMGUI   "${VENDOR}/imgui")
 set(INC_DOCTEST "${VENDOR}/doctest/doctest")
-set(INC_MIO,    "${VENDOR}/mio/include")
+set(INC_MIO    "${VENDOR}/mio/include")
 
 # Make these available to Sandbox and Tests via a cached variable
 set(AXLE_VENDOR_INCLUDES
