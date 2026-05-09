@@ -4,6 +4,11 @@
 #  Independent from the engine — does NOT link Axle.
 # ══════════════════════════════════════════════════════════════════════════════
 
+# ── Vendor include paths (used by multiple targets below) ─────────────────────
+set(VENDOR "${CMAKE_CURRENT_SOURCE_DIR}/vendor")
+
+set(INC_CLI11    "${VENDOR}/CLI11")
+
 file(GLOB_RECURSE AAP_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/**.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/**.hpp"
@@ -18,6 +23,7 @@ target_include_directories(AAP
         "${INC_FLATBUFFERS}"
         # Generated flatbuffers headers land here at build time
         "${CMAKE_BINARY_DIR}/generated"
+        "${INC_CLI11}"
 )
 
 target_compile_definitions(AAP
