@@ -1,0 +1,111 @@
+namespace Axle;
+
+enum ShaderStage : byte {
+    Unknown      = 0,
+    Vertex       = 1,
+    /// Hull shader in D3D terminology
+    TessControl  = 2,
+    /// Domain shader in D3D terminology
+    TessEval     = 3,
+    Geometry     = 4,
+    /// Pixel shader — always required
+    Fragment     = 5,
+    /// Replaces Vertex + Tessellation + Geometry
+    Mesh         = 6,
+    /// Optional amplification stage that feeds Mesh
+    Task         = 7,
+}
+
+enum ShaderFormat : byte {
+    Unknown      = 0,
+    /// Vulkan / OpenGL 4.6+
+    SPIRV        = 1,
+    /// Direct3D 12
+    DXIL         = 2,
+    /// Metal
+    MSL          = 3,
+    /// Plain-text fallback (not recommended for production)
+    GLSL_Source  = 4,
+    HLSL_Source  = 5,
+}
+
+/// A single compiled shader stage.
+table Shader {
+    /// Which pipeline stage this shader belongs to.
+    stage: ShaderStage;
+
+    /// Human-readable name / asset path for debugging and hot-reload.
+    name: string;
+
+    /// The entry-point function inside the bytecode.
+    /// Null/absent means "main" — handle the fallback in your deserialization code.
+    entry_point: string;
+
+    /// Format of the `bytecode` blob.
+    binary_format: ShaderFormat;
+
+    /// Raw compiled bytecode (SPIR-V words, DXIL bytes, etc.).
+    bytecode: [ubyte] (required);
+
+    /// Optional: specialization / compile-time constants.
+    /// Stored as alternating key/value pairs: ["SAMPLES", "4", "DEBUG", "1"]
+    defines: [string];
+}
+
+/// Classic rasterization pipeline: vertex → (tess control → tess eval) → (geometry) → fragment.
+/// Tessellation stages must appear together (both or neither).
+/// Fragment is always required.
+table ClassicPipeline {
+    vertex: Shader (required);
+ 
+    /// Optional tessellation — both fields must be set together or both omitted.
+    tess_control: Shader;
+    tess_eval: Shader;
+ 
+    /// Optional geometry stage.
+    geometry: Shader;
+ 
+    /// Always required.
+    fragment: Shader (required);
+}
+
+/// Mesh-shader pipeline: (task) → mesh → fragment.
+/// Replaces the entire classic vertex/tessellation/geometry stages.
+/// fragment is always required.
+table MeshPipeline {
+    /// Optional task / amplification shader.
+    task: Shader;
+ 
+    /// Required mesh shader.
+    mesh: Shader (required);
+ 
+    /// Always required.
+    fragment: Shader (required);
+}
+
+/// Discriminated union so a ShaderCollection carries exactly one pipeline variant.
+union Pipeline {
+    ClassicPipeline,
+    MeshPipeline,
+}
+
+/// Root table — one per renderable object / material.
+table ShaderCollection {
+    /// Human-readable identifier for the owning object or material.
+    object_name: string;
+ 
+    /// Semantic version of this shader package (e.g. "1.0.3").
+    version: string;
+ 
+    /// Target graphics API / hardware capability level this set was compiled for.
+    /// E.g. "vulkan-1.3", "d3d12-sm6.6", "metal-3".
+    target_profile: string;
+ 
+    /// The pipeline — either ClassicPipeline or MeshPipeline.
+    /// Exactly one must be present; validated at runtime.
+    pipeline: Pipeline (required);
+}
+
+root_type ShaderCollection;
+file_identifier "SHDR";   // 4-byte magic visible in the binary file
+file_extension  "shdrbin";
