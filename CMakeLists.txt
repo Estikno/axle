@@ -6,7 +6,6 @@ project(Axle)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Force x64 on Visual Studio (Unix generators default to host arch and don't support this variable)
 if(CMAKE_GENERATOR MATCHES "Visual Studio")
@@ -38,9 +37,44 @@ if(MSVC)
     add_compile_options(/utf-8)
 endif()
 
+# ── Compile commands for clangd ────────────────────────────────────────────────
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# ── Flatbuffers (root vendor, shared between Axle and AAP) ────────────────────
+set(FLATBUFFERS_BUILD_TESTS      OFF CACHE BOOL "" FORCE)
+set(FLATBUFFERS_INSTALL          OFF CACHE BOOL "" FORCE)
+set(FLATBUFFERS_BUILD_FLATHASH   OFF CACHE BOOL "" FORCE)
+set(FLATBUFFERS_BUILD_FLATLIB    OFF CACHE BOOL "" FORCE) # header-only, no lib needed
+set(FLATBUFFERS_BUILD_CPP_SAMPLE OFF CACHE BOOL "" FORCE)
+
+add_subdirectory("${CMAKE_SOURCE_DIR}/vendor/flatbuffers")
+
+# Export the include path and flatc target for all subprojects
+set(INC_FLATBUFFERS "${CMAKE_SOURCE_DIR}/vendor/flatbuffers/include" CACHE INTERNAL "")
+
+# ── Flatbuffers schema generation (shared between Axle and AAP) ───────────────
+file(GLOB ALL_SCHEMAS "${CMAKE_SOURCE_DIR}/assets/schemas/**.fbs")
+
+if(ALL_SCHEMAS)
+    set(FLATBUFFERS_FLATC_SCHEMA_EXTRA_ARGS "--gen-mutable" "--gen-object-api")
+
+    build_flatbuffers(
+        "${ALL_SCHEMAS}"
+        ""
+        flatbuffers_generated        # target name
+        ""
+        "${CMAKE_BINARY_DIR}/generated"  # shared output dir
+        ""
+        ""
+    )
+
+    set(HAS_SCHEMAS ON CACHE INTERNAL "")
+endif()
+
 # ── Subprojects ────────────────────────────────────────────────────────────────
 add_subdirectory(Axle)
 add_subdirectory(Sandbox)
+add_subdirectory(AAP)
 
 # Tests only exist for Debug builds.
 # For multi-config generators we add the directory and let the Tests

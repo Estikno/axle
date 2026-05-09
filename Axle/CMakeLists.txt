@@ -105,6 +105,11 @@ file(GLOB_RECURSE AXLE_SOURCES
 
 add_library(Axle SHARED ${AXLE_SOURCES})
 
+# First generate all flatbuffers binaries and headers
+if(HAS_SCHEMAS)
+    add_dependencies(Axle flatbuffers_generated)
+endif()
+
 target_include_directories(Axle
     PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
@@ -114,6 +119,8 @@ target_include_directories(Axle
         "${INC_GLM}"
         "${INC_IMGUI}"
         "${INC_MIO}"
+        "${INC_FLATBUFFERS}"
+        "${CMAKE_BINARY_DIR}/generated"
 )
 
 target_compile_definitions(Axle
@@ -163,11 +170,15 @@ set_target_properties(Axle PROPERTIES
 set(AXLE_LIB_OUTPUT "${OUTPUT_BASE}/$<CONFIG>/${CMAKE_SYSTEM_NAME}-x64/Axle")
 set(SANDBOX_OUTPUT  "${OUTPUT_BASE}/$<CONFIG>/${CMAKE_SYSTEM_NAME}-x64/Sandbox")
 set(TESTS_OUTPUT    "${OUTPUT_BASE}/$<CONFIG>/${CMAKE_SYSTEM_NAME}-x64/Tests")
+# If the engine is needed by the Asset Pipeline unvomment this and the other 2 lines
+# below for copying the shared library
+# set(AAP_OUTPUT     "${OUTPUT_BASE}/$<CONFIG>/${CMAKE_SYSTEM_NAME}-x64/AAP")
 
 add_custom_command(TARGET Axle POST_BUILD
     # Ensure destination dirs exist
     COMMAND ${CMAKE_COMMAND} -E make_directory "${SANDBOX_OUTPUT}"
     COMMAND ${CMAKE_COMMAND} -E make_directory "${TESTS_OUTPUT}"
+    # COMMAND ${CMAKE_COMMAND} -E make_directory "${AAP_OUTPUT}"
     # Copy the built shared library file
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "$<TARGET_FILE:Axle>"
@@ -175,6 +186,7 @@ add_custom_command(TARGET Axle POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "$<TARGET_FILE:Axle>"
         "${TESTS_OUTPUT}"
+    # COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:Axle>" "${AAP_OUTPUT}"
     COMMENT "Copying Axle shared lib to Sandbox and Tests output dirs"
 )
 

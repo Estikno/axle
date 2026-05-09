@@ -5,6 +5,8 @@
 #include "Core/Types.hpp"
 #include "Other/CustomTypes/SparseSet.hpp"
 
+#include <mio/mmap.hpp>
+
 namespace Axle {
     // TODO: Make the class thread safety
     class AXLE_API ResourceManager {
@@ -41,6 +43,7 @@ namespace Axle {
         struct Resource {
             u16 magic;
             bool is_shared;
+            std::variant<mio::mmap_source, mio::mmap_sink> mmap;
         };
 
         inline u16 GetIndexFromHandle(FileHandle h) {

@@ -16,3 +16,6 @@
 [submodule "Axle/vendor/mio"]
 	path = Axle/vendor/mio
 	url = https://github.com/vimpunk/mio.git
+[submodule "vendor/flatbuffers"]
+	path = vendor/flatbuffers
+	url = https://github.com/google/flatbuffers.git
