@@ -108,4 +108,3 @@ table ShaderCollection {
 
 root_type ShaderCollection;
 file_identifier "SHDR";   // 4-byte magic visible in the binary file
-file_extension  "shdrbin";
