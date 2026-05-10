@@ -8,6 +8,7 @@
 #include <bitset>
 #include <algorithm>
 #include <queue>
+#include <filesystem>
 
 #include <string>
 #include <vector>

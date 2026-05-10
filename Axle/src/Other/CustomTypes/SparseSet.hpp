@@ -61,34 +61,7 @@ namespace Axle {
          *
          * @param id The index to remove the element from
          */
-        void Remove(size_t id) {
-            AX_ASSERT(id < m_Sparse.size(), "Index {0} is out of bounds in the SparseSet", id);
-            AX_ENSURE(
-                Has(id), "Trying to remove a non-existent element of type {0} from index {1}", typeid(T).name(), id);
-
-            if (id >= m_Sparse.size()) {
-                AX_CORE_WARN("Trying to remove element {0} from an out of bounce index {1}", typeid(T).name(), id);
-                return;
-            }
-
-            // Swap the back of the dense array with the element to be deleted
-            size_t deletedIndex = m_Sparse.at(id);
-
-            if (deletedIndex != m_Dense.size() - 1) {
-                std::swap(m_Dense.at(deletedIndex), m_Dense.back());
-
-                // Update the sparse array to reflect the change
-                // We don't use swap here because when adding another element to the deleted
-                // id we will have to rewrite the values either way so preserving old ones is useless
-                size_t sparseIdxOfLastElement = m_DenseToSparse.at(m_Dense.size() - 1);
-                m_Sparse.at(sparseIdxOfLastElement) = deletedIndex;
-                m_DenseToSparse.at(deletedIndex) = sparseIdxOfLastElement;
-            }
-
-            m_Dense.pop_back();
-            m_DenseToSparse.pop_back();
-            m_Sparse.at(id) = InvalidIndex;
-        }
+        void Remove(size_t id);
 
         /**
          * Clears the sparse set
@@ -106,18 +79,7 @@ namespace Axle {
          *
          * @returns A reference to the element of type T
          */
-        Expected<std::reference_wrapper<T>> Get(size_t id) {
-            AX_ASSERT(
-                Has(id), "Trying to retrieve a non-existent element of type: {0} from index {1}", typeid(T).name(), id);
-
-            if (!Has(id)) {
-                return Expected<std::reference_wrapper<T>>::FromException(std::invalid_argument(
-                    "Trying to retrieve a non-existent element of type: " + std::string(typeid(T).name()) +
-                    " from index" + std::to_string(id)));
-            }
-
-            return std::ref(m_Dense.at(m_Sparse.at(id)));
-        }
+        Expected<std::reference_wrapper<T>> Get(size_t id);
 
         /**
          * Same as Remove but it doesn't panic. If the request is erroneous it simply
@@ -196,5 +158,48 @@ namespace Axle {
         /// Handy array to convert indexes to dense indexes
         std::vector<size_t> m_Sparse{};
     };
+
+    template <typename T>
+    void SparseSet<T>::Remove(size_t id) {
+        AX_ASSERT(id < m_Sparse.size(), "Index {0} is out of bounds in the SparseSet", id);
+        AX_ENSURE(Has(id), "Trying to remove a non-existent element of type {0} from index {1}", typeid(T).name(), id);
+
+        if (id >= m_Sparse.size()) {
+            AX_CORE_WARN("Trying to remove element {0} from an out of bounce index {1}", typeid(T).name(), id);
+            return;
+        }
+
+        // Swap the back of the dense array with the element to be deleted
+        size_t deletedIndex = m_Sparse.at(id);
+
+        if (deletedIndex != m_Dense.size() - 1) {
+            std::swap(m_Dense.at(deletedIndex), m_Dense.back());
+
+            // Update the sparse array to reflect the change
+            // We don't use swap here because when adding another element to the deleted
+            // id we will have to rewrite the values either way so preserving old ones is useless
+            size_t sparseIdxOfLastElement = m_DenseToSparse.at(m_Dense.size() - 1);
+            m_Sparse.at(sparseIdxOfLastElement) = deletedIndex;
+            m_DenseToSparse.at(deletedIndex) = sparseIdxOfLastElement;
+        }
+
+        m_Dense.pop_back();
+        m_DenseToSparse.pop_back();
+        m_Sparse.at(id) = InvalidIndex;
+    }
+
+    template <typename T>
+    Expected<std::reference_wrapper<T>> SparseSet<T>::Get(size_t id) {
+        AX_ASSERT(
+            Has(id), "Trying to retrieve a non-existent element of type: {0} from index {1}", typeid(T).name(), id);
+
+        if (!Has(id)) {
+            return Expected<std::reference_wrapper<T>>::FromException(std::invalid_argument(
+                "Trying to retrieve a non-existent element of type: " + std::string(typeid(T).name()) + " from index" +
+                std::to_string(id)));
+        }
+
+        return std::ref(m_Dense.at(m_Sparse.at(id)));
+    }
 
 } // namespace Axle

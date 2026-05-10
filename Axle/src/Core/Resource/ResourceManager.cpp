@@ -1,11 +1,12 @@
 #include "axpch.hpp"
 
 #include "ResourceManager.hpp"
+#include "Other/CustomTypes/Expected.hpp"
 #include "../Types.hpp"
 #include "../Logger/Log.hpp"
+#include "Core/Error/Panic.hpp"
 
 #include <mio/mmap.hpp>
-#include <system_error>
 
 namespace Axle {
     std::unique_ptr<ResourceManager> ResourceManager::s_ResourceManager;
@@ -22,13 +23,61 @@ namespace Axle {
     }
 
     void ResourceManager::ShutDown() {
+        // TODO: Close all loaded files
         s_ResourceManager.reset();
         AX_CORE_INFO("Resource Manager deleted...");
     }
 
+    FileHandle ResourceManager::LoadFile(std::string path) {
+        std::filesystem::path _path = path;
+        return LoadFile(_path);
+    }
 
-    void ResourceManager::LoadFile(std::string path) {
+    FileHandle ResourceManager::LoadFile(const char* path) {
+        std::filesystem::path _path = path;
+        return LoadFile(_path);
+    }
+
+    FileHandle ResourceManager::LoadFile(std::filesystem::path path) {
+        AX_ENSURE(std::filesystem::exists(path), "Trying to load a non-existing file.");
+        // File was already opened so return a valid handle to it
+        Expected<FileHandle> e = IsFileAlreadyOpened(path);
+        if (e.IsValid())
+            return e.Unwrap();
+
         std::error_code error;
         mio::mmap_source mmap = mio::make_mmap_source(path, error);
+
+        AX_ENSURE(!error, "There has been an error trying to read a file: {0}", error.message());
+
+        // File opened succesfully
+        u16 magic = m_MagicNumberCounter++;
+        u16 index;
+        if (m_AvailableIndexes.empty())
+            index = m_LargestAvailableIndex++;
+        else {
+            index = m_AvailableIndexes.top();
+            m_AvailableIndexes.pop();
+        }
+        FileHandle h = MakeHandle(index, magic);
+        Resource resource = {.magic = magic, .isShared = false, .mmap = std::move(mmap), .path = path};
+        m_Resources.Add(index, resource);
+
+        return h;
+    }
+
+    Expected<FileHandle> ResourceManager::IsFileAlreadyOpened(std::filesystem::path path) {
+        const std::vector<size_t> AvailableFilesIdx = m_Resources.GetList();
+
+        for (int i = 0; i < AvailableFilesIdx.size(); ++i) {
+            auto got = m_Resources.Get(AvailableFilesIdx[i]);
+            if (got.IsValid()) {
+                // File has already been opened, return a valid handle to it
+                FileHandle h = MakeHandle((u16) AvailableFilesIdx[i], got.Unwrap().get().magic);
+                return h;
+            }
+        }
+
+        return Expected<FileHandle>::FromException(std::runtime_error("File has not already been opened."));
     }
 } // namespace Axle
