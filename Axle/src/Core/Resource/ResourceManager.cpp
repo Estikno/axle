@@ -46,7 +46,7 @@ namespace Axle {
             return e.Unwrap();
 
         std::error_code error;
-        mio::mmap_source mmap = mio::make_mmap_source(path, error);
+        mio::mmap_source mmap = mio::make_mmap_source(path.string(), error);
 
         AX_ENSURE(!error, "There has been an error trying to read a file: {0}", error.message());
 
@@ -60,8 +60,7 @@ namespace Axle {
             m_AvailableIndexes.pop();
         }
         FileHandle h = MakeHandle(index, magic);
-        Resource resource = {.magic = magic, .isShared = false, .mmap = std::move(mmap), .path = path};
-        m_Resources.Add(index, resource);
+        m_Resources.Add(index, Resource{.magic = magic, .isShared = false, .mmap = std::move(mmap), .path = path});
 
         return h;
     }
