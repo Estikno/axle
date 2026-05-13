@@ -23,7 +23,33 @@ namespace Axle {
     }
 
     void ResourceManager::ShutDown() {
-        // TODO: Close all loaded files
+        // Close all remaining files
+        const std::vector<size_t> AvailableFilesIdx = s_ResourceManager->m_Resources.GetList();
+
+        for (int i = 0; i < AvailableFilesIdx.size(); ++i) {
+            auto got = s_ResourceManager->m_Resources.Get(AvailableFilesIdx[i]);
+            if (got.IsValid()) {
+                Resource& resource = got.Unwrap().get();
+                FileHandle h = s_ResourceManager->MakeHandle((u16) AvailableFilesIdx[i], resource.magic);
+
+                if (std::holds_alternative<mio::ummap_source>(resource.mmap))
+                    std::get<mio::ummap_source>(resource.mmap).unmap();
+                else {
+                    std::error_code error;
+                    mio::ummap_sink& mmap = std::get<mio::ummap_sink>(resource.mmap);
+                    mmap.sync(error);
+
+                    if (error) {
+                        AX_CORE_ERROR("Error flushing a file to disk: {0}", error.message());
+                    }
+
+                    std::get<mio::ummap_sink>(resource.mmap).unmap();
+                }
+
+                s_ResourceManager->m_Resources.Remove(AvailableFilesIdx[i]);
+            }
+        }
+
         s_ResourceManager.reset();
         AX_CORE_INFO("Resource Manager deleted...");
     }
@@ -85,6 +111,12 @@ namespace Axle {
 
         Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
 
+        // Check magic value
+        if (resource.magic != GetMagicFromHandle(handle)) {
+            AX_CORE_ERROR("Trying to close a file with an invalid handle.");
+            return;
+        }
+
         // We sync changes to disk and the close the file
         SyncFile(handle);
 
@@ -100,6 +132,12 @@ namespace Axle {
         AX_ENSURE(m_Resources.Has(GetIndexFromHandle(handle)), "Trying to access a file with an invalid handle");
 
         Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
+
+        // Check magic value
+        if (resource.magic != GetMagicFromHandle(handle)) {
+            AX_CORE_ERROR("Trying to sync a file with an invalid handle.");
+            return false;
+        }
 
         // If the holded map is read-only simply return
         if (std::holds_alternative<mio::ummap_source>(resource.mmap))
