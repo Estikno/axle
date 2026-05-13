@@ -92,7 +92,7 @@ namespace Axle {
             m_AvailableIndexes.pop();
         }
         FileHandle h = MakeHandle(index, magic);
-        m_Resources.Add(index, Resource{.magic = magic, .mmap = std::move(mmap), .path = path});
+        m_Resources.Add(index, Resource{.mmap = std::move(mmap), .path = path, .magic = magic});
 
         return h;
     }
