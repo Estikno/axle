@@ -14,7 +14,7 @@ namespace Axle {
         virtual ~ISparseSet() = default;
         virtual void RemoveNoPanic(size_t id) = 0;
         virtual size_t Size() const = 0;
-        virtual std::vector<size_t> GetList() = 0;
+        virtual std::vector<size_t> GetList() const = 0;
         virtual bool Has(size_t id) const = 0;
 #ifdef AX_DEBUG
         virtual void* GetRaw(size_t id) = 0;
@@ -82,6 +82,15 @@ namespace Axle {
         Expected<std::reference_wrapper<T>> Get(size_t id);
 
         /**
+         * Gets an inmutable element of type T from the given index
+         *
+         * @param id The index to get the element from
+         *
+         * @returns A const reference to the element of type T
+         */
+        Expected<std::reference_wrapper<const T>> Get(size_t id) const;
+
+        /**
          * Same as Remove but it doesn't panic. If the request is erroneous it simply
          * ignores it.
          *
@@ -111,7 +120,7 @@ namespace Axle {
          *
          * @returns A vector of indexes which are certain to have an element assigned
          */
-        std::vector<size_t> GetList() override {
+        std::vector<size_t> GetList() const override {
             return m_DenseToSparse;
         }
 
@@ -190,6 +199,20 @@ namespace Axle {
 
     template <typename T>
     Expected<std::reference_wrapper<T>> SparseSet<T>::Get(size_t id) {
+        AX_ASSERT(
+            Has(id), "Trying to retrieve a non-existent element of type: {0} from index {1}", typeid(T).name(), id);
+
+        if (!Has(id)) {
+            return Expected<std::reference_wrapper<T>>::FromException(std::invalid_argument(
+                "Trying to retrieve a non-existent element of type: " + std::string(typeid(T).name()) + " from index" +
+                std::to_string(id)));
+        }
+
+        return std::ref(m_Dense.at(m_Sparse.at(id)));
+    }
+
+    template <typename T>
+    Expected<std::reference_wrapper<const T>> SparseSet<T>::Get(size_t id) const {
         AX_ASSERT(
             Has(id), "Trying to retrieve a non-existent element of type: {0} from index {1}", typeid(T).name(), id);
 

@@ -84,7 +84,35 @@ namespace Axle {
          * */
         bool Sync(FileHandle handle);
 
-        u8* GetData(FileHandle handle);
+        /**
+         * Gets a pointer to the mapped data. Do not delete the given pointer, otherwise it is undefined behavior.
+         *
+         * If this method is called with a read-only file then it fails.
+         *
+         * @param handle The handle associated with the file
+         *
+         * @returns An Expected value that contains the pointer
+         * */
+        Expected<u8*> Data(FileHandle handle);
+
+        /**
+         * Gets a constant pointer to the mapped data. Do not delete the given pointer, otherwise it is undefined
+         * behavior.
+         *
+         * @param handle The handle associated with the file
+         *
+         * @returns An Expected value that contains the pointer
+         * */
+        Expected<const u8*> Data(FileHandle handle) const;
+
+        /**
+         * Gets the size of the given resource.
+         *
+         * @param handle The handle associated with the file
+         *
+         * @returns An Expected type with a valid size if the handle was valid
+         * */
+        Expected<size_t> Size(FileHandle handle) const;
 
     private:
         /// Small struct designed to keep resources organized
@@ -101,7 +129,7 @@ namespace Axle {
          *
          * @return An Expected handle value, valid if it has been already opened, otherwise not.
          * */
-        Expected<FileHandle> IsAlreadyOpened(std::filesystem::path path);
+        Expected<FileHandle> IsAlreadyOpened(std::filesystem::path path) const;
 
         /**
          * Gets the index value of a Handle. Assumes the handle is correctly builded (i.e. index on the 16 bottom bits
@@ -111,7 +139,7 @@ namespace Axle {
          *
          * @return The index value of the given handle
          * */
-        inline u16 GetIndexFromHandle(FileHandle h) {
+        inline u16 GetIndexFromHandle(FileHandle h) const {
             constexpr u32 indexMask = (1 << 16) - 1;
             return h & indexMask;
         }
@@ -124,7 +152,7 @@ namespace Axle {
          *
          * @return The magic value of the given handle
          * */
-        inline u16 GetMagicFromHandle(FileHandle h) {
+        inline u16 GetMagicFromHandle(FileHandle h) const {
             constexpr u32 magicMask = ~((1 << 16) - 1);
             return (h & magicMask) >> 16;
         }
@@ -136,7 +164,7 @@ namespace Axle {
          * @param h A reference to the handle
          * @param magic The magic value to insert
          * */
-        inline void SetMagicToHandle(FileHandle& h, u16 magic) {
+        inline void SetMagicToHandle(FileHandle& h, u16 magic) const {
             constexpr u32 indexMask = (1 << 16) - 1;
             h = (h & indexMask) | (u32(magic) << 16);
         }
@@ -148,7 +176,7 @@ namespace Axle {
          * @param h A reference to the handle
          * @param index The index value to insert
          * */
-        inline void SetIndexToHandle(FileHandle& h, u16 index) {
+        inline void SetIndexToHandle(FileHandle& h, u16 index) const {
             constexpr u32 magicMask = ~((1 << 16) - 1);
             h = (h & magicMask) | u32(index);
         }
@@ -161,7 +189,7 @@ namespace Axle {
          *
          * @returns The constructed handle
          * */
-        inline FileHandle MakeHandle(u16 index, u16 magic) {
+        inline FileHandle MakeHandle(u16 index, u16 magic) const {
             FileHandle h = u32(index);
             SetMagicToHandle(h, magic);
             return h;
