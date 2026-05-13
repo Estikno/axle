@@ -40,28 +40,31 @@ namespace Axle {
          * Loads the given file into memory and returns a handle to it.
          *
          * @param paht A string that represents a path to the file to be loaded
+         * @param readOnly Defines if the loaded file can be modified or not
          *
          * @returns A handle to the loaded file.
          * */
-        FileHandle Load(std::string path);
+        FileHandle Load(std::string path, bool readOnly = true);
 
         /**
          * Loads the given file into memory and returns a handle to it.
          *
          * @param paht A null terminated string that represents a path to the file to be loaded
+         * @param readOnly Defines if the loaded file can be modified or not
          *
          * @returns A handle to the loaded file.
          * */
-        FileHandle Load(const char* path);
+        FileHandle Load(const char* path, bool readOnly = true);
 
         /**
          * Loads the given file into memory and returns a handle to it.
          *
          * @param paht A fylesystem path to the file to be loaded
+         * @param readOnly Defines if the loaded file can be modified or not
          *
          * @returns A handle to the loaded file.
          * */
-        FileHandle Load(std::filesystem::path path);
+        FileHandle Load(std::filesystem::path path, bool readOnly = true);
 
         /**
          * Closes the file associated with the given handle.
@@ -112,14 +115,44 @@ namespace Axle {
          *
          * @returns An Expected type with a valid size if the handle was valid
          * */
-        Expected<size_t> Size(FileHandle handle) const;
+        Expected<u64> Size(FileHandle handle) const;
+
+        /**
+         * Creates a new file with the given size in Bytes.
+         *
+         * @param path The path to the new file. Obviosly the file desn't have to exist.
+         * @param size The size of the new file in bytes.
+         *
+         * @returns true if the operation was succesfull, false otherwise
+         * */
+        bool Create(std::string& path, u64 size);
+
+        /**
+         * Creates a new file with the given size in Bytes.
+         *
+         * @param path The path to the new file. Obviosly the file desn't have to exist.
+         * @param size The size of the new file in bytes.
+         *
+         * @returns true if the operation was succesfull, false otherwise
+         * */
+        bool Create(const char* path, u64 size);
+
+        /**
+         * Creates a new file with the given size in Bytes.
+         *
+         * @param path The path to the new file. Obviosly the file desn't have to exist.
+         * @param size The size of the new file in bytes.
+         *
+         * @returns true if the operation was succesfull, false otherwise
+         * */
+        bool Create(const std::filesystem::path& path, u64 size);
 
     private:
         /// Small struct designed to keep resources organized
         struct Resource {
-            u16 magic;
             std::variant<mio::ummap_source, mio::ummap_sink> mmap;
             std::filesystem::path path;
+            u16 magic;
         };
 
         /**

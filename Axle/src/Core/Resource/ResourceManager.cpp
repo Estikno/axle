@@ -54,17 +54,17 @@ namespace Axle {
         AX_CORE_INFO("Resource Manager deleted...");
     }
 
-    FileHandle ResourceManager::Load(std::string path) {
+    FileHandle ResourceManager::Load(std::string path, bool readOnly) {
         std::filesystem::path _path = path;
-        return Load(_path);
+        return Load(_path, readOnly);
     }
 
-    FileHandle ResourceManager::Load(const char* path) {
+    FileHandle ResourceManager::Load(const char* path, bool readOnly) {
         std::filesystem::path _path = path;
-        return Load(_path);
+        return Load(_path, readOnly);
     }
 
-    FileHandle ResourceManager::Load(std::filesystem::path path) {
+    FileHandle ResourceManager::Load(std::filesystem::path path, bool readOnly) {
         AX_ENSURE(std::filesystem::exists(path), "Trying to load a non-existing file.");
         // File was already opened so return a valid handle to it
         Expected<FileHandle> e = IsAlreadyOpened(path);
@@ -72,7 +72,12 @@ namespace Axle {
             return e.Unwrap();
 
         std::error_code error;
-        mio::ummap_source mmap = mio::make_mmap_source(path.string(), error);
+        std::variant<mio::ummap_source, mio::ummap_sink> mmap;
+
+        if (readOnly) {
+            mmap = static_cast<mio::ummap_source>(mio::make_mmap_source(path.string(), error));
+        } else
+            mmap = static_cast<mio::ummap_sink>(mio::make_mmap_sink(path.string(), error));
 
         AX_ENSURE(!error, "There has been an error trying to read a file: {0}", error.message());
 
@@ -196,7 +201,7 @@ namespace Axle {
     }
 
 
-    Expected<size_t> ResourceManager::Size(FileHandle handle) const {
+    Expected<u64> ResourceManager::Size(FileHandle handle) const {
         AX_ENSURE(m_Resources.Has(GetIndexFromHandle(handle)), "Trying to access a file with an invalid handle");
 
         const Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
@@ -212,5 +217,33 @@ namespace Axle {
             return std::get<mio::ummap_source>(resource.mmap).size();
         else
             return std::get<mio::ummap_sink>(resource.mmap).size();
+    }
+
+    bool ResourceManager::Create(std::string& path, u64 size) {
+        std::filesystem::path _path = path;
+        return Create(_path, size);
+    }
+
+    bool ResourceManager::Create(const char* path, u64 size) {
+        std::filesystem::path _path = path;
+        return Create(_path, size);
+    }
+
+    bool ResourceManager::Create(const std::filesystem::path& path, u64 size) {
+        AX_ENSURE(
+            !std::filesystem::exists(path), "Trying to create a new file that already exists: {0}", path.string());
+
+        std::ofstream file(path, std::ios::binary);
+
+        if (!file.is_open()) {
+            AX_ERROR("Failed to create file: {0}", path.string());
+            return false;
+        }
+
+        // jumps to the last byte position and writes a single zero there
+        file.seekp(size - 1);
+        file.put(0);
+
+        return file.good();
     }
 } // namespace Axle
