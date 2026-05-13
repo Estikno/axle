@@ -6,6 +6,7 @@
 #include "../Logger/Log.hpp"
 #include "Core/Error/Panic.hpp"
 
+#include <fstream>
 #include <mio/mmap.hpp>
 
 namespace Axle {
