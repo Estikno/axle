@@ -43,7 +43,7 @@ namespace Axle {
          *
          * @returns A handle to the loaded file.
          * */
-        FileHandle LoadFile(std::string path);
+        FileHandle Load(std::string path);
 
         /**
          * Loads the given file into memory and returns a handle to it.
@@ -52,7 +52,7 @@ namespace Axle {
          *
          * @returns A handle to the loaded file.
          * */
-        FileHandle LoadFile(const char* path);
+        FileHandle Load(const char* path);
 
         /**
          * Loads the given file into memory and returns a handle to it.
@@ -61,7 +61,7 @@ namespace Axle {
          *
          * @returns A handle to the loaded file.
          * */
-        FileHandle LoadFile(std::filesystem::path path);
+        FileHandle Load(std::filesystem::path path);
 
         /**
          * Closes the file associated with the given handle.
@@ -71,7 +71,7 @@ namespace Axle {
          *
          * @returns true if the operation was succesfull, false otherwise
          * */
-        void CloseFile(FileHandle handle);
+        void Close(FileHandle handle);
 
         /**
          * Syncs current changes made to the map to disk.
@@ -82,7 +82,9 @@ namespace Axle {
          *
          * @returns true if the operation was succesfull, false otherwise
          * */
-        bool SyncFile(FileHandle handle);
+        bool Sync(FileHandle handle);
+
+        u8* GetData(FileHandle handle);
 
     private:
         /// Small struct designed to keep resources organized
@@ -99,7 +101,7 @@ namespace Axle {
          *
          * @return An Expected handle value, valid if it has been already opened, otherwise not.
          * */
-        Expected<FileHandle> IsFileAlreadyOpened(std::filesystem::path path);
+        Expected<FileHandle> IsAlreadyOpened(std::filesystem::path path);
 
         /**
          * Gets the index value of a Handle. Assumes the handle is correctly builded (i.e. index on the 16 bottom bits

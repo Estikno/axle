@@ -54,20 +54,20 @@ namespace Axle {
         AX_CORE_INFO("Resource Manager deleted...");
     }
 
-    FileHandle ResourceManager::LoadFile(std::string path) {
+    FileHandle ResourceManager::Load(std::string path) {
         std::filesystem::path _path = path;
-        return LoadFile(_path);
+        return Load(_path);
     }
 
-    FileHandle ResourceManager::LoadFile(const char* path) {
+    FileHandle ResourceManager::Load(const char* path) {
         std::filesystem::path _path = path;
-        return LoadFile(_path);
+        return Load(_path);
     }
 
-    FileHandle ResourceManager::LoadFile(std::filesystem::path path) {
+    FileHandle ResourceManager::Load(std::filesystem::path path) {
         AX_ENSURE(std::filesystem::exists(path), "Trying to load a non-existing file.");
         // File was already opened so return a valid handle to it
-        Expected<FileHandle> e = IsFileAlreadyOpened(path);
+        Expected<FileHandle> e = IsAlreadyOpened(path);
         if (e.IsValid())
             return e.Unwrap();
 
@@ -91,7 +91,7 @@ namespace Axle {
         return h;
     }
 
-    Expected<FileHandle> ResourceManager::IsFileAlreadyOpened(std::filesystem::path path) {
+    Expected<FileHandle> ResourceManager::IsAlreadyOpened(std::filesystem::path path) {
         const std::vector<size_t> AvailableFilesIdx = m_Resources.GetList();
 
         for (int i = 0; i < AvailableFilesIdx.size(); ++i) {
@@ -106,7 +106,7 @@ namespace Axle {
         return Expected<FileHandle>::FromException(std::runtime_error("File has not already been opened."));
     }
 
-    void ResourceManager::CloseFile(FileHandle handle) {
+    void ResourceManager::Close(FileHandle handle) {
         AX_ENSURE(m_Resources.Has(GetIndexFromHandle(handle)), "Trying to close a file with an invalid handle");
 
         Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
@@ -118,7 +118,7 @@ namespace Axle {
         }
 
         // We sync changes to disk and the close the file
-        SyncFile(handle);
+        Sync(handle);
 
         if (std::holds_alternative<mio::ummap_source>(resource.mmap))
             std::get<mio::ummap_source>(resource.mmap).unmap();
@@ -128,7 +128,7 @@ namespace Axle {
         m_Resources.Remove(GetIndexFromHandle(handle));
     }
 
-    bool ResourceManager::SyncFile(FileHandle handle) {
+    bool ResourceManager::Sync(FileHandle handle) {
         AX_ENSURE(m_Resources.Has(GetIndexFromHandle(handle)), "Trying to access a file with an invalid handle");
 
         Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
