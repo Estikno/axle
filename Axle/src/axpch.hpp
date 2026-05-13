@@ -24,6 +24,7 @@
 // Error handling
 #include <stdexcept>
 #include <optional>
+#include <system_error>
 
 // Multithreading
 #include <thread>

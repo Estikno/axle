@@ -63,12 +63,32 @@ namespace Axle {
          * */
         FileHandle LoadFile(std::filesystem::path path);
 
+        /**
+         * Closes the file associated with the given handle.
+         * The given handle becomes invalid once the file is closed.
+         *
+         * @param handle The handle associated with the file
+         *
+         * @returns true if the operation was succesfull, false otherwise
+         * */
+        void CloseFile(FileHandle handle);
+
+        /**
+         * Syncs current changes made to the map to disk.
+         *
+         * Flushing changes of a read-only file does nothing.
+         *
+         * @param handle The handle associated with the file
+         *
+         * @returns true if the operation was succesfull, false otherwise
+         * */
+        bool SyncFile(FileHandle handle);
+
     private:
         /// Small struct designed to keep resources organized
         struct Resource {
             u16 magic;
-            bool isShared;
-            std::variant<mio::mmap_source, mio::mmap_sink> mmap;
+            std::variant<mio::ummap_source, mio::ummap_sink> mmap;
             std::filesystem::path path;
         };
 
@@ -153,6 +173,7 @@ namespace Axle {
         std::priority_queue<u16, std::vector<u16>, std::greater<u16>> m_AvailableIndexes;
 
         u16 m_MagicNumberCounter = 0;
+        /// The id of the SparseSet are the indexes, not the whole handle
         SparseSet<Resource> m_Resources{};
     };
 } // namespace Axle

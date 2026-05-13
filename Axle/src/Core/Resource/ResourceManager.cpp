@@ -46,7 +46,7 @@ namespace Axle {
             return e.Unwrap();
 
         std::error_code error;
-        mio::mmap_source mmap = mio::make_mmap_source(path.string(), error);
+        mio::ummap_source mmap = mio::make_mmap_source(path.string(), error);
 
         AX_ENSURE(!error, "There has been an error trying to read a file: {0}", error.message());
 
@@ -60,7 +60,7 @@ namespace Axle {
             m_AvailableIndexes.pop();
         }
         FileHandle h = MakeHandle(index, magic);
-        m_Resources.Add(index, Resource{.magic = magic, .isShared = false, .mmap = std::move(mmap), .path = path});
+        m_Resources.Add(index, Resource{.magic = magic, .mmap = std::move(mmap), .path = path});
 
         return h;
     }
@@ -78,5 +78,41 @@ namespace Axle {
         }
 
         return Expected<FileHandle>::FromException(std::runtime_error("File has not already been opened."));
+    }
+
+    void ResourceManager::CloseFile(FileHandle handle) {
+        AX_ENSURE(m_Resources.Has(GetIndexFromHandle(handle)), "Trying to close a file with an invalid handle");
+
+        Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
+
+        // We sync changes to disk and the close the file
+        SyncFile(handle);
+
+        if (std::holds_alternative<mio::ummap_source>(resource.mmap))
+            std::get<mio::ummap_source>(resource.mmap).unmap();
+        else
+            std::get<mio::ummap_sink>(resource.mmap).unmap();
+
+        m_Resources.Remove(GetIndexFromHandle(handle));
+    }
+
+    bool ResourceManager::SyncFile(FileHandle handle) {
+        AX_ENSURE(m_Resources.Has(GetIndexFromHandle(handle)), "Trying to access a file with an invalid handle");
+
+        Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
+
+        // If the holded map is read-only simply return
+        if (std::holds_alternative<mio::ummap_source>(resource.mmap))
+            return false;
+
+        std::error_code error;
+        std::get<mio::ummap_sink>(resource.mmap).sync(error);
+
+        if (error) {
+            AX_CORE_ERROR("Error flushing a file to disk: {0}", error.message());
+            return false;
+        }
+
+        return true;
     }
 } // namespace Axle
