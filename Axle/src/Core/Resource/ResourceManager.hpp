@@ -10,7 +10,7 @@
 
 namespace Axle {
     // TODO: Make the class thread safety
-    class AXLE_API ResourceManager {
+    class AXLE_TEST_API ResourceManager {
     public:
         ResourceManager(const ResourceManager&) = delete;
         ResourceManager& operator=(const ResourceManager&) = delete;
@@ -44,7 +44,7 @@ namespace Axle {
          *
          * @returns A handle to the loaded file.
          * */
-        FileHandle Load(std::string path, bool readOnly = true);
+        Expected<FileHandle> Load(std::string path, bool readOnly = true);
 
         /**
          * Loads the given file into memory and returns a handle to it.
@@ -54,7 +54,7 @@ namespace Axle {
          *
          * @returns A handle to the loaded file.
          * */
-        FileHandle Load(const char* path, bool readOnly = true);
+        Expected<FileHandle> Load(const char* path, bool readOnly = true);
 
         /**
          * Loads the given file into memory and returns a handle to it.
@@ -64,7 +64,7 @@ namespace Axle {
          *
          * @returns A handle to the loaded file.
          * */
-        FileHandle Load(std::filesystem::path path, bool readOnly = true);
+        Expected<FileHandle> Load(std::filesystem::path path, bool readOnly = true);
 
         /**
          * Closes the file associated with the given handle.
@@ -74,7 +74,7 @@ namespace Axle {
          *
          * @returns true if the operation was succesfull, false otherwise
          * */
-        void Close(FileHandle handle);
+        bool Close(FileHandle handle);
 
         /**
          * Syncs current changes made to the map to disk.
@@ -96,7 +96,7 @@ namespace Axle {
          *
          * @returns An Expected value that contains the pointer
          * */
-        Expected<u8*> Data(FileHandle handle);
+        Expected<char*> Data(FileHandle handle);
 
         /**
          * Gets a constant pointer to the mapped data. Do not delete the given pointer, otherwise it is undefined
@@ -106,7 +106,7 @@ namespace Axle {
          *
          * @returns An Expected value that contains the pointer
          * */
-        Expected<const u8*> Data(FileHandle handle) const;
+        Expected<const char*> DataConst(FileHandle handle) const;
 
         /**
          * Gets the size of the given resource.
@@ -147,10 +147,22 @@ namespace Axle {
          * */
         bool Create(const std::filesystem::path& path, u64 size);
 
+#ifdef AXLE_TESTING
+        u16 LargestAvailableIndex() {
+            return m_LargestAvailableIndex;
+        }
+        std::priority_queue<u16, std::vector<u16>, std::greater<u16>>& AvailableIndexes() {
+            return m_AvailableIndexes;
+        }
+        u16 MagicNumberCounter() {
+            return m_MagicNumberCounter;
+        }
+#endif // AXLE_TESTING
+
     private:
         /// Small struct designed to keep resources organized
         struct Resource {
-            std::variant<mio::ummap_source, mio::ummap_sink> mmap;
+            std::variant<mio::mmap_source, mio::mmap_sink> mmap;
             std::filesystem::path path;
             u16 magic;
         };
@@ -164,9 +176,17 @@ namespace Axle {
          * */
         Expected<FileHandle> IsAlreadyOpened(std::filesystem::path path) const;
 
+        inline bool DoesFileExist(const std::filesystem::path& path) const {
+            return std::filesystem::exists(path) && std::filesystem::is_regular_file(path);
+        }
+
+#ifdef AXLE_TESTING
+    public:
+#endif // AXLE_TESTING
+
         /**
-         * Gets the index value of a Handle. Assumes the handle is correctly builded (i.e. index on the 16 bottom bits
-         * and magic on the 16 upper ones)
+         * Gets the index value of a Handle. Assumes the handle is correctly builded (i.e. index on the 16 bottom
+         * bits and magic on the 16 upper ones)
          *
          * @param h A handle
          *
@@ -227,6 +247,10 @@ namespace Axle {
             SetMagicToHandle(h, magic);
             return h;
         }
+
+#ifdef AXLE_TESTING
+    private:
+#endif // AXLE_TESTING
 
         static std::unique_ptr<ResourceManager> s_ResourceManager;
 

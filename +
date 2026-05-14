@@ -6,6 +6,7 @@
 #include "../Logger/Log.hpp"
 #include "Core/Error/Panic.hpp"
 
+#include <filesystem>
 #include <fstream>
 #include <mio/mmap.hpp>
 
@@ -33,21 +34,20 @@ namespace Axle {
                 Resource& resource = got.Unwrap().get();
                 FileHandle h = s_ResourceManager->MakeHandle((u16) AvailableFilesIdx[i], resource.magic);
 
-                if (std::holds_alternative<mio::mmap_source>(resource.mmap))
-                    std::get<mio::mmap_source>(resource.mmap).unmap();
+                if (std::holds_alternative<mio::ummap_source>(resource.mmap))
+                    std::get<mio::ummap_source>(resource.mmap).unmap();
                 else {
                     std::error_code error;
-                    mio::mmap_sink& mmap = std::get<mio::mmap_sink>(resource.mmap);
+                    mio::ummap_sink& mmap = std::get<mio::ummap_sink>(resource.mmap);
                     mmap.sync(error);
 
                     if (error) {
                         AX_CORE_ERROR("Error flushing a file to disk: {0}", error.message());
                     }
 
-                    mmap.unmap();
+                    std::get<mio::ummap_sink>(resource.mmap).unmap();
                 }
 
-                AX_CORE_TRACE("Closed file: {0}", resource.path.string());
                 s_ResourceManager->m_Resources.Remove(AvailableFilesIdx[i]);
             }
         }
@@ -67,7 +67,10 @@ namespace Axle {
     }
 
     Expected<FileHandle> ResourceManager::Load(std::filesystem::path path, bool readOnly) {
+        AX_INFO(path.string());
+
         AX_ENSURE(DoesFileExist(path), "Trying to load a non-existing file.");
+        AX_INFO(std::filesystem::absolute(path).string());
         // File was already opened so return a valid handle to it
         Expected<FileHandle> e = IsAlreadyOpened(path);
         if (e.IsValid())
@@ -78,17 +81,28 @@ namespace Axle {
         }
 
         std::error_code error;
-        std::variant<mio::mmap_source, mio::mmap_sink> mmap;
+        std::variant<mio::ummap_source, mio::ummap_sink> mmap;
 
-        if (readOnly)
-            mmap = mio::make_mmap_source(path.string(), error);
-        else
-            mmap = mio::make_mmap_sink(path.generic_string(), error);
+        if (readOnly) {
+            AX_CORE_INFO("done3");
+            mio::ummap_source source = mio::make_mmap_source(std::filesystem::absolute(path).generic_string(), error);
+            AX_CORE_INFO("done3");
+            mmap = std::move(source);
+        } else {
+            mio::ummap_sink sink = mio::make_mmap_sink(path.generic_string(), error);
+            mmap = std::move(sink);
+        }
 
+        if (error) {
+            AX_CORE_ERROR(error.value());
+            AX_CORE_ERROR(error.message());
+            AX_CORE_ERROR(error.category().name());
 
-        if (error)
             return Expected<FileHandle>::FromException(std::runtime_error(error.message()));
+        }
+
         // AX_ENSURE(!error, "There has been an error trying to read a file: {0}", error.message());
+        AX_CORE_INFO("done2");
 
         // File opened succesfully
         u16 magic = m_MagicNumberCounter++;
@@ -102,7 +116,7 @@ namespace Axle {
         FileHandle h = MakeHandle(index, magic);
         m_Resources.Add(index, Resource{.mmap = std::move(mmap), .path = path, .magic = magic});
 
-        AX_CORE_TRACE("Loaded file: {0}", path.string());
+        AX_CORE_INFO("done");
 
         return h;
     }
@@ -136,12 +150,11 @@ namespace Axle {
         // We sync changes to disk and the close the file
         Sync(handle);
 
-        if (std::holds_alternative<mio::mmap_source>(resource.mmap))
-            std::get<mio::mmap_source>(resource.mmap).unmap();
+        if (std::holds_alternative<mio::ummap_source>(resource.mmap))
+            std::get<mio::ummap_source>(resource.mmap).unmap();
         else
-            std::get<mio::mmap_sink>(resource.mmap).unmap();
+            std::get<mio::ummap_sink>(resource.mmap).unmap();
 
-        AX_CORE_TRACE("Closed file: {0}", resource.path.string());
         m_Resources.Remove(GetIndexFromHandle(handle));
 
         return true;
@@ -159,22 +172,21 @@ namespace Axle {
         }
 
         // If the holded map is read-only simply return
-        if (std::holds_alternative<mio::mmap_source>(resource.mmap))
+        if (std::holds_alternative<mio::ummap_source>(resource.mmap))
             return false;
 
         std::error_code error;
-        std::get<mio::mmap_sink>(resource.mmap).sync(error);
+        std::get<mio::ummap_sink>(resource.mmap).sync(error);
 
         if (error) {
             AX_CORE_ERROR("Error flushing a file to disk: {0}", error.message());
             return false;
         }
 
-        AX_CORE_TRACE("Flused changes to disk from file: {0}", resource.path.string());
         return true;
     }
 
-    Expected<char*> ResourceManager::Data(FileHandle handle) {
+    Expected<u8*> ResourceManager::Data(FileHandle handle) {
         AX_ENSURE(m_Resources.Has(GetIndexFromHandle(handle)), "Trying to access a file with an invalid handle");
 
         Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
@@ -182,22 +194,22 @@ namespace Axle {
         // Check magic value
         if (resource.magic != GetMagicFromHandle(handle)) {
             AX_CORE_ERROR("Trying to access a file with an invalid handle.");
-            return Expected<char*>::FromException(
+            return Expected<u8*>::FromException(
                 std::runtime_error("Trying to access a resource with an invalid handle"));
         }
 
-        if (std::holds_alternative<mio::mmap_source>(resource.mmap)) {
+        if (std::holds_alternative<mio::ummap_source>(resource.mmap)) {
             AX_CORE_ERROR("Trying to get a mutable pointer to a read-only resource.");
-            return Expected<char*>::FromException(
+            return Expected<u8*>::FromException(
                 std::invalid_argument("Trying to get a mutable pointer to a read-only resource"));
         }
 
-        mio::mmap_sink& map = std::get<mio::mmap_sink>(resource.mmap);
+        mio::ummap_sink& map = std::get<mio::ummap_sink>(resource.mmap);
 
         return map.data();
     }
 
-    Expected<const char*> ResourceManager::DataConst(FileHandle handle) const {
+    Expected<const u8*> ResourceManager::DataConst(FileHandle handle) const {
         AX_ENSURE(m_Resources.Has(GetIndexFromHandle(handle)), "Trying to access a file with an invalid handle");
 
         const Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
@@ -205,14 +217,14 @@ namespace Axle {
         // Check magic value
         if (resource.magic != GetMagicFromHandle(handle)) {
             AX_CORE_ERROR("Trying to access a file with an invalid handle.");
-            return Expected<const char*>::FromException(
+            return Expected<const u8*>::FromException(
                 std::runtime_error("Trying to access a resource with an invalid handle"));
         }
 
-        if (std::holds_alternative<mio::mmap_source>(resource.mmap))
-            return std::get<mio::mmap_source>(resource.mmap).data();
+        if (std::holds_alternative<mio::ummap_source>(resource.mmap))
+            return std::get<mio::ummap_source>(resource.mmap).data();
         else
-            return std::get<mio::mmap_sink>(resource.mmap).data();
+            return std::get<mio::ummap_sink>(resource.mmap).data();
     }
 
 
@@ -228,10 +240,10 @@ namespace Axle {
                 std::runtime_error("Trying to access a resource with an invalid handle"));
         }
 
-        if (std::holds_alternative<mio::mmap_source>(resource.mmap))
-            return std::get<mio::mmap_source>(resource.mmap).size();
+        if (std::holds_alternative<mio::ummap_source>(resource.mmap))
+            return std::get<mio::ummap_source>(resource.mmap).size();
         else
-            return std::get<mio::mmap_sink>(resource.mmap).size();
+            return std::get<mio::ummap_sink>(resource.mmap).size();
     }
 
     bool ResourceManager::Create(std::string& path, u64 size) {
@@ -257,8 +269,6 @@ namespace Axle {
         // jumps to the last byte position and writes a single zero there
         file.seekp(size - 1);
         file.put(0);
-
-        AX_CORE_TRACE("Created file: {0}, with size: {1}", path.string(), size);
 
         return file.good();
     }
