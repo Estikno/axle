@@ -128,15 +128,12 @@ namespace Axle {
     }
 
     bool ResourceManager::Close(FileHandle handle) {
-        AX_ENSURE(m_Resources.Has(GetIndexFromHandle(handle)), "Trying to close a file with an invalid handle");
-
-        Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
-
-        // Check magic value
-        if (resource.magic != GetMagicFromHandle(handle)) {
-            AX_CORE_ERROR("Trying to close a file with an invalid handle.");
+        if (!IsHandleValid(handle)) {
+            AX_CORE_ERROR("Trying to close a file with an invalid handle");
             return false;
         }
+
+        Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
 
         // We sync changes to disk and the close the file
         Sync(handle);
@@ -156,15 +153,12 @@ namespace Axle {
     }
 
     bool ResourceManager::Sync(FileHandle handle) {
-        AX_ENSURE(m_Resources.Has(GetIndexFromHandle(handle)), "Trying to access a file with an invalid handle");
-
-        Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
-
-        // Check magic value
-        if (resource.magic != GetMagicFromHandle(handle)) {
-            AX_CORE_ERROR("Trying to sync a file with an invalid handle.");
+        if (!IsHandleValid(handle)) {
+            AX_CORE_ERROR("Trying to access a file with an invalid handle");
             return false;
         }
+
+        Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
 
         // If the holded map is read-only simply return
         if (std::holds_alternative<mio::mmap_source>(resource.mmap))
@@ -183,16 +177,13 @@ namespace Axle {
     }
 
     Expected<char*> ResourceManager::Data(FileHandle handle) {
-        AX_ENSURE(m_Resources.Has(GetIndexFromHandle(handle)), "Trying to access a file with an invalid handle");
+        if (!IsHandleValid(handle)) {
+            AX_CORE_ERROR("Trying to access a file with an invalid handle");
+            return Expected<char*>::FromException(
+                std::invalid_argument("Trying to access a file with an invalid handle"));
+        }
 
         Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
-
-        // Check magic value
-        if (resource.magic != GetMagicFromHandle(handle)) {
-            AX_CORE_ERROR("Trying to access a file with an invalid handle.");
-            return Expected<char*>::FromException(
-                std::runtime_error("Trying to access a resource with an invalid handle"));
-        }
 
         if (std::holds_alternative<mio::mmap_source>(resource.mmap)) {
             AX_CORE_ERROR("Trying to get a mutable pointer to a read-only resource.");
@@ -206,16 +197,13 @@ namespace Axle {
     }
 
     Expected<const char*> ResourceManager::DataConst(FileHandle handle) const {
-        AX_ENSURE(m_Resources.Has(GetIndexFromHandle(handle)), "Trying to access a file with an invalid handle");
+        if (!IsHandleValid(handle)) {
+            AX_CORE_ERROR("Trying to access a file with an invalid handle");
+            return Expected<const char*>::FromException(
+                std::invalid_argument("Trying to access a file with an invalid handle"));
+        }
 
         const Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
-
-        // Check magic value
-        if (resource.magic != GetMagicFromHandle(handle)) {
-            AX_CORE_ERROR("Trying to access a file with an invalid handle.");
-            return Expected<const char*>::FromException(
-                std::runtime_error("Trying to access a resource with an invalid handle"));
-        }
 
         if (std::holds_alternative<mio::mmap_source>(resource.mmap))
             return std::get<mio::mmap_source>(resource.mmap).data();
@@ -225,16 +213,13 @@ namespace Axle {
 
 
     Expected<u64> ResourceManager::Size(FileHandle handle) const {
-        AX_ENSURE(m_Resources.Has(GetIndexFromHandle(handle)), "Trying to access a file with an invalid handle");
+        if (!IsHandleValid(handle)) {
+            AX_CORE_ERROR("Trying to access a resource with an invalid handle");
+            return Expected<u64>::FromException(
+                std::invalid_argument("Trying to access a resource with an invalid handle"));
+        }
 
         const Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
-
-        // Check magic value
-        if (resource.magic != GetMagicFromHandle(handle)) {
-            AX_CORE_ERROR("Trying to access a file with an invalid handle.");
-            return Expected<size_t>::FromException(
-                std::runtime_error("Trying to access a resource with an invalid handle"));
-        }
 
         if (std::holds_alternative<mio::mmap_source>(resource.mmap))
             return std::get<mio::mmap_source>(resource.mmap).size();
@@ -272,5 +257,28 @@ namespace Axle {
         AX_CORE_TRACE("Created file: {0}, with size: {1}", path.string(), size);
 
         return file.good();
+    }
+
+    Expected<bool> ResourceManager::IsReadOnly(FileHandle handle) const {
+        if (!IsHandleValid(handle)) {
+            AX_CORE_ERROR("Trying to access a resource with an invalid handle");
+            return Expected<bool>::FromException(
+                std::invalid_argument("Trying to access a resource with an invalid handle"));
+        }
+
+        const Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
+
+        return std::holds_alternative<mio::mmap_source>(resource.mmap);
+    }
+
+    Expected<std::filesystem::path> ResourceManager::GetPath(FileHandle handle) const {
+        if (!IsHandleValid(handle)) {
+            AX_CORE_ERROR("Trying to access a resource with an invalid handle");
+            return Expected<std::filesystem::path>::FromException(
+                std::invalid_argument("Trying to access a resource with an invalid handle"));
+        }
+
+        const Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
+        return resource.path;
     }
 } // namespace Axle

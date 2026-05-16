@@ -66,6 +66,7 @@ namespace Axle {
          * */
         Expected<FileHandle> Load(std::filesystem::path path, bool readOnly = true);
 
+        // TODO: Add reference counting. This way a resource is close if all users have released their handle
         /**
          * Closes the file associated with the given handle.
          * The given handle becomes invalid once the file is closed.
@@ -146,6 +147,36 @@ namespace Axle {
          * @returns true if the operation was succesfull, false otherwise
          * */
         bool Create(const std::filesystem::path& path, u64 size);
+
+        /**
+         * Checks wether ot not the given handle is valid.
+         *
+         * @param handle The handle associated with the file
+         *
+         * @returns true if the handle is valid, false otherwise
+         * */
+        bool IsHandleValid(FileHandle handle) const {
+            return m_Resources.Has(GetIndexFromHandle(handle)) &&
+                   m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get().magic == GetMagicFromHandle(handle);
+        }
+
+        /**
+         * Checks if the file is read-only or not.
+         *
+         * @param handle The handle associated with the file
+         *
+         * @returns An Expected that contains the result if valid
+         * */
+        Expected<bool> IsReadOnly(FileHandle handle) const;
+
+        /**
+         * Returns the path of a file.
+         *
+         * @param handle The handle associated with the file
+         *
+         * @returns An Expected that contains the path if valid
+         * */
+        Expected<std::filesystem::path> GetPath(FileHandle handle) const;
 
 #ifdef AXLE_TESTING
         u16 LargestAvailableIndex() {
