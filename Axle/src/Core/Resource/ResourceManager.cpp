@@ -67,7 +67,11 @@ namespace Axle {
     }
 
     Expected<FileHandle> ResourceManager::Load(std::filesystem::path path, bool readOnly) {
-        AX_ENSURE(DoesFileExist(path), "Trying to load a non-existing file.");
+        if (!DoesFileExist(path)) {
+            AX_CORE_ERROR("Trying to load a non-existing file: {0}", path.string());
+            return Expected<FileHandle>::FromException(std::invalid_argument("Trying to load a non-existing file."));
+        }
+
         // File was already opened so return a valid handle to it
         Expected<FileHandle> e = IsAlreadyOpened(path);
         if (e.IsValid())
@@ -83,12 +87,13 @@ namespace Axle {
         if (readOnly)
             mmap = mio::make_mmap_source(path.string(), error);
         else
-            mmap = mio::make_mmap_sink(path.generic_string(), error);
+            mmap = mio::make_mmap_sink(path.string(), error);
 
 
-        if (error)
+        if (error) {
+            AX_CORE_ERROR("There has been an error trying to read a file: {0}", error.message());
             return Expected<FileHandle>::FromException(std::runtime_error(error.message()));
-        // AX_ENSURE(!error, "There has been an error trying to read a file: {0}", error.message());
+        }
 
         // File opened succesfully
         u16 magic = m_MagicNumberCounter++;
@@ -112,7 +117,7 @@ namespace Axle {
 
         for (int i = 0; i < AvailableFilesIdx.size(); ++i) {
             auto got = m_Resources.Get(AvailableFilesIdx[i]);
-            if (got.IsValid()) {
+            if (got.IsValid() && got.Unwrap().get().path == path) {
                 // File has already been opened, return a valid handle to it
                 FileHandle h = MakeHandle((u16) AvailableFilesIdx[i], got.Unwrap().get().magic);
                 return h;
@@ -143,6 +148,9 @@ namespace Axle {
 
         AX_CORE_TRACE("Closed file: {0}", resource.path.string());
         m_Resources.Remove(GetIndexFromHandle(handle));
+
+        // The index is now free
+        m_AvailableIndexes.push(GetIndexFromHandle(handle));
 
         return true;
     }
@@ -245,7 +253,10 @@ namespace Axle {
     }
 
     bool ResourceManager::Create(const std::filesystem::path& path, u64 size) {
-        AX_ENSURE(!DoesFileExist(path), "Trying to create a new file that already exists: {0}", path.string());
+        if (DoesFileExist(path)) {
+            AX_CORE_ERROR("Trying to create a new file that already exists: {0}", path.string());
+            return false;
+        }
 
         std::ofstream file(path, std::ios::binary);
 
