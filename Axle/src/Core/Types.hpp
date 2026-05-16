@@ -49,5 +49,5 @@ namespace Axle {
     using Job = std::function<void()>;
 
     // Resource Manager
-    using FileHandle = u32;
+    using FileHandle = u64;
 } // namespace Axle

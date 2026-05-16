@@ -4,7 +4,6 @@
 #include "Other/CustomTypes/Expected.hpp"
 #include "../Types.hpp"
 #include "../Logger/Log.hpp"
-#include "Core/Error/Panic.hpp"
 
 #include <fstream>
 #include <mio/mmap.hpp>
@@ -27,11 +26,11 @@ namespace Axle {
         // Close all remaining files
         const std::vector<size_t> AvailableFilesIdx = s_ResourceManager->m_Resources.GetList();
 
-        for (int i = 0; i < AvailableFilesIdx.size(); ++i) {
+        for (u64 i = 0; i < AvailableFilesIdx.size(); ++i) {
             auto got = s_ResourceManager->m_Resources.Get(AvailableFilesIdx[i]);
             if (got.IsValid()) {
                 Resource& resource = got.Unwrap().get();
-                FileHandle h = s_ResourceManager->MakeHandle((u16) AvailableFilesIdx[i], resource.magic);
+                FileHandle h = s_ResourceManager->MakeHandle((u32) AvailableFilesIdx[i], resource.magic);
 
                 if (std::holds_alternative<mio::mmap_source>(resource.mmap))
                     std::get<mio::mmap_source>(resource.mmap).unmap();
@@ -56,24 +55,16 @@ namespace Axle {
         AX_CORE_INFO("Resource Manager deleted...");
     }
 
-    Expected<FileHandle> ResourceManager::Load(std::string path, bool readOnly) {
-        std::filesystem::path _path = path;
-        return Load(_path, readOnly);
-    }
-
-    Expected<FileHandle> ResourceManager::Load(const char* path, bool readOnly) {
-        std::filesystem::path _path = path;
-        return Load(_path, readOnly);
-    }
-
-    Expected<FileHandle> ResourceManager::Load(std::filesystem::path path, bool readOnly) {
+    Expected<FileHandle> ResourceManager::Load(const std::filesystem::path& path, bool readOnly) {
         if (!DoesFileExist(path)) {
             AX_CORE_ERROR("Trying to load a non-existing file: {0}", path.string());
             return Expected<FileHandle>::FromException(std::invalid_argument("Trying to load a non-existing file."));
         }
 
+        std::unique_lock lock(m_Mutex);
+
         // File was already opened so return a valid handle to it
-        Expected<FileHandle> e = IsAlreadyOpened(path);
+        Expected<FileHandle> e = IsAlreadyOpenedUnsafe(path);
         if (e.IsValid())
             return e.Unwrap();
 
@@ -96,8 +87,8 @@ namespace Axle {
         }
 
         // File opened succesfully
-        u16 magic = m_MagicNumberCounter++;
-        u16 index;
+        u32 magic = m_MagicNumberCounter++;
+        u32 index;
         if (m_AvailableIndexes.empty())
             index = m_LargestAvailableIndex++;
         else {
@@ -105,21 +96,25 @@ namespace Axle {
             m_AvailableIndexes.pop();
         }
         FileHandle h = MakeHandle(index, magic);
-        m_Resources.Add(index, Resource{.mmap = std::move(mmap), .path = path, .magic = magic});
+        m_Resources.Add(index,
+                        Resource{.mmap = std::move(mmap),
+                                 .path = path,
+                                 .magic = magic,
+                                 .m_Mutex = std::make_unique<std::shared_mutex>()});
 
         AX_CORE_TRACE("Loaded file: {0}", path.string());
 
         return h;
     }
 
-    Expected<FileHandle> ResourceManager::IsAlreadyOpened(std::filesystem::path path) const {
+    Expected<FileHandle> ResourceManager::IsAlreadyOpenedUnsafe(const std::filesystem::path& path) const {
         const std::vector<size_t> AvailableFilesIdx = m_Resources.GetList();
 
-        for (int i = 0; i < AvailableFilesIdx.size(); ++i) {
+        for (u64 i = 0; i < AvailableFilesIdx.size(); ++i) {
             auto got = m_Resources.Get(AvailableFilesIdx[i]);
             if (got.IsValid() && got.Unwrap().get().path == path) {
                 // File has already been opened, return a valid handle to it
-                FileHandle h = MakeHandle((u16) AvailableFilesIdx[i], got.Unwrap().get().magic);
+                FileHandle h = MakeHandle((u32) AvailableFilesIdx[i], got.Unwrap().get().magic);
                 return h;
             }
         }
@@ -128,7 +123,9 @@ namespace Axle {
     }
 
     bool ResourceManager::Close(FileHandle handle) {
-        if (!IsHandleValid(handle)) {
+        std::unique_lock lock(m_Mutex);
+
+        if (!IsHandleValidUnsafe(handle)) {
             AX_CORE_ERROR("Trying to close a file with an invalid handle");
             return false;
         }
@@ -136,7 +133,7 @@ namespace Axle {
         Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
 
         // We sync changes to disk and the close the file
-        Sync(handle);
+        SyncUnsafe(handle);
 
         if (std::holds_alternative<mio::mmap_source>(resource.mmap))
             std::get<mio::mmap_source>(resource.mmap).unmap();
@@ -153,7 +150,12 @@ namespace Axle {
     }
 
     bool ResourceManager::Sync(FileHandle handle) {
-        if (!IsHandleValid(handle)) {
+        std::unique_lock lock(m_Mutex);
+        return SyncUnsafe(handle);
+    }
+
+    bool ResourceManager::SyncUnsafe(FileHandle handle) {
+        if (!IsHandleValidUnsafe(handle)) {
             AX_CORE_ERROR("Trying to access a file with an invalid handle");
             return false;
         }
@@ -172,14 +174,16 @@ namespace Axle {
             return false;
         }
 
-        AX_CORE_TRACE("Flused changes to disk from file: {0}", resource.path.string());
+        AX_CORE_TRACE("Flushed changes to disk from file: {0}", resource.path.string());
         return true;
     }
 
-    Expected<char*> ResourceManager::Data(FileHandle handle) {
-        if (!IsHandleValid(handle)) {
+    Expected<ResourceManager::WriteGuard> ResourceManager::Data(FileHandle handle) {
+        std::unique_lock lock(m_Mutex);
+
+        if (!IsHandleValidUnsafe(handle)) {
             AX_CORE_ERROR("Trying to access a file with an invalid handle");
-            return Expected<char*>::FromException(
+            return Expected<ResourceManager::WriteGuard>::FromException(
                 std::invalid_argument("Trying to access a file with an invalid handle"));
         }
 
@@ -187,33 +191,40 @@ namespace Axle {
 
         if (std::holds_alternative<mio::mmap_source>(resource.mmap)) {
             AX_CORE_ERROR("Trying to get a mutable pointer to a read-only resource.");
-            return Expected<char*>::FromException(
+            return Expected<ResourceManager::WriteGuard>::FromException(
                 std::invalid_argument("Trying to get a mutable pointer to a read-only resource"));
         }
 
         mio::mmap_sink& map = std::get<mio::mmap_sink>(resource.mmap);
 
-        return map.data();
+        return WriteGuard(map.data(), map.size(), *resource.m_Mutex);
     }
 
-    Expected<const char*> ResourceManager::DataConst(FileHandle handle) const {
-        if (!IsHandleValid(handle)) {
+    Expected<ResourceManager::ReadGuard> ResourceManager::DataConst(FileHandle handle) const {
+        std::shared_lock lock(m_Mutex);
+
+        if (!IsHandleValidUnsafe(handle)) {
             AX_CORE_ERROR("Trying to access a file with an invalid handle");
-            return Expected<const char*>::FromException(
+            return Expected<ResourceManager::ReadGuard>::FromException(
                 std::invalid_argument("Trying to access a file with an invalid handle"));
         }
 
         const Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
 
-        if (std::holds_alternative<mio::mmap_source>(resource.mmap))
-            return std::get<mio::mmap_source>(resource.mmap).data();
-        else
-            return std::get<mio::mmap_sink>(resource.mmap).data();
+        if (std::holds_alternative<mio::mmap_source>(resource.mmap)) {
+            const mio::mmap_source& map = std::get<mio::mmap_source>(resource.mmap);
+            return ReadGuard(map.data(), map.size(), *resource.m_Mutex);
+        } else {
+            const mio::mmap_sink& map = std::get<mio::mmap_sink>(resource.mmap);
+            return ReadGuard(map.data(), map.size(), *resource.m_Mutex);
+        }
     }
 
 
     Expected<u64> ResourceManager::Size(FileHandle handle) const {
-        if (!IsHandleValid(handle)) {
+        std::shared_lock lock(m_Mutex);
+
+        if (!IsHandleValidUnsafe(handle)) {
             AX_CORE_ERROR("Trying to access a resource with an invalid handle");
             return Expected<u64>::FromException(
                 std::invalid_argument("Trying to access a resource with an invalid handle"));
@@ -225,16 +236,6 @@ namespace Axle {
             return std::get<mio::mmap_source>(resource.mmap).size();
         else
             return std::get<mio::mmap_sink>(resource.mmap).size();
-    }
-
-    bool ResourceManager::Create(std::string& path, u64 size) {
-        std::filesystem::path _path = path;
-        return Create(_path, size);
-    }
-
-    bool ResourceManager::Create(const char* path, u64 size) {
-        std::filesystem::path _path = path;
-        return Create(_path, size);
     }
 
     bool ResourceManager::Create(const std::filesystem::path& path, u64 size) {
@@ -249,18 +250,26 @@ namespace Axle {
             AX_ERROR("Failed to create file: {0}", path.string());
             return false;
         }
+        file.close();
 
-        // jumps to the last byte position and writes a single zero there
-        file.seekp(size - 1);
-        file.put(0);
+        // Allocate the desired size
+        std::error_code ec;
+        std::filesystem::resize_file(path, size, ec);
+
+        if (ec) {
+            AX_CORE_ERROR("Failed to resize the file: {0} with error: {1}", path.string(), ec.message());
+            return false;
+        }
 
         AX_CORE_TRACE("Created file: {0}, with size: {1}", path.string(), size);
 
-        return file.good();
+        return true;
     }
 
     Expected<bool> ResourceManager::IsReadOnly(FileHandle handle) const {
-        if (!IsHandleValid(handle)) {
+        std::shared_lock lock(m_Mutex);
+
+        if (!IsHandleValidUnsafe(handle)) {
             AX_CORE_ERROR("Trying to access a resource with an invalid handle");
             return Expected<bool>::FromException(
                 std::invalid_argument("Trying to access a resource with an invalid handle"));
@@ -272,7 +281,9 @@ namespace Axle {
     }
 
     Expected<std::filesystem::path> ResourceManager::GetPath(FileHandle handle) const {
-        if (!IsHandleValid(handle)) {
+        std::shared_lock lock(m_Mutex);
+
+        if (!IsHandleValidUnsafe(handle)) {
             AX_CORE_ERROR("Trying to access a resource with an invalid handle");
             return Expected<std::filesystem::path>::FromException(
                 std::invalid_argument("Trying to access a resource with an invalid handle"));
