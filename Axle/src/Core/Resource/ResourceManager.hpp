@@ -155,6 +155,14 @@ namespace Axle {
                 return *this;
             }
 
+            // Equality operators
+            bool operator==(const ManagedFileHandle& other) const {
+                return m_Handle == other.m_Handle;
+            }
+            bool operator!=(const ManagedFileHandle& other) const {
+                return m_Handle != other.m_Handle;
+            }
+
             // Accessors
             FileHandle Get() const {
                 return m_Handle;
@@ -383,13 +391,37 @@ namespace Axle {
         // Let ManagedFileHandle access the AddRef and ReleaseRef methods
         friend class ManagedFileHandle;
 
+        /// A zero-overhead wrapper to make std::atomic movable so std::swap works in SparseSet
+        struct MovableAtomic {
+            std::atomic<u32> count{1};
+
+            MovableAtomic() = default;
+            MovableAtomic(u32 initial)
+                : count(initial) {}
+
+            // Prevent copying
+            MovableAtomic(const MovableAtomic&) = delete;
+            MovableAtomic& operator=(const MovableAtomic&) = delete;
+
+            // Custom Move Semantics
+            MovableAtomic(MovableAtomic&& other) noexcept
+                : count(other.count.load(std::memory_order_relaxed)) {}
+
+            MovableAtomic& operator=(MovableAtomic&& other) noexcept {
+                if (this != &other) {
+                    count.store(other.count.load(std::memory_order_relaxed), std::memory_order_relaxed);
+                }
+                return *this;
+            }
+        };
+
         /// Small struct designed to keep resources organized
         struct Resource {
             std::variant<mio::mmap_source, mio::mmap_sink> mmap;
             std::filesystem::path path;
             u32 magic;
             std::unique_ptr<std::shared_mutex> m_Mutex;
-            std::atomic<u32> m_RefCount{1};
+            MovableAtomic m_RefCount{1};
         };
 
         /**

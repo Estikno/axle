@@ -69,7 +69,10 @@ namespace Axle {
         Expected<FileHandle> e = IsAlreadyOpenedUnsafe(path);
         if (e.IsValid()) {
             FileHandle h = e.Unwrap();
-            m_Resources.Get(GetIndexFromHandle(h)).Unwrap().get().m_RefCount.fetch_add(1, std::memory_order_relaxed);
+            m_Resources.Get(GetIndexFromHandle(h))
+                .Unwrap()
+                .get()
+                .m_RefCount.count.fetch_add(1, std::memory_order_relaxed);
             return ResourceManager::ManagedFileHandle(h);
         }
 
@@ -107,7 +110,7 @@ namespace Axle {
                                  .path = path,
                                  .magic = magic,
                                  .m_Mutex = std::make_unique<std::shared_mutex>(),
-                                 .m_RefCount = 1});
+                                 .m_RefCount = {1}});
 
         AX_CORE_TRACE("Loaded file: {0}", path.string());
 
@@ -323,12 +326,12 @@ namespace Axle {
     }
 
     void ResourceManager::ManagedFileHandle::AddRef() {
-        if (IsValid())
+        if (IsValid() && ResourceManager::s_ResourceManager != nullptr)
             ResourceManager::GetInstance().AddRef(m_Handle);
     }
 
     void ResourceManager::ManagedFileHandle::ReleaseRef() {
-        if (IsValid())
+        if (IsValid() && ResourceManager::s_ResourceManager != nullptr)
             ResourceManager::GetInstance().ReleaseRef(m_Handle);
     }
 
@@ -340,39 +343,48 @@ namespace Axle {
             return false;
         }
 
-        m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get().m_RefCount.fetch_add(1, std::memory_order_relaxed);
+        m_Resources.Get(GetIndexFromHandle(handle))
+            .Unwrap()
+            .get()
+            .m_RefCount.count.fetch_add(1, std::memory_order_relaxed);
         return true;
     }
 
     bool ResourceManager::ReleaseRef(FileHandle handle) {
-        std::shared_lock lock(m_Mutex);
+        {
+            std::shared_lock lock(m_Mutex);
 
-        if (!IsHandleValidUnsafe(handle)) {
-            AX_CORE_ERROR("Trying to access a resource with an invalid handle");
-            return false;
+            if (!IsHandleValidUnsafe(handle)) {
+                AX_CORE_ERROR("Trying to access a resource with an invalid handle");
+                return false;
+            }
+
+            Resource& r = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
+
+            // If we're not the last one, just decrement and return
+            if (r.m_RefCount.count.fetch_sub(1, std::memory_order_acq_rel) != 1)
+                return true;
+
+            // We decremented to 0 — fall through to close under unique lock
         }
 
-        Resource& r = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
-        const std::string path = r.path.string();
+        // Re-acquire as unique lock to close
+        std::unique_lock releaseLock(m_Mutex);
 
-        // We're the last one (count == 1 before decrement)
-        if (r.m_RefCount.fetch_sub(1, std::memory_order_acq_rel) == 1) {
-            // Most of the time we don't get here
-            lock.unlock();
-            std::unique_lock releaseLock(m_Mutex);
+        // Re-check: someone may have rescued the file between the two locks
+        if (!IsHandleValidUnsafe(handle))
+            return true; // already closed by someone else
 
-            // RE-CHECK state! Did someone else Load() this file while we were upgrading the lock?
-            if (IsHandleValidUnsafe(handle)) {
-                Resource& recheckedResource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
+        Resource& rechecked = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
 
-                // Only close if it's STILL 0. If it's > 0, someone else rescued it.
-                if (recheckedResource.m_RefCount.load(std::memory_order_acquire) == 0) {
-                    if (!CloseUnsafe(handle)) {
-                        AX_CORE_ERROR("There was an error closing the file: {0}", path);
-                        return false;
-                    }
-                }
-            }
+        if (rechecked.m_RefCount.count.load(std::memory_order_acquire) != 0)
+            return true; // someone called Load() and bumped the count back up
+
+        // Safe to close now
+        std::string path = rechecked.path.string(); // capture path before closing
+        if (!CloseUnsafe(handle)) {
+            AX_CORE_ERROR("There was an error closing the file: {0}", path);
+            return false;
         }
 
         return true;
