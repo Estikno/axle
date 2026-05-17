@@ -362,10 +362,13 @@ namespace Axle {
             Resource& r = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
 
             // If we're not the last one, just decrement and return
-            if (r.m_RefCount.count.fetch_sub(1, std::memory_order_acq_rel) != 1)
-                return true;
-
-            // We decremented to 0 — fall through to close under unique lock
+            u32 current = r.m_RefCount.count.load(std::memory_order_relaxed);
+            while (current > 1) {
+                if (r.m_RefCount.count.compare_exchange_weak(
+                        current, current - 1, std::memory_order_acq_rel, std::memory_order_relaxed))
+                    return true; // Successfully decremented from >1 to >0 safely!
+            }
+            // Count is 1 — fall through without decrementing to close under unique lock
         }
 
         // Re-acquire as unique lock to close
@@ -377,16 +380,94 @@ namespace Axle {
 
         Resource& rechecked = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
 
-        if (rechecked.m_RefCount.count.load(std::memory_order_acquire) != 0)
-            return true; // someone called Load() and bumped the count back up
+        // Perform the final decrement entirely under the safety of the unique lock
+        if (rechecked.m_RefCount.count.fetch_sub(1, std::memory_order_acq_rel) == 1) {
+            // The count successfully went from 1 to 0 under exclusive ownership
+            std::string path = rechecked.path.string();
+            if (!CloseUnsafe(handle)) {
+                AX_CORE_ERROR("There was an error closing the file: {0}", path);
+                return false;
+            }
+        } else {
+            // Someone called Load() in the lock gap and rescued the file (count is > 0 again),
+            // or another thread beat us to the unique lock and closed it. Do nothing.
+        }
 
-        // Safe to close now
-        std::string path = rechecked.path.string(); // capture path before closing
-        if (!CloseUnsafe(handle)) {
-            AX_CORE_ERROR("There was an error closing the file: {0}", path);
+        return true;
+    }
+
+    bool ResourceManager::Resize(const ResourceManager::ManagedFileHandle& handle, u64 newSize) {
+        return Resize(handle.Get(), newSize);
+    }
+
+    bool ResourceManager::Resize(FileHandle handle, u64 newSize) {
+        std::unique_lock lock(m_Mutex);
+
+        if (!IsHandleValidUnsafe(handle)) {
+            AX_CORE_ERROR("Trying to access a resource with an invalid handle");
             return false;
         }
 
+        // We can't use the Close method because we want to appear as if the file was never closed
+        SyncUnsafe(handle);
+
+        Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
+        bool IsReadOnly = std::holds_alternative<mio::mmap_source>(resource.mmap);
+
+        // We lock the resource mutex to prevent reading/writing threads to access its contents while we resize it
+        std::unique_lock lockResources(*resource.m_Mutex);
+
+        // We unmap the file
+        if (IsReadOnly)
+            std::get<mio::mmap_source>(resource.mmap).unmap();
+        else
+            std::get<mio::mmap_sink>(resource.mmap).unmap();
+
+
+        // Resize the file
+        std::error_code ec;
+        std::filesystem::resize_file(resource.path, newSize, ec);
+
+        if (ec) {
+            AX_CORE_ERROR("Failed to resize file {0}: {1}. Attempting rollback.", resource.path.string(), ec.message());
+
+            // ROLLBACK: Re-map the file using the old size so it isn't left dead
+            std::error_code rollbackError;
+            if (IsReadOnly)
+                resource.mmap = mio::make_mmap_source(resource.path.string(), rollbackError);
+            else
+                resource.mmap = mio::make_mmap_sink(resource.path.string(), rollbackError);
+
+            if (rollbackError) {
+                // Fatal error: We couldn't even map it back. The handle MUST be invalidated.
+                AX_CORE_CRITICAL("FATAL: Rollback failed for {0}. File is unmapped.", resource.path.string());
+
+                // FIX: Add a boolean that tells if a resource is poisoned or not if we can't rollback
+                // We try to close the file here to prevent segfaults
+                lockResources.unlock();
+            }
+
+            return false;
+        }
+
+        // Re-map the updated file
+        std::error_code error;
+
+        if (IsReadOnly)
+            resource.mmap = mio::make_mmap_source(resource.path.string(), error);
+        else
+            resource.mmap = mio::make_mmap_sink(resource.path.string(), error);
+
+        if (error) {
+            AX_CORE_ERROR("Failed to resize the file: {0} with error: {1}", resource.path.string(), error.message());
+
+            // FIX: Add a boolean that tells if a resource is poisoned or not if we can't rollback
+            // The file was resized but remapping failed. It must be destroyed.
+            lockResources.unlock();
+            return false;
+        }
+
+        AX_CORE_TRACE("File: {0} was resized to: {1} bytes", resource.path.string(), newSize);
         return true;
     }
 } // namespace Axle

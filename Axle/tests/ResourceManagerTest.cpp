@@ -10,9 +10,26 @@
 #include <vector>
 #include <atomic>
 #include <barrier>
-#include <array>
+#include <deque>
 
 using namespace Axle;
+
+// Helper to create a temp file and clean it up after the test
+struct TempFile {
+    std::filesystem::path path;
+
+    TempFile(const std::string& name, u64 size)
+        : path("assets/tests/" + name) {
+        if (std::filesystem::exists(path))
+            std::filesystem::remove(path);
+        ResourceManager::GetInstance().Create(path, size);
+    }
+
+    ~TempFile() {
+        if (std::filesystem::exists(path))
+            std::filesystem::remove(path);
+    }
+};
 
 TEST_CASE("ResourceManager - Created correctly") {
     ResourceManager::Init();
@@ -126,13 +143,15 @@ TEST_CASE("ResourceManager - Load read-write file") {
     ResourceManager::Init();
     ResourceManager& instance = ResourceManager::GetInstance();
 
-    Expected<ResourceManager::ManagedFileHandle> eHandle = instance.Load("assets/tests/valid.txt", false);
-    REQUIRE(eHandle.IsValid());
-    ResourceManager::ManagedFileHandle handle = eHandle.Unwrap();
+    {
+        Expected<ResourceManager::ManagedFileHandle> eHandle = instance.Load("assets/tests/valid.txt", false);
+        REQUIRE(eHandle.IsValid());
+        ResourceManager::ManagedFileHandle handle = eHandle.Unwrap();
 
-    // Data() should succeed for a read-write file
-    Expected<ResourceManager::WriteGuard> data = instance.Data(handle);
-    CHECK(data.IsValid());
+        // Data() should succeed for a read-write file
+        Expected<ResourceManager::WriteGuard> data = instance.Data(handle);
+        CHECK(data.IsValid());
+    }
 
     ResourceManager::ShutDown();
 }
@@ -254,12 +273,14 @@ TEST_CASE("ResourceManager - Sync read-only file returns false") {
     ResourceManager::Init();
     ResourceManager& instance = ResourceManager::GetInstance();
 
-    Expected<ResourceManager::ManagedFileHandle> eHandle = instance.Load("assets/tests/valid.txt", true);
-    REQUIRE(eHandle.IsValid());
-    ResourceManager::ManagedFileHandle handle = eHandle.Unwrap();
+    {
+        Expected<ResourceManager::ManagedFileHandle> eHandle = instance.Load("assets/tests/valid.txt", true);
+        REQUIRE(eHandle.IsValid());
+        ResourceManager::ManagedFileHandle handle = eHandle.Unwrap();
 
-    // Syncing a read-only map is a no-op and returns false
-    CHECK_FALSE(instance.Sync(handle));
+        // Syncing a read-only map is a no-op and returns false
+        CHECK_FALSE(instance.Sync(handle));
+    }
 
     ResourceManager::ShutDown();
 }
@@ -268,11 +289,13 @@ TEST_CASE("ResourceManager - Sync read-write file succeeds") {
     ResourceManager::Init();
     ResourceManager& instance = ResourceManager::GetInstance();
 
-    Expected<ResourceManager::ManagedFileHandle> eHandle = instance.Load("assets/tests/valid.txt", false);
-    REQUIRE(eHandle.IsValid());
-    ResourceManager::ManagedFileHandle handle = eHandle.Unwrap();
+    {
+        Expected<ResourceManager::ManagedFileHandle> eHandle = instance.Load("assets/tests/valid.txt", false);
+        REQUIRE(eHandle.IsValid());
+        ResourceManager::ManagedFileHandle handle = eHandle.Unwrap();
 
-    CHECK(instance.Sync(handle));
+        CHECK(instance.Sync(handle));
+    }
 
     ResourceManager::ShutDown();
 }
@@ -285,17 +308,20 @@ TEST_CASE("ResourceManager - ShutDown closes all open files") {
     ResourceManager::Init();
     ResourceManager& instance = ResourceManager::GetInstance();
 
-    Expected<ResourceManager::ManagedFileHandle> h = instance.Load("assets/tests/valid.txt");
-    CHECK_EQ(instance.LargestAvailableIndex(), (u32) 1);
+    {
+        Expected<ResourceManager::ManagedFileHandle> h = instance.Load("assets/tests/valid.txt");
+        CHECK_EQ(instance.LargestAvailableIndex(), (u32) 1);
 
-    // ShutDown should close everything without crashing
-    ResourceManager::ShutDown();
+        // ShutDown should close everything without crashing
+        ResourceManager::ShutDown();
 
-    // Re-init to verify clean state
-    ResourceManager::Init();
-    ResourceManager& instance2 = ResourceManager::GetInstance();
-    CHECK_EQ(instance2.LargestAvailableIndex(), (u32) 0);
-    CHECK_EQ(instance2.MagicNumberCounter(), (u32) 0);
+        // Re-init to verify clean state
+        ResourceManager::Init();
+        ResourceManager& instance2 = ResourceManager::GetInstance();
+        CHECK_EQ(instance2.LargestAvailableIndex(), (u32) 0);
+        CHECK_EQ(instance2.MagicNumberCounter(), (u32) 0);
+    }
+
     ResourceManager::ShutDown();
 }
 
@@ -305,34 +331,36 @@ TEST_CASE("ResourceManager MT - Concurrent loads of the same file return the sam
     ResourceManager::Init();
     ResourceManager& instance = ResourceManager::GetInstance();
 
-    constexpr int THREAD_COUNT = 8;
-    std::vector<ResourceManager::ManagedFileHandle> handles(THREAD_COUNT);
-    std::vector<std::thread> threads;
+    {
+        constexpr int THREAD_COUNT = 8;
+        std::vector<ResourceManager::ManagedFileHandle> handles(THREAD_COUNT);
+        std::vector<std::thread> threads;
 
-    // Barrier so all threads start loading at the same time
-    std::barrier startBarrier(THREAD_COUNT);
+        // Barrier so all threads start loading at the same time
+        std::barrier startBarrier(THREAD_COUNT);
 
-    for (int i = 0; i < THREAD_COUNT; ++i) {
-        threads.emplace_back([&, i]() {
-            startBarrier.arrive_and_wait();
-            auto eHandle = instance.Load("assets/tests/valid.txt");
-            if (eHandle.IsValid())
-                handles[i] = eHandle.Unwrap();
-        });
+        for (int i = 0; i < THREAD_COUNT; ++i) {
+            threads.emplace_back([&, i]() {
+                startBarrier.arrive_and_wait();
+                auto eHandle = instance.Load("assets/tests/valid.txt");
+                if (eHandle.IsValid())
+                    handles[i] = eHandle.Unwrap();
+            });
+        }
+
+        for (auto& t : threads)
+            t.join();
+
+        // All threads should have gotten the same handle
+        ResourceManager::ManagedFileHandle& first = handles[0];
+        REQUIRE_NE(first.Get(), INVALID_FILE_HANDLE);
+        for (int i = 1; i < THREAD_COUNT; ++i)
+            CHECK_EQ(handles[i], first);
+
+        // Only one resource should have been allocated
+        CHECK_EQ(instance.LargestAvailableIndex(), (u32) 1);
+        CHECK_EQ(instance.MagicNumberCounter(), (u32) 1);
     }
-
-    for (auto& t : threads)
-        t.join();
-
-    // All threads should have gotten the same handle
-    ResourceManager::ManagedFileHandle& first = handles[0];
-    REQUIRE_NE(first.Get(), INVALID_FILE_HANDLE);
-    for (int i = 1; i < THREAD_COUNT; ++i)
-        CHECK_EQ(handles[i], first);
-
-    // Only one resource should have been allocated
-    CHECK_EQ(instance.LargestAvailableIndex(), (u32) 1);
-    CHECK_EQ(instance.MagicNumberCounter(), (u32) 1);
 
     ResourceManager::ShutDown();
 }
@@ -341,43 +369,45 @@ TEST_CASE("ResourceManager MT - Concurrent loads of different files allocate uni
     ResourceManager::Init();
     ResourceManager& instance = ResourceManager::GetInstance();
 
-    // Prepare N temp files
-    constexpr int FILE_COUNT = 8;
-    std::vector<std::string> paths;
-    for (int i = 0; i < FILE_COUNT; ++i) {
-        std::string p = "assets/tests/mt_file_" + std::to_string(i) + ".bin";
-        instance.Create(p, 64);
-        paths.push_back(p);
-    }
-
     {
-        std::vector<ResourceManager::ManagedFileHandle> handles(FILE_COUNT);
-        std::vector<std::thread> threads;
-        std::barrier startBarrier(FILE_COUNT);
-
+        // Prepare N temp files
+        constexpr int FILE_COUNT = 8;
+        std::vector<std::string> paths;
         for (int i = 0; i < FILE_COUNT; ++i) {
-            threads.emplace_back([&, i]() {
-                // startBarrier.arrive_and_wait();
-                auto eHandle = instance.Load(paths[i]);
-                REQUIRE(eHandle.IsValid());
-                handles[i] = eHandle.Unwrap();
-            });
+            std::string p = "assets/tests/mt_file_" + std::to_string(i) + ".bin";
+            instance.Create(p, 64);
+            paths.push_back(p);
         }
 
-        for (auto& t : threads)
-            t.join();
+        {
+            std::vector<ResourceManager::ManagedFileHandle> handles(FILE_COUNT);
+            std::vector<std::thread> threads;
+            std::barrier startBarrier(FILE_COUNT);
 
-        for (int i = 0; i < FILE_COUNT; ++i)
-            for (int j = i + 1; j < FILE_COUNT; ++j)
-                CHECK_NE(handles[i].Get(), handles[j].Get());
+            for (int i = 0; i < FILE_COUNT; ++i) {
+                threads.emplace_back([&, i]() {
+                    // startBarrier.arrive_and_wait();
+                    auto eHandle = instance.Load(paths[i]);
+                    REQUIRE(eHandle.IsValid());
+                    handles[i] = eHandle.Unwrap();
+                });
+            }
 
-        // Exactly FILE_COUNT resources allocated
-        CHECK_EQ(instance.LargestAvailableIndex(), (u32) FILE_COUNT);
+            for (auto& t : threads)
+                t.join();
+
+            for (int i = 0; i < FILE_COUNT; ++i)
+                for (int j = i + 1; j < FILE_COUNT; ++j)
+                    CHECK_NE(handles[i].Get(), handles[j].Get());
+
+            // Exactly FILE_COUNT resources allocated
+            CHECK_EQ(instance.LargestAvailableIndex(), (u32) FILE_COUNT);
+        }
+
+        // Cleanup
+        for (auto& p : paths)
+            std::filesystem::remove(p);
     }
-
-    // Cleanup
-    for (auto& p : paths)
-        std::filesystem::remove(p);
 
     ResourceManager::ShutDown();
 }
@@ -386,32 +416,34 @@ TEST_CASE("ResourceManager MT - Concurrent DataConst reads do not block each oth
     ResourceManager::Init();
     ResourceManager& instance = ResourceManager::GetInstance();
 
-    auto eHandle = instance.Load("assets/tests/valid.txt");
-    REQUIRE(eHandle.IsValid());
-    ResourceManager::ManagedFileHandle handle = eHandle.Unwrap();
+    {
+        auto eHandle = instance.Load("assets/tests/valid.txt");
+        REQUIRE(eHandle.IsValid());
+        ResourceManager::ManagedFileHandle handle = eHandle.Unwrap();
 
-    constexpr int THREAD_COUNT = 8;
-    std::atomic<int> successCount = 0;
-    std::vector<std::thread> threads;
-    std::barrier startBarrier(THREAD_COUNT);
+        constexpr int THREAD_COUNT = 8;
+        std::atomic<int> successCount = 0;
+        std::vector<std::thread> threads;
+        std::barrier startBarrier(THREAD_COUNT);
 
-    for (int i = 0; i < THREAD_COUNT; ++i) {
-        threads.emplace_back([&]() {
-            // startBarrier.arrive_and_wait();
-            auto guard = instance.DataConst(handle);
-            if (guard.IsValid()) {
-                // All threads should be able to read simultaneously
-                const char* data = guard.Unwrap().Data();
-                if (data[0] == 'T')
-                    successCount.fetch_add(1, std::memory_order_relaxed);
-            }
-        });
+        for (int i = 0; i < THREAD_COUNT; ++i) {
+            threads.emplace_back([&]() {
+                // startBarrier.arrive_and_wait();
+                auto guard = instance.DataConst(handle);
+                if (guard.IsValid()) {
+                    // All threads should be able to read simultaneously
+                    const char* data = guard.Unwrap().Data();
+                    if (data[0] == 'T')
+                        successCount.fetch_add(1, std::memory_order_relaxed);
+                }
+            });
+        }
+
+        for (auto& t : threads)
+            t.join();
+
+        CHECK_EQ(successCount.load(), THREAD_COUNT);
     }
-
-    for (auto& t : threads)
-        t.join();
-
-    CHECK_EQ(successCount.load(), THREAD_COUNT);
 
     ResourceManager::ShutDown();
 }
@@ -420,30 +452,32 @@ TEST_CASE("ResourceManager MT - Concurrent Size reads are consistent") {
     ResourceManager::Init();
     ResourceManager& instance = ResourceManager::GetInstance();
 
-    auto eHandle = instance.Load("assets/tests/valid.txt");
-    REQUIRE(eHandle.IsValid());
-    ResourceManager::ManagedFileHandle handle = eHandle.Unwrap();
+    {
+        auto eHandle = instance.Load("assets/tests/valid.txt");
+        REQUIRE(eHandle.IsValid());
+        ResourceManager::ManagedFileHandle handle = eHandle.Unwrap();
 
-    constexpr int THREAD_COUNT = 8;
-    std::vector<u64> sizes(THREAD_COUNT, 0);
-    std::vector<std::thread> threads;
-    std::barrier startBarrier(THREAD_COUNT);
+        constexpr int THREAD_COUNT = 8;
+        std::vector<u64> sizes(THREAD_COUNT, 0);
+        std::vector<std::thread> threads;
+        std::barrier startBarrier(THREAD_COUNT);
 
-    for (int i = 0; i < THREAD_COUNT; ++i) {
-        threads.emplace_back([&, i]() {
-            startBarrier.arrive_and_wait();
-            auto size = instance.Size(handle);
-            if (size.IsValid())
-                sizes[i] = size.Unwrap();
-        });
+        for (int i = 0; i < THREAD_COUNT; ++i) {
+            threads.emplace_back([&, i]() {
+                startBarrier.arrive_and_wait();
+                auto size = instance.Size(handle);
+                if (size.IsValid())
+                    sizes[i] = size.Unwrap();
+            });
+        }
+
+        for (auto& t : threads)
+            t.join();
+
+        // All threads should see the same size
+        for (int i = 0; i < THREAD_COUNT; ++i)
+            CHECK_EQ(sizes[i], (u64) 21);
     }
-
-    for (auto& t : threads)
-        t.join();
-
-    // All threads should see the same size
-    for (int i = 0; i < THREAD_COUNT; ++i)
-        CHECK_EQ(sizes[i], (u64) 21);
 
     ResourceManager::ShutDown();
 }
@@ -481,31 +515,33 @@ TEST_CASE("ResourceManager MT - Concurrent ref count increments and decrements a
     ResourceManager::Init();
     ResourceManager& instance = ResourceManager::GetInstance();
 
-    auto eHandle = instance.Load("assets/tests/valid.txt");
-    REQUIRE(eHandle.IsValid());
-    FileHandle rawHandle = eHandle.Unwrap().Get();
+    {
+        auto eHandle = instance.Load("assets/tests/valid.txt");
+        REQUIRE(eHandle.IsValid());
+        FileHandle rawHandle = eHandle.Unwrap().Get();
 
-    constexpr int THREAD_COUNT = 8;
-    std::vector<std::thread> threads;
-    std::barrier startBarrier(THREAD_COUNT);
+        constexpr int THREAD_COUNT = 8;
+        std::vector<std::thread> threads;
+        std::barrier startBarrier(THREAD_COUNT);
 
-    for (int i = 0; i < THREAD_COUNT; ++i) {
-        threads.emplace_back([&]() {
-            startBarrier.arrive_and_wait();
-            // Each thread loads (increments ref) then lets the handle drop (decrements ref)
-            auto localHandle = instance.Load("assets/tests/valid.txt");
-        });
+        for (int i = 0; i < THREAD_COUNT; ++i) {
+            threads.emplace_back([&]() {
+                startBarrier.arrive_and_wait();
+                // Each thread loads (increments ref) then lets the handle drop (decrements ref)
+                auto localHandle = instance.Load("assets/tests/valid.txt");
+            });
+        }
+
+        for (auto& t : threads)
+            t.join();
+
+        // Original handle should still be valid — eHandle is still alive
+        CHECK(instance.IsHandleValid(rawHandle));
+
+        // Drop the original — now file should close
+        eHandle.Unwrap() = ResourceManager::ManagedFileHandle();
+        CHECK_FALSE(instance.IsHandleValid(rawHandle));
     }
-
-    for (auto& t : threads)
-        t.join();
-
-    // Original handle should still be valid — eHandle is still alive
-    CHECK(instance.IsHandleValid(rawHandle));
-
-    // Drop the original — now file should close
-    eHandle.Unwrap() = ResourceManager::ManagedFileHandle();
-    CHECK_FALSE(instance.IsHandleValid(rawHandle));
 
     ResourceManager::ShutDown();
 }
@@ -514,38 +550,40 @@ TEST_CASE("ResourceManager MT - Write guard blocks other writes") {
     ResourceManager::Init();
     ResourceManager& instance = ResourceManager::GetInstance();
 
-    instance.Create("assets/tests/mt_write.bin", 64);
-    auto eHandle = instance.Load("assets/tests/mt_write.bin", false);
-    REQUIRE(eHandle.IsValid());
-    ResourceManager::ManagedFileHandle handle = eHandle.Unwrap();
+    {
+        instance.Create("assets/tests/mt_write.bin", 64);
+        auto eHandle = instance.Load("assets/tests/mt_write.bin", false);
+        REQUIRE(eHandle.IsValid());
+        ResourceManager::ManagedFileHandle handle = eHandle.Unwrap();
 
-    std::atomic<int> concurrentWriters = 0;
-    std::atomic<bool> exclusivityViolated = false;
-    constexpr int THREAD_COUNT = 4;
-    std::vector<std::thread> threads;
-    std::barrier startBarrier(THREAD_COUNT);
+        std::atomic<int> concurrentWriters = 0;
+        std::atomic<bool> exclusivityViolated = false;
+        constexpr int THREAD_COUNT = 4;
+        std::vector<std::thread> threads;
+        std::barrier startBarrier(THREAD_COUNT);
 
-    for (int i = 0; i < THREAD_COUNT; ++i) {
-        threads.emplace_back([&]() {
-            // startBarrier.arrive_and_wait();
-            auto guard = instance.Data(handle);
-            if (guard.IsValid()) {
-                int prev = concurrentWriters.fetch_add(1, std::memory_order_acq_rel);
-                if (prev > 0)
-                    exclusivityViolated.store(true, std::memory_order_relaxed);
+        for (int i = 0; i < THREAD_COUNT; ++i) {
+            threads.emplace_back([&]() {
+                // startBarrier.arrive_and_wait();
+                auto guard = instance.Data(handle);
+                if (guard.IsValid()) {
+                    int prev = concurrentWriters.fetch_add(1, std::memory_order_acq_rel);
+                    if (prev > 0)
+                        exclusivityViolated.store(true, std::memory_order_relaxed);
 
-                // Simulate some work while holding the write guard
-                std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                    // Simulate some work while holding the write guard
+                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
-                concurrentWriters.fetch_sub(1, std::memory_order_release);
-            }
-        });
+                    concurrentWriters.fetch_sub(1, std::memory_order_release);
+                }
+            });
+        }
+
+        for (auto& t : threads)
+            t.join();
+
+        CHECK_FALSE(exclusivityViolated.load());
     }
-
-    for (auto& t : threads)
-        t.join();
-
-    CHECK_FALSE(exclusivityViolated.load());
 
     std::filesystem::remove("assets/tests/mt_write.bin");
     ResourceManager::ShutDown();
@@ -555,35 +593,398 @@ TEST_CASE("ResourceManager MT - Concurrent load and read do not race") {
     ResourceManager::Init();
     ResourceManager& instance = ResourceManager::GetInstance();
 
-    constexpr int THREAD_COUNT = 8;
-    std::atomic<int> successCount = 0;
-    std::vector<std::thread> threads;
-    std::barrier startBarrier(THREAD_COUNT);
+    {
+        constexpr int THREAD_COUNT = 8;
+        std::atomic<int> successCount = 0;
+        std::vector<std::thread> threads;
+        std::barrier startBarrier(THREAD_COUNT);
 
-    for (int i = 0; i < THREAD_COUNT; ++i) {
-        threads.emplace_back([&, i]() {
-            startBarrier.arrive_and_wait();
-            if (i % 2 == 0) {
-                // Even threads load
-                auto eHandle = instance.Load("assets/tests/valid.txt");
-                if (eHandle.IsValid())
-                    successCount.fetch_add(1, std::memory_order_relaxed);
-            } else {
-                // Odd threads read size
-                auto eHandle = instance.Load("assets/tests/valid.txt");
-                if (eHandle.IsValid()) {
-                    auto size = instance.Size(eHandle.Unwrap());
-                    if (size.IsValid() && size.Unwrap() == 21)
+        for (int i = 0; i < THREAD_COUNT; ++i) {
+            threads.emplace_back([&, i]() {
+                startBarrier.arrive_and_wait();
+                if (i % 2 == 0) {
+                    // Even threads load
+                    auto eHandle = instance.Load("assets/tests/valid.txt");
+                    if (eHandle.IsValid())
                         successCount.fetch_add(1, std::memory_order_relaxed);
+                } else {
+                    // Odd threads read size
+                    auto eHandle = instance.Load("assets/tests/valid.txt");
+                    if (eHandle.IsValid()) {
+                        auto size = instance.Size(eHandle.Unwrap());
+                        if (size.IsValid() && size.Unwrap() == 21)
+                            successCount.fetch_add(1, std::memory_order_relaxed);
+                    }
                 }
-            }
-        });
+            });
+        }
+
+        for (auto& t : threads)
+            t.join();
+
+        CHECK_EQ(successCount.load(), THREAD_COUNT);
     }
 
-    for (auto& t : threads)
-        t.join();
+    ResourceManager::ShutDown();
+}
 
-    CHECK_EQ(successCount.load(), THREAD_COUNT);
+TEST_CASE("ResourceManager Resize - Grow a read-only file") {
+    ResourceManager::Init();
+    ResourceManager& instance = ResourceManager::GetInstance();
+    TempFile tmp("resize_grow_ro.bin", 64);
+
+    {
+        auto eHandle = instance.Load(tmp.path);
+        REQUIRE(eHandle.IsValid());
+        ResourceManager::ManagedFileHandle handle = eHandle.Unwrap();
+
+        CHECK_EQ(instance.Size(handle).Unwrap(), (u64) 64);
+
+        bool result = instance.Resize(handle.Get(), 128);
+        CHECK(result);
+        CHECK_EQ(instance.Size(handle).Unwrap(), (u64) 128);
+        CHECK_EQ(std::filesystem::file_size(tmp.path), (u64) 128);
+    }
+
+    ResourceManager::ShutDown();
+}
+
+TEST_CASE("ResourceManager Resize - Grow a read-write file") {
+    ResourceManager::Init();
+    ResourceManager& instance = ResourceManager::GetInstance();
+    TempFile tmp("resize_grow_rw.bin", 64);
+
+    {
+        auto eHandle = instance.Load(tmp.path, false);
+        REQUIRE(eHandle.IsValid());
+        ResourceManager::ManagedFileHandle handle = eHandle.Unwrap();
+
+        CHECK_EQ(instance.Size(handle).Unwrap(), (u64) 64);
+
+        bool result = instance.Resize(handle.Get(), 256);
+        CHECK(result);
+        CHECK_EQ(instance.Size(handle).Unwrap(), (u64) 256);
+        CHECK_EQ(std::filesystem::file_size(tmp.path), (u64) 256);
+    }
+
+    ResourceManager::ShutDown();
+}
+
+TEST_CASE("ResourceManager Resize - Shrink a file") {
+    ResourceManager::Init();
+    ResourceManager& instance = ResourceManager::GetInstance();
+    TempFile tmp("resize_shrink.bin", 256);
+
+    {
+        auto eHandle = instance.Load(tmp.path, false);
+        REQUIRE(eHandle.IsValid());
+        ResourceManager::ManagedFileHandle handle = eHandle.Unwrap();
+
+        CHECK_EQ(instance.Size(handle).Unwrap(), (u64) 256);
+
+        bool result = instance.Resize(handle.Get(), 64);
+        CHECK(result);
+        CHECK_EQ(instance.Size(handle).Unwrap(), (u64) 64);
+        CHECK_EQ(std::filesystem::file_size(tmp.path), (u64) 64);
+    }
+
+    ResourceManager::ShutDown();
+}
+
+TEST_CASE("ResourceManager Resize - Resize to same size is a no-op") {
+    ResourceManager::Init();
+    ResourceManager& instance = ResourceManager::GetInstance();
+    TempFile tmp("resize_same.bin", 128);
+
+    {
+        auto eHandle = instance.Load(tmp.path);
+        REQUIRE(eHandle.IsValid());
+        ResourceManager::ManagedFileHandle handle = eHandle.Unwrap();
+
+        bool result = instance.Resize(handle.Get(), 128);
+        CHECK(result);
+        CHECK_EQ(instance.Size(handle).Unwrap(), (u64) 128);
+    }
+
+    ResourceManager::ShutDown();
+}
+
+TEST_CASE("ResourceManager Resize - Invalid handle fails gracefully") {
+    ResourceManager::Init();
+    ResourceManager& instance = ResourceManager::GetInstance();
+
+    bool result = instance.Resize(INVALID_FILE_HANDLE, 128);
+    CHECK_FALSE(result);
+
+    ResourceManager::ShutDown();
+}
+
+TEST_CASE("ResourceManager Resize - Data is accessible after grow") {
+    ResourceManager::Init();
+    ResourceManager& instance = ResourceManager::GetInstance();
+    TempFile tmp("resize_data_grow.bin", 64);
+
+    {
+        auto eHandle = instance.Load(tmp.path, false);
+        REQUIRE(eHandle.IsValid());
+        ResourceManager::ManagedFileHandle handle = eHandle.Unwrap();
+
+        // Write some data before resize
+        {
+            auto guard = instance.Data(handle);
+            REQUIRE(guard.IsValid());
+            guard.Unwrap().Data()[0] = 'A';
+            guard.Unwrap().Data()[1] = 'B';
+        }
+
+        instance.Sync(handle);
+        instance.Resize(handle.Get(), 128);
+
+        // Data written before resize should still be there
+        {
+            auto guard = instance.DataConst(handle);
+            REQUIRE(guard.IsValid());
+            CHECK_EQ(guard.Unwrap().Data()[0], 'A');
+            CHECK_EQ(guard.Unwrap().Data()[1], 'B');
+        }
+
+        // New region should be accessible
+        CHECK_EQ(instance.Size(handle).Unwrap(), (u64) 128);
+    }
+
+    ResourceManager::ShutDown();
+}
+
+TEST_CASE("ResourceManager Resize - Data is accessible after shrink") {
+    ResourceManager::Init();
+    ResourceManager& instance = ResourceManager::GetInstance();
+    TempFile tmp("resize_data_shrink.bin", 128);
+
+    {
+        auto eHandle = instance.Load(tmp.path, false);
+        REQUIRE(eHandle.IsValid());
+        ResourceManager::ManagedFileHandle handle = eHandle.Unwrap();
+
+        // Write data in the region that will survive the shrink
+        {
+            auto guard = instance.Data(handle);
+            REQUIRE(guard.IsValid());
+            guard.Unwrap().Data()[0] = 'X';
+            guard.Unwrap().Data()[1] = 'Y';
+        }
+
+        instance.Sync(handle);
+        instance.Resize(handle.Get(), 64);
+
+        {
+            auto guard = instance.DataConst(handle);
+            REQUIRE(guard.IsValid());
+            CHECK_EQ(guard.Unwrap().Data()[0], 'X');
+            CHECK_EQ(guard.Unwrap().Data()[1], 'Y');
+        }
+    }
+
+    ResourceManager::ShutDown();
+}
+
+TEST_CASE("ResourceManager Resize - Multiple consecutive resizes") {
+    ResourceManager::Init();
+    ResourceManager& instance = ResourceManager::GetInstance();
+    TempFile tmp("resize_consecutive.bin", 64);
+
+    {
+        auto eHandle = instance.Load(tmp.path, false);
+        REQUIRE(eHandle.IsValid());
+        ResourceManager::ManagedFileHandle handle = eHandle.Unwrap();
+
+        REQUIRE(instance.Resize(handle.Get(), 128));
+        CHECK_EQ(instance.Size(handle).Unwrap(), (u64) 128);
+
+        REQUIRE(instance.Resize(handle.Get(), 512));
+        CHECK_EQ(instance.Size(handle).Unwrap(), (u64) 512);
+
+        REQUIRE(instance.Resize(handle.Get(), 256));
+        CHECK_EQ(instance.Size(handle).Unwrap(), (u64) 256);
+
+        REQUIRE(instance.Resize(handle.Get(), 64));
+        CHECK_EQ(instance.Size(handle).Unwrap(), (u64) 64);
+
+        CHECK_EQ(std::filesystem::file_size(tmp.path), (u64) 64);
+    }
+
+    ResourceManager::ShutDown();
+}
+
+TEST_CASE("ResourceManager Resize MT - Resize blocks until active ReadGuard is released") {
+    ResourceManager::Init();
+    ResourceManager& instance = ResourceManager::GetInstance();
+    TempFile tmp("resize_mt_block_read.bin", 64);
+
+    {
+        auto eHandle = instance.Load(tmp.path);
+        REQUIRE(eHandle.IsValid());
+        ResourceManager::ManagedFileHandle handle = eHandle.Unwrap();
+
+        std::atomic<bool> guardReleased = false;
+        std::atomic<bool> resizeStarted = false;
+        std::atomic<bool> resizeDone = false;
+
+        // Thread A: holds a ReadGuard, then releases it
+        std::thread reader([&]() {
+            auto guard = instance.DataConst(handle);
+            REQUIRE(guard.IsValid());
+            auto g = std::move(guard.Unwrap());
+
+            // Signal that resize can start
+            resizeStarted.store(true);
+
+            // Hold the guard for a bit
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+            // Release guard — Resize should now proceed
+            guardReleased.store(true);
+            // g destroyed here, releases resource.m_Mutex
+        });
+
+        // Thread B: waits for reader to start, then resizes
+        std::thread resizer([&]() {
+            // Wait until reader has the guard
+            while (!resizeStarted.load())
+                std::this_thread::yield();
+
+            instance.Resize(handle.Get(), 128);
+            resizeDone.store(true);
+        });
+
+        reader.join();
+        resizer.join();
+
+        // Resize must have happened after the guard was released
+        CHECK(guardReleased.load());
+        CHECK(resizeDone.load());
+        CHECK_EQ(instance.Size(handle).Unwrap(), (u64) 128);
+    }
+
+    ResourceManager::ShutDown();
+}
+
+TEST_CASE("ResourceManager Resize MT - Resize blocks until active WriteGuard is released") {
+    ResourceManager::Init();
+    ResourceManager& instance = ResourceManager::GetInstance();
+    TempFile tmp("resize_mt_block_write.bin", 64);
+
+    {
+        auto eHandle = instance.Load(tmp.path, false);
+        REQUIRE(eHandle.IsValid());
+        ResourceManager::ManagedFileHandle handle = eHandle.Unwrap();
+
+        std::atomic<bool> guardReleased = false;
+        std::atomic<bool> resizeStarted = false;
+        std::atomic<bool> resizeDone = false;
+
+        std::thread writer([&]() {
+            auto guard = instance.Data(handle);
+            REQUIRE(guard.IsValid());
+
+            resizeStarted.store(true);
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+            auto g = std::move(guard.Unwrap());
+            guardReleased.store(true);
+            // g destroyed here
+        });
+
+        std::thread resizer([&]() {
+            while (!resizeStarted.load())
+                std::this_thread::yield();
+
+            instance.Resize(handle.Get(), 128);
+            resizeDone.store(true);
+        });
+
+        writer.join();
+        resizer.join();
+
+        CHECK(guardReleased.load());
+        CHECK(resizeDone.load());
+        CHECK_EQ(instance.Size(handle).Unwrap(), (u64) 128);
+    }
+
+    ResourceManager::ShutDown();
+}
+
+TEST_CASE("ResourceManager Resize MT - Reads after resize see new size") {
+    ResourceManager::Init();
+    ResourceManager& instance = ResourceManager::GetInstance();
+    TempFile tmp("resize_mt_new_size.bin", 64);
+
+    {
+        auto eHandle = instance.Load(tmp.path);
+        REQUIRE(eHandle.IsValid());
+        ResourceManager::ManagedFileHandle handle = eHandle.Unwrap();
+        FileHandle rawHandle = handle.Get();
+
+        constexpr int THREAD_COUNT = 4;
+        std::atomic<bool> resizeDone = false;
+        std::vector<std::thread> threads;
+
+        // Reader threads — all start after resize
+        for (int i = 0; i < THREAD_COUNT; ++i) {
+            threads.emplace_back([&, i]() {
+                // Wait for resize to complete
+                while (!resizeDone.load())
+                    std::this_thread::yield();
+
+                auto size = instance.Size(rawHandle);
+                REQUIRE(size.IsValid());
+                CHECK_EQ(size.Unwrap(), (u64) 256);
+            });
+        }
+
+        // Main thread resizes first
+        instance.Resize(rawHandle, 256);
+        resizeDone.store(true);
+
+        for (auto& t : threads)
+            t.join();
+    }
+
+    ResourceManager::ShutDown();
+}
+
+TEST_CASE("ResourceManager Resize MT - Concurrent resizes on different files") {
+    ResourceManager::Init();
+    ResourceManager& instance = ResourceManager::GetInstance();
+
+    {
+        constexpr int FILE_COUNT = 4;
+        std::vector<TempFile> files;
+        std::deque<ResourceManager::ManagedFileHandle> handles;
+        std::vector<FileHandle> rawHandles;
+        rawHandles.reserve(FILE_COUNT + 1);
+        files.reserve(FILE_COUNT + 1);
+
+        for (int i = 0; i < FILE_COUNT; ++i) {
+            files.emplace_back("resize_mt_concurrent_" + std::to_string(i) + ".bin", 64);
+            auto eHandle = instance.Load(files.back().path);
+            REQUIRE(eHandle.IsValid());
+            handles.push_back(eHandle.Unwrap());
+            rawHandles.push_back(handles.back().Get());
+        }
+
+        std::vector<std::thread> threads;
+
+        for (int i = 0; i < FILE_COUNT; ++i) {
+            threads.emplace_back([&, i]() { CHECK(instance.Resize(rawHandles[i], (u64) (128 * (i + 1)))); });
+        }
+
+        for (auto& t : threads)
+            t.join();
+
+        for (int i = 0; i < FILE_COUNT; ++i) {
+            CHECK_EQ(instance.Size(rawHandles[i]).Unwrap(), (u64) (128 * (i + 1)));
+        }
+    }
 
     ResourceManager::ShutDown();
 }

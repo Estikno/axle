@@ -37,6 +37,34 @@ if(MSVC)
     add_compile_options(/utf-8)
 endif()
 
+# ── Sanitizers ─────────────────────────────────────────────────────────────────
+option(ENABLE_ASAN "Enable Address Sanitizer" OFF)
+
+if(ENABLE_ASAN)
+    if(MSVC)
+        add_compile_options(/fsanitize=address)
+        add_link_options(/fsanitize=address)
+    else()
+        add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
+        add_link_options(-fsanitize=address)
+    endif()
+endif()
+
+option(ENABLE_TSAN "Enable Thread Sanitizer" OFF)
+
+if(ENABLE_TSAN)
+    if(MSVC)
+        message(WARNING "Thread Sanitizer is not supported on MSVC")
+    else()
+        add_compile_options(-fsanitize=thread)
+        add_link_options(-fsanitize=thread)
+    endif()
+endif()
+
+if(ENABLE_ASAN AND ENABLE_TSAN)
+    message(FATAL_ERROR "ENABLE_ASAN and ENABLE_TSAN cannot be enabled at the same time")
+endif()
+
 # ── Compile commands for clangd ────────────────────────────────────────────────
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -80,4 +108,3 @@ add_subdirectory(AAP)
 # For multi-config generators we add the directory and let the Tests
 # CMakeLists.txt exclude itself from non-Debug configs.
 add_subdirectory(Axle/tests)
-

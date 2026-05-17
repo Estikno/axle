@@ -122,7 +122,7 @@ namespace Axle {
             }
 
             // Construct from raw handle (internal use by ResourceManager)
-            explicit ManagedFileHandle(FileHandle handle)
+            explicit ManagedFileHandle(FileHandle handle) noexcept
                 : m_Handle(handle) {}
 
             // Copy constructor
@@ -371,6 +371,49 @@ namespace Axle {
          * @returns An Expected that contains the path if valid
          * */
         Expected<std::filesystem::path> GetPath(FileHandle handle) const;
+
+        /**
+         * Resizes a file to the new given size. If the file size was previously larger than newSize, the remainder of
+         * the file is discarded. If the file was previously smaller than newSize, the file size is increased and the
+         * new area appears as if zero-filled.
+         *
+         * This method is thread safe. It will block until all active ReadGuards and
+         * WriteGuards on this resource are released before proceeding with the resize.
+         *
+         * WARNING: Any ReadGuard or WriteGuard obtained AFTER this method returns will
+         * point to the remapped memory at the new size. However, calling this method
+         * while intentionally holding a guard on the same resource from the same thread
+         * will deadlock, since the resize waits for all guards to be released.
+         *
+         * @param handle The ManagedFileHandle associated with the file
+         * @param newSize What new size do you want
+         *
+         * @retruns true if the operation was successful, false otherwise
+         * */
+        bool Resize(const ManagedFileHandle& handle, u64 newSize);
+
+        /**
+         * Resizes a file to the new given size. If the file size was previously larger than newSize, the remainder of
+         * the file is discarded. If the file was previously smaller than newSize, the file size is increased and the
+         * new area appears as if zero-filled.
+         *
+         * This method is thread safe. It will block until all active ReadGuards and
+         * WriteGuards on this resource are released before proceeding with the resize.
+         *
+         * It's highly encouraged to use the Resize method that accepts a
+         * ManagedFileHandle, as it's possible this will be deleted in the future.
+         *
+         * WARNING: Any ReadGuard or WriteGuard obtained AFTER this method returns will
+         * point to the remapped memory at the new size. However, calling this method
+         * while intentionally holding a guard on the same resource from the same thread
+         * will deadlock, since the resize waits for all guards to be released.
+         *
+         * @param handle The ManagedFileHandle associated with the file
+         * @param newSize What new size do you want
+         *
+         * @retruns true if the operation was successful, false otherwise
+         * */
+        bool Resize(FileHandle handle, u64 newSize);
 
 #ifdef AXLE_TESTING
         u16 LargestAvailableIndex() {

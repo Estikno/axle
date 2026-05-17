@@ -158,6 +158,8 @@ namespace Axle {
 #endif // AX_DEBUG
 
     private:
+        // TODO: Consider using a deque instead of a vector to not invalidate references on insertion
+
         /// A dense array of elements of type T
         std::vector<T> m_Dense{};
 

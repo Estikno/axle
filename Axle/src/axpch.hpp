@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <deque>
 #include <unordered_map>
 #include <set>
 #include <typeindex>
