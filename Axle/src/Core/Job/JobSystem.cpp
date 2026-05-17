@@ -87,7 +87,7 @@ namespace Axle {
     }
 
     void JobSystem::WorkerLoop(u32 index) {
-        while (m_Running.load(std::memory_order_seq_cst)) {
+        while (m_Running.load(std::memory_order_acquire)) {
             RunPendingJob();
 
             std::unique_lock lock(m_CVMutex);
@@ -147,14 +147,14 @@ namespace Axle {
 
         auto popped = PopJob();
         if (popped.IsValid()) {
-            m_AvailableJobs.fetch_sub(1, std::memory_order_relaxed);
+            m_AvailableJobs.fetch_sub(1, std::memory_order_acq_rel);
             popped.Unwrap()();
             return true;
         }
 
         auto stolen = StealJob();
         if (stolen.IsValid()) {
-            m_AvailableJobs.fetch_sub(1, std::memory_order_relaxed);
+            m_AvailableJobs.fetch_sub(1, std::memory_order_acq_rel);
             stolen.Unwrap()();
             return true;
         }

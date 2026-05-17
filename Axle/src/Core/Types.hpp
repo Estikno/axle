@@ -50,4 +50,5 @@ namespace Axle {
 
     // Resource Manager
     using FileHandle = u64;
+    constexpr FileHandle INVALID_FILE_HANDLE = std::numeric_limits<FileHandle>::max();
 } // namespace Axle

@@ -82,7 +82,7 @@ namespace Axle {
          * @returns A u32 with how many jobs there currently are
          * */
         u32 GetAvailableJobs() {
-            return m_AvailableJobs.load();
+            return m_AvailableJobs.load(std::memory_order_relaxed);
         }
 
 #ifdef AXLE_TESTING

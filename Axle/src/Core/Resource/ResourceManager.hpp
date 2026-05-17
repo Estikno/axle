@@ -107,6 +107,68 @@ namespace Axle {
             u64 m_Size;
             std::unique_lock<std::shared_mutex> m_Lock;
         };
+
+        /**
+         * A RAII wrapper around a FileHandle
+         * */
+        class ManagedFileHandle {
+        public:
+            // Default constructor (invalid handle)
+            ManagedFileHandle() = default;
+
+            // Release the reference
+            ~ManagedFileHandle() {
+                ReleaseRef();
+            }
+
+            // Construct from raw handle (internal use by ResourceManager)
+            explicit ManagedFileHandle(FileHandle handle)
+                : m_Handle(handle) {}
+
+            // Copy constructor
+            ManagedFileHandle(const ManagedFileHandle& other)
+                : m_Handle(other.m_Handle) {
+                AddRef();
+            }
+
+            ManagedFileHandle& operator=(const ManagedFileHandle& other) {
+                if (this != &other) {
+                    ReleaseRef(); // Release the current handle
+                    m_Handle = other.m_Handle;
+                    AddRef(); // Add a reference to the new handle
+                }
+                return *this;
+            }
+
+            // Move Semantics: Transfer ownership without touching ref counts
+            ManagedFileHandle(ManagedFileHandle&& other) noexcept
+                : m_Handle(other.m_Handle) {
+                other.m_Handle = INVALID_FILE_HANDLE;
+            }
+
+            ManagedFileHandle& operator=(ManagedFileHandle&& other) noexcept {
+                if (this != &other) {
+                    ReleaseRef();
+                    m_Handle = other.m_Handle;
+                    other.m_Handle = INVALID_FILE_HANDLE;
+                }
+                return *this;
+            }
+
+            // Accessors
+            FileHandle Get() const {
+                return m_Handle;
+            }
+            bool IsValid() const {
+                return m_Handle != INVALID_FILE_HANDLE;
+            }
+
+        private:
+            void AddRef();
+            void ReleaseRef();
+
+            FileHandle m_Handle = INVALID_FILE_HANDLE;
+        };
         // --------------
 
         ResourceManager(const ResourceManager&) = delete;
@@ -145,24 +207,24 @@ namespace Axle {
          *
          * @returns A handle to the loaded file.
          * */
-        Expected<FileHandle> Load(const std::filesystem::path& path, bool readOnly = true);
+        Expected<ManagedFileHandle> Load(const std::filesystem::path& path, bool readOnly = true);
 
-        // TODO: Add reference counting. This way a resource is close if all users have released their handle
         /**
-         * Closes the file associated with the given handle.
-         * The given handle becomes invalid once the file is closed.
+         * Syncs current changes made to the map to disk. Flushing changes of a read-only file does nothing.
          *
-         * @param handle The handle associated with the file
+         * This method is thread safe.
+         *
+         * @param handle The ManagedFileHandle associated with the file
          *
          * @returns true if the operation was successful, false otherwise
          * */
-        bool Close(FileHandle handle);
+        bool Sync(const ManagedFileHandle& handle);
 
         /**
-         * Syncs current changes made to the map to disk.
-         * Flushing changes of a read-only file does nothing.
+         * Syncs current changes made to the map to disk. Flushing changes of a read-only file does nothing.
          *
-         * This method is thread safe.
+         * This method is thread safe. It's highly encouraged to use the Sync method that accepts a ManagedFileHandle,
+         * as it's possible this will be deleted in the future.
          *
          * @param handle The handle associated with the file
          *
@@ -173,6 +235,18 @@ namespace Axle {
         /**
          * Gets a Guard that protects thread safety to the retrieved data.
          * This method is thread safe.
+         *
+         * @param handle The ManagedFileHandle associated with the file
+         *
+         * @returns A ReadGuard used for reading/writting safely the contents
+         * */
+        Expected<WriteGuard> Data(const ManagedFileHandle& handle);
+
+        /**
+         * Gets a Guard that protects thread safety to the retrieved data.
+         *
+         * This method is thread safe. It's highly encouraged to use the Data method that accepts a ManagedFileHandle,
+         * as it's possible this will be deleted in the future.
          *
          * @param handle The handle associated with the file
          *
@@ -185,6 +259,18 @@ namespace Axle {
          * behavior.
          * This method is thread safe.
          *
+         * @param handle The ManagedFileHandle associated with the file
+         *
+         * @returns A ReadGuard used for reading safely the contents
+         * */
+        Expected<ReadGuard> DataConst(const ManagedFileHandle& handle) const;
+
+        /**
+         * Gets a Guard that protects thread safety to the retrieved data.
+         * behavior.
+         * This method is thread safe. It's highly encouraged to use the DataConst method that accepts a
+         * ManagedFileHandle, as it's possible this will be deleted in the future.
+         *
          * @param handle The handle associated with the file
          *
          * @returns A ReadGuard used for reading safely the contents
@@ -194,6 +280,17 @@ namespace Axle {
         /**
          * Gets the size of the given resource.
          * This method is thread safe.
+         *
+         * @param handle The ManagedFileHandle associated with the file
+         *
+         * @returns An Expected type with a valid size if the handle was valid
+         * */
+        Expected<u64> Size(const ManagedFileHandle& handle) const;
+
+        /**
+         * Gets the size of the given resource.
+         * This method is thread safe. It's highly encouraged to use the Size method that accepts a
+         * ManagedFileHandle, as it's possible this will be deleted in the future.
          *
          * @param handle The handle associated with the file
          *
@@ -229,6 +326,17 @@ namespace Axle {
          * Checks if the file is read-only or not.
          * This method is thread safe.
          *
+         * @param handle The ManagedFileHandle associated with the file
+         *
+         * @returns An Expected that contains the result if valid
+         * */
+        Expected<bool> IsReadOnly(const ManagedFileHandle& handle) const;
+
+        /**
+         * Checks if the file is read-only or not.
+         * This method is thread safe. It's highly encouraged to use the IsReadOnly method that accepts a
+         * ManagedFileHandle, as it's possible this will be deleted in the future.
+         *
          * @param handle The handle associated with the file
          *
          * @returns An Expected that contains the result if valid
@@ -238,6 +346,17 @@ namespace Axle {
         /**
          * Returns the path of a file.
          * This method is thread safe.
+         *
+         * @param handle The ManagedFileHandle associated with the file
+         *
+         * @returns An Expected that contains the path if valid
+         * */
+        Expected<std::filesystem::path> GetPath(const ManagedFileHandle& handle) const;
+
+        /**
+         * Returns the path of a file.
+         * This method is thread safe. It's highly encouraged to use the GetPath method that accepts a
+         * ManagedFileHandle, as it's possible this will be deleted in the future.
          *
          * @param handle The handle associated with the file
          *
@@ -261,13 +380,48 @@ namespace Axle {
 #endif // AXLE_TESTING
 
     private:
+        // Let ManagedFileHandle access the AddRef and ReleaseRef methods
+        friend class ManagedFileHandle;
+
         /// Small struct designed to keep resources organized
         struct Resource {
             std::variant<mio::mmap_source, mio::mmap_sink> mmap;
             std::filesystem::path path;
             u32 magic;
             std::unique_ptr<std::shared_mutex> m_Mutex;
+            std::atomic<u32> m_RefCount{1};
         };
+
+        /**
+         * Incremets the reference count associated with the given handle.
+         * This method is intended to be used only by ManagedFileHandle.
+         *
+         * @param handle The handle associated with the file
+         *
+         * @returns true if the operation was successful, flase otherwise
+         * */
+        bool AddRef(FileHandle handle);
+
+        /**
+         * Decrements the reference count associated with the given handle. If the count reaches 0 the file is closed.
+         * This method is intended to be used only by ManagedFileHandle.
+         *
+         * @param handle The handle associated with the file
+         *
+         * @returns true if the operation was successful, flase otherwise
+         * */
+        bool ReleaseRef(FileHandle handle);
+
+        /**
+         * Closes the file associated with the given handle.
+         * The given handle becomes invalid once the file is closed.
+         * This method is not thread safe.
+         *
+         * @param handle The handle associated with the file
+         *
+         * @returns true if the operation was successful, false otherwise
+         * */
+        bool CloseUnsafe(FileHandle handle);
 
         /**
          * Checks if a given file has already been opened and returns the handle if it has been.
@@ -301,7 +455,7 @@ namespace Axle {
          * @returns true if the handle is valid, false otherwise
          * */
         bool IsHandleValidUnsafe(FileHandle handle) const {
-            return m_Resources.Has(GetIndexFromHandle(handle)) &&
+            return handle != INVALID_FILE_HANDLE && m_Resources.Has(GetIndexFromHandle(handle)) &&
                    m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get().magic == GetMagicFromHandle(handle);
         }
 
