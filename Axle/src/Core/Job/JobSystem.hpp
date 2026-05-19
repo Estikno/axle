@@ -6,7 +6,7 @@
 #include "Core/Logger/Log.hpp"
 #include "Core/Types.hpp"
 
-// JobSystem inspired on Rismoch blog: https://www.rismosch.com/article?id=building-a-job-system
+// JobSystem inspired by Rismoch: https://www.rismosch.com/article?id=building-a-job-system
 
 namespace Axle {
     inline static constexpr u32 BufferCapacity = 64;
@@ -28,8 +28,17 @@ namespace Axle {
 
     class JobSystem {
     public:
+        JobSystem(const JobSystem& other) = delete;
+        JobSystem& operator=(const JobSystem&) = delete;
+
+        // Constructors do nothing because the initialization/destruction is manual with Init/ShutDown
+        JobSystem() {}
+        ~JobSystem() {}
+
         /**
          * Simple method for initialising the system. Shall not be called more than once.
+         *
+         * This function is NOT thread safe so it must be called from only one thread and only once to be safe.
          *
          * @param threadCount How many working threads you need. The render thread is excluded from this count. However,
          * the main one is included. So if you want 2 additional dedicated working threads you would pass a 3.
@@ -40,13 +49,14 @@ namespace Axle {
 
         /**
          * Same as init but for destroying and cleaning everything.
+         * This function is NOT thread safe so it must be called from only one thread and only once to be safe.
          * */
         static void Shutdown();
 
         /**
          * Simply gets the singleton instance. Call after initialization.
          * */
-        inline static JobSystem& GetInstance() {
+        inline static JobSystem& GetInstance() noexcept {
             return *s_JobSystem;
         }
 
@@ -81,7 +91,7 @@ namespace Axle {
          *
          * @returns A u32 with how many jobs there currently are
          * */
-        u32 GetAvailableJobs() {
+        u32 GetAvailableJobs() const noexcept {
             return m_AvailableJobs.load(std::memory_order_relaxed);
         }
 
@@ -90,11 +100,11 @@ namespace Axle {
             return m_Buffers;
         }
 
-        std::vector<std::thread>& GetThreads() {
+        const std::vector<std::thread>& GetThreads() const noexcept {
             return m_Threads;
         }
 
-        i32 GetNumThreads() {
+        u32 GetNumThreads() const noexcept {
             return m_NumThreads;
         }
 #endif // AXLE_TESTING

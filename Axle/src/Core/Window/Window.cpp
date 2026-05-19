@@ -92,12 +92,7 @@ namespace Axle {
     }
 
     void Window::SetVSync(bool enabled) {
-        if (enabled) {
-            glfwSwapInterval(1);
-        } else {
-            glfwSwapInterval(0);
-        }
-
+        glfwSwapInterval(enabled ? 1 : 0);
         m_Data.VSync = enabled;
     }
 } // namespace Axle

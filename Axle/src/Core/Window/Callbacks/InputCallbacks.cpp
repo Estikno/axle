@@ -17,7 +17,7 @@ namespace Axle {
         // Temporal delete window when escape is pressed
         if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
             Event event(EventType::WindowClose, EventCategory::Window);
-            AX_ADD_EVENT(event);
+            AX_DISPATCH_EVENT(std::move(event));
         }
 
         // Convert the GLFW key to our own key enum

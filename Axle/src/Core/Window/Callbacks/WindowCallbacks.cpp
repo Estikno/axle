@@ -14,7 +14,7 @@
 namespace Axle {
     void WindowCloseCallback(GLFWwindow* window) {
         Event event(EventType::WindowClose, EventCategory::Window);
-        AX_ADD_EVENT(event);
+        AX_DISPATCH_EVENT(std::move(event));
     }
 
     void WindowSizeCallback(GLFWwindow* window, int width, int height) {
@@ -34,7 +34,7 @@ namespace Axle {
         // Send the event at the end to ensure the size is correctly updated
         Event event(EventType::WindowResize, EventCategory::Window);
         event.GetContext().raw_data = std::array<u32, 4>{static_cast<u32>(width), static_cast<u32>(height)};
-        AX_ADD_EVENT(event);
+        AX_DISPATCH_EVENT(std::move(event));
     }
 
     void FrameBufferSizeCallback(GLFWwindow* window, int width, int height) {

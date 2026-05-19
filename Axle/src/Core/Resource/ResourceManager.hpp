@@ -187,7 +187,7 @@ namespace Axle {
 
         /**
          * Initializes the event handler and its singleton
-         * This method is NOT thread safe.
+         * This function is NOT thread safe so it must be called from only one thread and only once to be safe.
          *
          * Important: This has to be called before using the macros and any other functionality
          *
@@ -197,7 +197,7 @@ namespace Axle {
 
         /**
          * Shutdowns the manager, important to call when no other component depends on it anymore
-         * This method is NOT thread safe.
+         * This function is NOT thread safe so it must be called from only one thread and only once to be safe.
          */
         static void ShutDown();
 
@@ -557,7 +557,7 @@ namespace Axle {
          *
          * @return The index value of the given handle
          * */
-        inline u32 GetIndexFromHandle(FileHandle h) const {
+        inline u32 GetIndexFromHandle(FileHandle h) const noexcept {
             constexpr u64 indexMask = (u64(1) << 32) - 1;
             return h & indexMask;
         }
@@ -570,7 +570,7 @@ namespace Axle {
          *
          * @return The magic value of the given handle
          * */
-        inline u32 GetMagicFromHandle(FileHandle h) const {
+        inline u32 GetMagicFromHandle(FileHandle h) const noexcept {
             constexpr u64 magicMask = ~((u64(1) << 32) - 1);
             return (h & magicMask) >> 32;
         }
@@ -582,7 +582,7 @@ namespace Axle {
          * @param h A reference to the handle
          * @param magic The magic value to insert
          * */
-        inline void SetMagicToHandle(FileHandle& h, u32 magic) const {
+        inline void SetMagicToHandle(FileHandle& h, u32 magic) const noexcept {
             constexpr u64 indexMask = (u64(1) << 32) - 1;
             h = (h & indexMask) | (u64(magic) << 32);
         }
@@ -594,7 +594,7 @@ namespace Axle {
          * @param h A reference to the handle
          * @param index The index value to insert
          * */
-        inline void SetIndexToHandle(FileHandle& h, u32 index) const {
+        inline void SetIndexToHandle(FileHandle& h, u32 index) const noexcept {
             constexpr u64 magicMask = ~((u64(1) << 32) - 1);
             h = (h & magicMask) | u64(index);
         }
@@ -607,7 +607,7 @@ namespace Axle {
          *
          * @returns The constructed handle
          * */
-        inline FileHandle MakeHandle(u32 index, u32 magic) const {
+        inline FileHandle MakeHandle(u32 index, u32 magic) const noexcept {
             FileHandle h = u64(index);
             SetMagicToHandle(h, magic);
             return h;

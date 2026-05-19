@@ -7,6 +7,7 @@
 
 #include <fstream>
 #include <mio/mmap.hpp>
+#include "Core/Error/Panic.hpp"
 
 namespace Axle {
     std::unique_ptr<ResourceManager> ResourceManager::s_ResourceManager;
@@ -445,6 +446,7 @@ namespace Axle {
                 // FIX: Add a boolean that tells if a resource is poisoned or not if we can't rollback
                 // We try to close the file here to prevent segfaults
                 lockResources.unlock();
+                AX_PANIC("Failed to re-map file after failing to resize.");
             }
 
             return false;
@@ -464,6 +466,7 @@ namespace Axle {
             // FIX: Add a boolean that tells if a resource is poisoned or not if we can't rollback
             // The file was resized but remapping failed. It must be destroyed.
             lockResources.unlock();
+            AX_PANIC("Failed to re-map file after resize.");
             return false;
         }
 

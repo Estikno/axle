@@ -5,8 +5,6 @@
 #include "Core/Core.hpp"
 #include "Core/Types.hpp"
 
-#include "Core/Events/Event.hpp"
-
 #include <GLFW/glfw3.h>
 
 namespace Axle {
@@ -30,8 +28,6 @@ namespace Axle {
 
     class AXLE_API Window {
     public:
-        using EventCallbackFn = std::function<void(Event*)>;
-
         Window(const WindowProps& props);
         ~Window();
 
@@ -40,13 +36,13 @@ namespace Axle {
          * */
         void OnUpdate();
 
-        inline u32 GetWidth() const {
+        inline u32 GetWidth() const noexcept {
             return m_Data.Width;
         }
-        inline u32 GetHeight() const {
+        inline u32 GetHeight() const noexcept {
             return m_Data.Height;
         }
-        inline bool IsVSync() const {
+        inline bool IsVSync() const noexcept {
             return m_Data.VSync;
         }
 

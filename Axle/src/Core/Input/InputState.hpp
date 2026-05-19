@@ -157,12 +157,12 @@ namespace Axle {
     };
 
     struct KeyBoardState {
-        bool keys[256] = {false};
+        std::bitset<static_cast<u32>(Keys::MaxKeys)> keys;
     };
 
     struct MouseState {
         glm::vec2 position;
-        bool buttons[static_cast<i32>(MouseButtons::MAX_BUTTONS)] = {false};
+        std::bitset<static_cast<u32>(MouseButtons::MAX_BUTTONS)> buttons;
     };
 
     struct InputState {

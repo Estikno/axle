@@ -26,7 +26,7 @@ namespace Axle {
 
         // Create one buffer per worker
         for (u32 i = 0; i < js.m_NumThreads; ++i)
-            js.m_Buffers.push_back(std::make_shared<JobBuffer<BufferCapacity>>());
+            js.m_Buffers.emplace_back(std::make_shared<JobBuffer<BufferCapacity>>());
 
         // Spawn worker threads (skip 0, that's the main thread)
         for (u32 i = 1; i < js.m_NumThreads; ++i) {
@@ -61,6 +61,7 @@ namespace Axle {
 
         delete t_WorkerThread; // clean up main thread's WorkerThread
         t_WorkerThread = nullptr;
+
         s_JobSystem.reset();
 
         AX_CORE_INFO("JobSystem deleted...");

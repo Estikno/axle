@@ -25,11 +25,18 @@ namespace Axle {
         AX_CORE_INFO("Event handler deleted...");
     }
 
-    void EventHandler::AddEvent(Event event) {
+    void EventHandler::DispatchEvent(const Event& event) {
         std::scoped_lock lock(m_EventMutex);
 
         AX_CORE_TRACE("Added a new event of type: {}", (i32) (event.GetEventType()));
-        m_EventQueue.push_back(event);
+        m_EventQueue.emplace_back(event);
+    }
+
+    void EventHandler::DispatchEvent(Event&& event) {
+        std::scoped_lock lock(m_EventMutex);
+
+        AX_CORE_TRACE("Added a new event of type: {}", (i32) (event.GetEventType()));
+        m_EventQueue.emplace_back(std::move(event));
     }
 
     size_t EventHandler::Subscribe(const HandlerType& handler, EventType type, EventCategory category) {

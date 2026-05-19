@@ -13,6 +13,7 @@ namespace Axle {
 
         /**
          * Initializes the logger and its singletons
+         * This function is NOT thread safe so it must be called from only one thread and only once to be safe.
          *
          * Important: This has to be called before using the macros
          *
@@ -22,6 +23,7 @@ namespace Axle {
 
         /**
          * Shutdowns the manager, important to call when no other component depends on it anymore
+         * This function is NOT thread safe so it must be called from only one thread and only once to be safe.
          */
         static void ShutDown();
 

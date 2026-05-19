@@ -21,6 +21,7 @@
 #include <limits>
 #include <ranges>
 #include <variant>
+#include <tuple>
 
 // Error handling
 #include <stdexcept>

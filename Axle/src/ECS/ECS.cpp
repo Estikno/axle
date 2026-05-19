@@ -10,29 +10,21 @@
 #include "Other/CustomTypes/SparseSet.hpp"
 
 namespace Axle {
-    std::unique_ptr<ECS> ECS::m_ECS;
+    std::unique_ptr<ECS> ECS::s_ECS;
     std::mutex ECS::s_StaticMutex;
 
-    ECS::ECS()
-        : m_EntityMasks(MAX_ENTITIES),
-          m_LivingEntities(MAX_ENTITIES, false) {
-        for (EntityID entity = 0; entity < MAX_ENTITIES; ++entity) {
-            m_AvailableEntities.push(entity);
-        }
-    }
-
     void ECS::Init() {
-        if (m_ECS != nullptr) {
+        if (s_ECS != nullptr) {
             AX_CORE_WARN("Init method of the ECS has been called a second time. IGNORING");
             return;
         }
 
-        m_ECS = std::make_unique<ECS>();
+        s_ECS = std::make_unique<ECS>();
         AX_CORE_INFO("ECS initialized...");
     }
 
     void ECS::ShutDown() {
-        m_ECS.reset();
+        s_ECS.reset();
         AX_CORE_INFO("ECS deleted...");
     }
 
@@ -43,10 +35,15 @@ namespace Axle {
                   MAX_ENTITIES);
 
         // Take the smallest available entity ID
-        EntityID id = m_AvailableEntities.top();
-        m_AvailableEntities.pop();
+        EntityID id;
+        if (m_AvailableEntities.empty())
+            id = m_LargestAvailableEntityID++;
+        else {
+            id = m_AvailableEntities.top();
+            m_AvailableEntities.pop();
+        }
 
-        m_LivingEntities.at(id) = true;
+        m_LivingEntities.set(id, true);
 
         m_InsertingIntoIndex = id;
         m_LivingEntityCount++;
@@ -62,14 +59,14 @@ namespace Axle {
 
     void ECS::DeleteEntityUnsafe(EntityID id) {
         AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
-        AX_ASSERT(m_LivingEntities.at(id), "Entity ID {0} is not alive.", id);
+        AX_ASSERT(m_LivingEntities[id], "Entity ID {0} is not alive.", id);
 
         if (id >= MAX_ENTITIES) {
             AX_CORE_WARN("Entity {0} hasn't been removed it's out of bounds.", id);
             return;
         }
 
-        if (!m_LivingEntities.at(id)) {
+        if (!m_LivingEntities[id]) {
             AX_CORE_WARN("Entity {0} hasn't been removed because the entity is not alive.", id);
             return;
         }
@@ -83,7 +80,7 @@ namespace Axle {
         // Invalidate the mask of the entity
         m_EntityMasks.at(id).reset();
 
-        m_LivingEntities.at(id) = false;
+        m_LivingEntities.set(id, false);
 
         // Put the destroyed ID back to the queue for future use
         m_AvailableEntities.push(id);

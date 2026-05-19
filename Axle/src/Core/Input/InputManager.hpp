@@ -1,8 +1,8 @@
 #pragma once
 
 #include "axpch.hpp"
-#include "../Types.hpp"
 
+#include "../Types.hpp"
 #include "Core/Core.hpp"
 #include "InputState.hpp"
 
@@ -23,8 +23,6 @@ namespace Axle {
          *
          * Important: This has to be called before using the macros and any other functionality
          * This function is NOT thread safe so it must be called from only one thread and only once to be safe.
-         *
-         * It is safe to call multiple times, it simply displays a warning after the first call.
          */
         static void Init();
 
@@ -41,7 +39,7 @@ namespace Axle {
          *
          * @returns Returns a reference to the Event Handler
          */
-        inline static InputManager& GetInstance() {
+        inline static InputManager& GetInstance() noexcept {
             return *m_InputManager;
         }
 
@@ -55,7 +53,7 @@ namespace Axle {
          *
          * @returns True if the key was pressed down this frame, false otherwise.
          */
-        bool GetKeyDown(Keys key);
+        bool GetKeyDown(Keys key) const;
 
         /**
          * Returns true if the key was released this frame.
@@ -67,7 +65,7 @@ namespace Axle {
          *
          * @returns True if the key was released this frame, false otherwise.
          */
-        bool GetKeyUp(Keys key);
+        bool GetKeyUp(Keys key) const;
 
         /**
          * Returns true if the key is currently being pressed.
@@ -78,7 +76,7 @@ namespace Axle {
          *
          * @returns True if the key is currently being pressed, false otherwise.
          */
-        bool GetKey(Keys key);
+        bool GetKey(Keys key) const;
 
         /**
          * Same as GetKeyDown, but for mouse buttons.
@@ -87,7 +85,7 @@ namespace Axle {
          *
          * @returns True if the mouse button was pressed down this frame, false otherwise.
          */
-        bool GetMouseButtonDown(MouseButtons button);
+        bool GetMouseButtonDown(MouseButtons button) const;
 
         /**
          * Same as GetKeyUp, but for mouse buttons.
@@ -96,7 +94,7 @@ namespace Axle {
          *
          * @returns True if the mouse button was released this frame, false otherwise.
          */
-        bool GetMouseButtonUp(MouseButtons button);
+        bool GetMouseButtonUp(MouseButtons button) const;
 
         /**
          * Same as GetKey, but for mouse buttons.
@@ -105,14 +103,14 @@ namespace Axle {
          *
          * @returns True if the mouse button is currently being pressed, false otherwise.
          */
-        bool GetMouseButton(MouseButtons button);
+        bool GetMouseButton(MouseButtons button) const;
 
         /**
          * Gets the current mouse position in screen coordinates.
          *
          * @returns The current mouse position in screen coordinates.
          */
-        glm::vec2 GetMousePosition();
+        glm::vec2 GetMousePosition() const;
 
         // Modify the keys state. This should only be called by the event system and should not be available to the end
         // user.
@@ -176,7 +174,7 @@ namespace Axle {
          *
          * @returns True if the key is currently being pressed, false otherwise.
          */
-        bool GetKeyUnsafe(Keys key);
+        bool GetKeyUnsafe(Keys key) const;
 
         /**
          * This is the unsafe version of the GetMouseButton method
@@ -185,12 +183,11 @@ namespace Axle {
          *
          * @returns True if the mouse button is currently being pressed, false otherwise.
          */
-        bool GetMouseButtonUnsafe(MouseButtons button);
+        bool GetMouseButtonUnsafe(MouseButtons button) const;
 
         static std::unique_ptr<InputManager> m_InputManager;
 
-        InputState m_InputState;
-        // TODO: See about making two mutexes, one for the keyboard and other for mouse state
-        std::mutex m_InputMutex;
+        InputState m_InputState{};
+        std::shared_mutex m_Mutex;
     };
 } // namespace Axle

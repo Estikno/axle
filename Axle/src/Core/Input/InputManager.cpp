@@ -1,13 +1,12 @@
 #include "axpch.hpp"
-#include "../Types.hpp"
 
+#include "../Types.hpp"
 #include "InputManager.hpp"
 #include "../Logger/Log.hpp"
 #include "../Events/EventHandler.hpp"
 #include "Core/Events/Event.hpp"
 #include "Core/Input/InputState.hpp"
 
-#include <array>
 #include <glm/vec2.hpp>
 
 namespace Axle {
@@ -30,14 +29,14 @@ namespace Axle {
     }
 
     void InputManager::Update() {
-        std::scoped_lock lock(m_InputMutex);
+        std::unique_lock lock(m_Mutex);
 
         // Send events if keys are pressed
         for (u16 i = 0; i < static_cast<u16>(Keys::MaxKeys); ++i) {
             if (GetKeyUnsafe(static_cast<Keys>(i))) {
                 Event event(EventType::KeyIsPressed, EventCategory::Input);
                 event.GetContext().raw_data = std::array<u16, 8>{i};
-                AX_ADD_EVENT(event);
+                AX_DISPATCH_EVENT(std::move(event));
             }
         }
 
@@ -46,7 +45,7 @@ namespace Axle {
             if (GetMouseButtonUnsafe(static_cast<MouseButtons>(i))) {
                 Event event(EventType::MouseButtonIsPressed, EventCategory::Input);
                 event.GetContext().raw_data = std::array<u16, 8>{i};
-                AX_ADD_EVENT(event);
+                AX_DISPATCH_EVENT(std::move(event));
             }
         }
 
@@ -55,7 +54,7 @@ namespace Axle {
     }
 
     void InputManager::SetKey(Keys key, bool pressed) {
-        std::scoped_lock lock(m_InputMutex);
+        std::unique_lock lock(m_Mutex);
 
         // Only handles if the state of the key has changed
         if (m_InputState.keyboard_current.keys[static_cast<i32>(key)] == pressed)
@@ -70,11 +69,12 @@ namespace Axle {
         // event->GetContext().u16_values[0] = static_cast<u16>(key);
         event.GetContext().raw_data = std::array<u16, 8>{static_cast<u16>(key)};
 
-        AX_ADD_EVENT(event);
+        AX_DISPATCH_EVENT(std::move(event));
     }
 
     void InputManager::SetMouseButton(MouseButtons button, bool pressed) {
-        std::scoped_lock lock(m_InputMutex);
+        std::unique_lock lock(m_Mutex);
+
         // Only handles if the state of the key has changed
         if (m_InputState.mouse_current.buttons[static_cast<i32>(button)] == pressed)
             return;
@@ -88,11 +88,11 @@ namespace Axle {
         // event->GetContext().u16_values[0] = static_cast<u16>(button);
         event.GetContext().raw_data = std::array<u16, 8>{static_cast<u16>(button)};
 
-        AX_ADD_EVENT(event);
+        AX_DISPATCH_EVENT(std::move(event));
     }
 
     void InputManager::SetMousePosition(const glm::vec2& position) {
-        std::scoped_lock lock(m_InputMutex);
+        std::unique_lock lock(m_Mutex);
 
         // Only handles if the state of the key has changed
         if (m_InputState.mouse_current.position == position)
@@ -108,7 +108,7 @@ namespace Axle {
         // event->GetContext().u16_values[1] = static_cast<u16>(position.y);
         event.GetContext().raw_data = std::array<u16, 8>{static_cast<u16>(position.x), static_cast<u16>(position.y)};
 
-        AX_ADD_EVENT(event);
+        AX_DISPATCH_EVENT(std::move(event));
     }
 
     void InputManager::SetMouseWheel(f32 delta) {
@@ -117,58 +117,58 @@ namespace Axle {
         // event->GetContext().f32_values[0] = delta;
         event.GetContext().raw_data = std::array<f32, 4>{static_cast<f32>(delta)};
 
-        AX_ADD_EVENT(event);
+        AX_DISPATCH_EVENT(std::move(event));
     }
 
-    bool InputManager::GetKeyDown(Keys key) {
-        std::scoped_lock lock(m_InputMutex);
-        return m_InputState.keyboard_current.keys[static_cast<i32>(key)] &&
-               !m_InputState.keyboard_previous.keys[static_cast<i32>(key)];
+    bool InputManager::GetKeyDown(Keys key) const {
+        std::shared_lock lock(m_Mutex);
+        return m_InputState.keyboard_current.keys[static_cast<u32>(key)] &&
+               !m_InputState.keyboard_previous.keys[static_cast<u32>(key)];
     }
 
-    bool InputManager::GetKeyUp(Keys key) {
-        std::scoped_lock lock(m_InputMutex);
-        return !m_InputState.keyboard_current.keys[static_cast<i32>(key)] &&
-               m_InputState.keyboard_previous.keys[static_cast<i32>(key)];
+    bool InputManager::GetKeyUp(Keys key) const {
+        std::shared_lock lock(m_Mutex);
+        return !m_InputState.keyboard_current.keys[static_cast<u32>(key)] &&
+               m_InputState.keyboard_previous.keys[static_cast<u32>(key)];
     }
 
-    bool InputManager::GetKey(Keys key) {
-        std::scoped_lock lock(m_InputMutex);
-        return m_InputState.keyboard_current.keys[static_cast<i32>(key)] &&
-               m_InputState.keyboard_previous.keys[static_cast<i32>(key)];
+    bool InputManager::GetKey(Keys key) const {
+        std::shared_lock lock(m_Mutex);
+        return m_InputState.keyboard_current.keys[static_cast<u32>(key)] &&
+               m_InputState.keyboard_previous.keys[static_cast<u32>(key)];
     }
 
-    bool InputManager::GetMouseButtonDown(MouseButtons button) {
-        std::scoped_lock lock(m_InputMutex);
-        return m_InputState.mouse_current.buttons[static_cast<i32>(button)] &&
-               !m_InputState.mouse_previous.buttons[static_cast<i32>(button)];
+    bool InputManager::GetMouseButtonDown(MouseButtons button) const {
+        std::shared_lock lock(m_Mutex);
+        return m_InputState.mouse_current.buttons[static_cast<u32>(button)] &&
+               !m_InputState.mouse_previous.buttons[static_cast<u32>(button)];
     }
 
-    bool InputManager::GetMouseButtonUp(MouseButtons button) {
-        std::scoped_lock lock(m_InputMutex);
-        return !m_InputState.mouse_current.buttons[static_cast<i32>(button)] &&
-               m_InputState.mouse_previous.buttons[static_cast<i32>(button)];
+    bool InputManager::GetMouseButtonUp(MouseButtons button) const {
+        std::shared_lock lock(m_Mutex);
+        return !m_InputState.mouse_current.buttons[static_cast<u32>(button)] &&
+               m_InputState.mouse_previous.buttons[static_cast<u32>(button)];
     }
 
-    bool InputManager::GetMouseButton(MouseButtons button) {
-        std::scoped_lock lock(m_InputMutex);
-        return m_InputState.mouse_current.buttons[static_cast<i32>(button)] &&
-               m_InputState.mouse_previous.buttons[static_cast<i32>(button)];
+    bool InputManager::GetMouseButton(MouseButtons button) const {
+        std::shared_lock lock(m_Mutex);
+        return m_InputState.mouse_current.buttons[static_cast<u32>(button)] &&
+               m_InputState.mouse_previous.buttons[static_cast<u32>(button)];
     }
 
-    glm::vec2 InputManager::GetMousePosition() {
-        std::scoped_lock lock(m_InputMutex);
+    glm::vec2 InputManager::GetMousePosition() const {
+        std::shared_lock lock(m_Mutex);
         return m_InputState.mouse_current.position;
     }
 
-    bool InputManager::GetKeyUnsafe(Keys key) {
-        return m_InputState.keyboard_current.keys[static_cast<i32>(key)] &&
-               m_InputState.keyboard_previous.keys[static_cast<i32>(key)];
+    bool InputManager::GetKeyUnsafe(Keys key) const {
+        return m_InputState.keyboard_current.keys[static_cast<u32>(key)] &&
+               m_InputState.keyboard_previous.keys[static_cast<u32>(key)];
     }
 
-    bool InputManager::GetMouseButtonUnsafe(MouseButtons button) {
-        return m_InputState.mouse_current.buttons[static_cast<i32>(button)] &&
-               m_InputState.mouse_previous.buttons[static_cast<i32>(button)];
+    bool InputManager::GetMouseButtonUnsafe(MouseButtons button) const {
+        return m_InputState.mouse_current.buttons[static_cast<u32>(button)] &&
+               m_InputState.mouse_previous.buttons[static_cast<u32>(button)];
     }
 
 #ifdef AXLE_TESTING
@@ -188,7 +188,7 @@ namespace Axle {
         Update();
     }
     void InputManager::SimulateReset() {
-        std::scoped_lock lock(m_InputMutex);
+        std::unique_lock lock(m_Mutex);
         m_InputState = InputState();
     }
 #endif // AXLE_TESTING

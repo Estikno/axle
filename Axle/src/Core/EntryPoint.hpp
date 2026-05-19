@@ -1,6 +1,5 @@
 #pragma once
 
-#include "ECS/ECS.hpp"
 #include "axpch.hpp"
 
 #include "Application.hpp"
@@ -9,6 +8,7 @@
 #include "Core/Input/InputManager.hpp"
 #include "Core/Resource/ResourceManager.hpp"
 #include "Core/Job/JobSystem.hpp"
+#include "ECS/ECS.hpp"
 
 #ifdef AX_PLATFORM_WINDOWS
 

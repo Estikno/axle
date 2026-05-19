@@ -4,8 +4,6 @@
 
 #include "../Core.hpp"
 #include "Event.hpp"
-#include <cstddef>
-#include <tuple>
 
 namespace Axle {
     /**
@@ -32,8 +30,6 @@ namespace Axle {
          *
          * Important: This has to be called before using the macros and any other functionality
          * This function is NOT thread safe so it must be called from only one thread and only once to be safe.
-         *
-         * It is safe to call multiple times, it simply displays a warning after the first call.
          */
         static void Init();
 
@@ -50,18 +46,25 @@ namespace Axle {
          *
          * @returns Returns a reference to the Event Handler
          */
-        inline static EventHandler& GetInstance() {
+        inline static EventHandler& GetInstance() noexcept {
             return *m_EventHandler;
         }
 
-        // TODO: Optimize how to add events as now they are coppied
         /**
          * Add an event to the event handler and it will be notified automatically.
          * This function is not recommended to be called manually, better by the macro.
          *
-         * @param event An event object
+         * @param event An event lvalue object
          */
-        void AddEvent(Event event);
+        void DispatchEvent(const Event& event);
+
+        /**
+         * Add an event to the event handler and it will be notified automatically.
+         * This function is not recommended to be called manually, better by the macro.
+         *
+         * @param event An event rvalue object
+         */
+        void DispatchEvent(Event&& event);
 
         /**
          * Subscribes a handler (function) to the event system.
@@ -123,4 +126,4 @@ namespace Axle {
 /**
  * Macro that simplifies the addition of new events to the event handler
  */
-#define AX_ADD_EVENT(...) ::Axle::EventHandler::GetInstance().AddEvent(__VA_ARGS__)
+#define AX_DISPATCH_EVENT(...) ::Axle::EventHandler::GetInstance().DispatchEvent(__VA_ARGS__)

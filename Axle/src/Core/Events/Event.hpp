@@ -69,14 +69,14 @@ namespace Axle {
          *
          * @returns If the event has already been handled.
          */
-        bool IsHandled() {
+        bool IsHandled() const noexcept {
             return m_Handled;
         }
 
         /**
          * Marks the event as handled
          */
-        virtual void Handle() {
+        virtual void Handle() noexcept {
             m_Handled = true;
         }
 
@@ -85,7 +85,7 @@ namespace Axle {
          *
          * @returns The type of event
          */
-        EventType GetEventType() {
+        EventType GetEventType() const noexcept {
             return m_EventType;
         }
 
@@ -94,11 +94,11 @@ namespace Axle {
          *
          * @returns The cateory of the event
          */
-        EventCategory GetEventCategory() {
+        EventCategory GetEventCategory() const noexcept {
             return m_EventCategory;
         }
 
-        EventContext& GetContext() {
+        EventContext& GetContext() noexcept {
             return m_Context;
         }
 

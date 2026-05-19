@@ -9,7 +9,6 @@
 #include "Core/Types.hpp"
 #include "Core/Error/Panic.hpp"
 #include "Other/CustomTypes/Expected.hpp"
-#include <stdexcept>
 
 namespace Axle {
 #ifdef AX_DEBUG
@@ -24,7 +23,12 @@ namespace Axle {
 #endif // AX_DEBUG
     class ECS {
     public:
-        AXLE_TEST_API ECS();
+        ECS(const ECS&) = delete;
+        ECS& operator=(const ECS&) = delete;
+
+        // Constructors do nothing because the initialization/destruction is manual with Init/ShutDown
+        ECS() {}
+        ~ECS() {}
 
         /**
          * Initializes the ECS and its singleton
@@ -50,7 +54,7 @@ namespace Axle {
          * @returns Returns a reference to the Event Handler
          */
         inline static ECS& GetInstance() {
-            return *m_ECS;
+            return *s_ECS;
         }
 
         /**
@@ -130,7 +134,7 @@ namespace Axle {
          *
          * @returns The ID of the last created entity.
          */
-        inline EntityID GetLastCreatedEntity() noexcept {
+        inline EntityID GetLastCreatedEntity() const noexcept {
             std::scoped_lock lock(m_EntitiesMutex);
             return m_InsertingIntoIndex;
         }
@@ -146,7 +150,7 @@ namespace Axle {
          * @returns True if the entity has the component, false otherwise.
          */
         template <typename T>
-        inline bool Has(EntityID id) {
+        inline bool Has(EntityID id) const {
             std::scoped_lock lock(m_EntitiesMutex, m_ComponentsMutex);
             return HasUnsafe<T>(id);
         }
@@ -159,7 +163,7 @@ namespace Axle {
          * @returns True if the entity has all the components, false otherwise.
          */
         template <typename... Ts>
-        inline bool HasAll(EntityID id) {
+        inline bool HasAll(EntityID id) const {
             std::scoped_lock lock(m_EntitiesMutex, m_ComponentsMutex);
             return HasAllUnsafe<Ts...>(id);
         }
@@ -172,7 +176,7 @@ namespace Axle {
          * @returns True if the entity has at least one of the components, false otherwise.
          */
         template <typename... Ts>
-        inline bool HasAny(EntityID id) {
+        inline bool HasAny(EntityID id) const {
             std::scoped_lock lock(m_EntitiesMutex, m_ComponentsMutex);
             return HasAnyUnsafe<Ts...>(id);
         }
@@ -182,30 +186,31 @@ namespace Axle {
          *
          * @returns true if the entity is alive and false otherwise
          */
-        inline bool IsAlive(EntityID id) noexcept {
+        inline bool IsAlive(EntityID id) const noexcept {
             // If it's not a valid id don't event bother locking the mutex
             if (id >= MAX_ENTITIES)
                 return false;
 
             std::scoped_lock lock(m_EntitiesMutex);
-            return m_LivingEntities.at(id);
+            return m_LivingEntities[id];
         }
 
 #ifdef AXLE_TESTING
-        inline std::unordered_map<ComponentType, std::unique_ptr<ISparseSet>>& GetComponentArraysTEST() {
+        inline const std::unordered_map<ComponentType, std::unique_ptr<ISparseSet>>&
+        GetComponentArraysTEST() const noexcept {
             return m_ComponentArrays;
         }
 
-        inline std::vector<ComponentMask>& GetEntityMasksTEST() {
+        inline const std::array<ComponentMask, MAX_ENTITIES>& GetEntityMasksTEST() const noexcept {
             return m_EntityMasks;
         }
 
-        inline std::priority_queue<EntityID, std::vector<EntityID>, std::greater<EntityID>>&
-        GetAvailableEntitiesTEST() {
+        inline const std::priority_queue<EntityID, std::vector<EntityID>, std::greater<EntityID>>&
+        GetAvailableEntitiesTEST() const noexcept {
             return m_AvailableEntities;
         }
 
-        inline std::unordered_map<ComponentType, ComponentDescriptorDebug>& GetDescriptors() {
+        inline const std::unordered_map<ComponentType, ComponentDescriptorDebug>& GetDescriptors() const noexcept {
             return m_ComponentDescriptorsDebug;
         }
 #endif // AXLE_TESTING
@@ -257,11 +262,11 @@ namespace Axle {
          * @returns True if the entity has the component, false otherwise.
          */
         template <typename T>
-        inline bool HasUnsafe(EntityID id) {
+        inline bool HasUnsafe(EntityID id) const {
             AX_ENSURE(
                 IsComponentRegistered<T>(), "Component {0} has not been registered before use.", typeid(T).name());
 
-            Expected<std::reference_wrapper<ComponentMask>> mask = GetMask(id);
+            Expected<std::reference_wrapper<const ComponentMask>> mask = GetMask(id);
 
             if (!mask.IsValid()) {
                 return false;
@@ -278,7 +283,7 @@ namespace Axle {
          * @returns True if the entity has all the components, false otherwise.
          */
         template <typename... Ts>
-        inline bool HasAllUnsafe(EntityID id) {
+        inline bool HasAllUnsafe(EntityID id) const {
             return (HasUnsafe<Ts>(id) && ...);
         }
 
@@ -290,7 +295,7 @@ namespace Axle {
          * @returns True if the entity has at least one of the components, false otherwise.
          */
         template <typename... Ts>
-        inline bool HasAnyUnsafe(EntityID id) {
+        inline bool HasAnyUnsafe(EntityID id) const {
             return (HasUnsafe<Ts>(id) || ...);
         }
 
@@ -300,7 +305,7 @@ namespace Axle {
          * @returns The type of the component
          */
         template <typename T>
-        inline ComponentType GetComponentType() {
+        inline ComponentType GetComponentType() noexcept {
             std::scoped_lock lock(s_StaticMutex);
 
             static ComponentType typeID = s_NextComponentType++;
@@ -316,7 +321,7 @@ namespace Axle {
          * @param val The value to set the bit to.
          */
         template <typename T>
-        void SetComponentBit(ComponentMask& mask, bool val = true) {
+        void SetComponentBit(ComponentMask& mask, bool val = true) const noexcept {
             AX_ENSURE(
                 IsComponentRegistered<T>(), "Component {0} has not been registered before use.", typeid(T).name());
 
@@ -333,7 +338,7 @@ namespace Axle {
          * @returns True if the component is enabled, false otherwise.
          */
         template <typename T>
-        bool GetComponentBit(const ComponentMask& mask) {
+        bool GetComponentBit(const ComponentMask& mask) const noexcept {
             AX_ENSURE(
                 IsComponentRegistered<T>(), "Component {0} has not been registered before use.", typeid(T).name());
 
@@ -349,7 +354,7 @@ namespace Axle {
          * @returns A component mask with the bits set for the given component types.
          */
         template <typename... Ts>
-        ComponentMask GetComponentMask() {
+        ComponentMask GetComponentMask() const noexcept {
             ComponentMask mask;
             (SetComponentBit<Ts>(mask), ...);
             return mask;
@@ -372,8 +377,33 @@ namespace Axle {
                     std::out_of_range("EntityID is out of range"));
             }
 
-            if (!m_LivingEntities.at(id)) {
+            if (!m_LivingEntities[id]) {
                 return Expected<std::reference_wrapper<ComponentMask>>::FromException(
+                    std::invalid_argument("Entity is not alive"));
+            }
+
+            return std::ref(m_EntityMasks.at(id));
+        }
+
+        /**
+         * Gets the component mask of an entity. This method is not thread safe.
+         *
+         * @param id The ID of the entity.
+         *
+         * @returns A reference to the component mask of the entity.
+         */
+        inline Expected<std::reference_wrapper<const ComponentMask>> GetMask(EntityID id) const {
+            // AX_ASSERT(id < MAX_ENTITIES,
+            //           "Entity {0} is out of bounce, the maximum id allowed is: {1}.",
+            //           id,
+            //           MAX_ENTITIES - 1);
+            if (id >= MAX_ENTITIES) {
+                return Expected<std::reference_wrapper<const ComponentMask>>::FromException(
+                    std::out_of_range("EntityID is out of range"));
+            }
+
+            if (!m_LivingEntities[id]) {
+                return Expected<std::reference_wrapper<const ComponentMask>>::FromException(
                     std::invalid_argument("Entity is not alive"));
             }
 
@@ -386,7 +416,7 @@ namespace Axle {
          * @returns True if the component has been registered, false otherwise.
          */
         template <typename T>
-        inline bool IsComponentRegistered() {
+        inline bool IsComponentRegistered() const {
             // FIX: If a component has not been registered, its type ID will be registered for later use even if it's
             // not desired
             return m_ComponentArrays.find(GetComponentType<T>()) != m_ComponentArrays.end();
@@ -433,19 +463,17 @@ namespace Axle {
         /// entity.
         ///
         /// For example, if the entity has the first and third registered component, the bit set will be `101`.
-        std::vector<ComponentMask> m_EntityMasks;
+        std::array<ComponentMask, MAX_ENTITIES> m_EntityMasks;
 
         /// A vector that keeps track of which entities are alive and which are not.
-        std::vector<bool> m_LivingEntities;
+        // std::vector<bool> m_LivingEntities;
+        std::bitset<MAX_ENTITIES> m_LivingEntities;
 
         /// The index of the last created entity
         EntityID m_InsertingIntoIndex = 0;
 
-        /// A priority queue of available entity IDs.
-        /// When creating an entity the EntityID assigned to it is retrieved from this.
-        // TODO: Instead of storing all posible entities values that are available keep a counter of the maximum ID and
-        // store in the queue those that are lower, i.e. some entity has been deleted. If the queue is empty all new
-        // entities id get the counter's one
+        EntityID m_LargestAvailableEntityID = 0;
+        /// Contains the deleted EntityIDs that are available once again to be used
         std::priority_queue<EntityID, std::vector<EntityID>, std::greater<EntityID>> m_AvailableEntities;
         std::mutex m_EntitiesMutex;
 
@@ -453,7 +481,7 @@ namespace Axle {
         EntityID m_LivingEntityCount = 0;
 
         /// The singleton of the event handler class
-        static std::unique_ptr<ECS> m_ECS;
+        static std::unique_ptr<ECS> s_ECS;
 
 #ifdef AX_DEBUG
         // TODO: Because ComponentType is just an integer we can change this unordered_map to a vector for better
@@ -492,7 +520,7 @@ namespace Axle {
     void ECS::AddUnsafe(EntityID id, T component) {
         AX_ENSURE(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
         AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
-        AX_ASSERT(m_LivingEntities.at(id), "Entity ID {0} is not alive.", id);
+        AX_ASSERT(m_LivingEntities[id], "Entity ID {0} is not alive.", id);
 
         if (id >= MAX_ENTITIES) {
             AX_CORE_WARN(
@@ -500,7 +528,7 @@ namespace Axle {
             return;
         }
 
-        if (!m_LivingEntities.at(id)) {
+        if (!m_LivingEntities[id]) {
             AX_CORE_WARN(
                 "Component {0} hasn't been added to entity {1} because the entity is not alive.", typeid(T).name(), id);
             return;
@@ -527,7 +555,7 @@ namespace Axle {
     void ECS::RemoveUnsafe(EntityID id) {
         AX_ENSURE(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
         AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
-        AX_ASSERT(m_LivingEntities.at(id), "Entity ID {0} is not alive.", id);
+        AX_ASSERT(m_LivingEntities[id], "Entity ID {0} is not alive.", id);
 
         if (id >= MAX_ENTITIES) {
             AX_CORE_WARN("Component {0} hasn't been removed from entity {1} because the ID is out of bounds.",
@@ -536,7 +564,7 @@ namespace Axle {
             return;
         }
 
-        if (!m_LivingEntities.at(id)) {
+        if (!m_LivingEntities[id]) {
             AX_CORE_WARN("Component {0} hasn't been removed from entity {1} because the entity is not alive.",
                          typeid(T).name(),
                          id);
@@ -563,13 +591,13 @@ namespace Axle {
     Expected<std::reference_wrapper<T>> ECS::GetUnsafe(EntityID id) {
         AX_ENSURE(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
         AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
-        AX_ASSERT(m_LivingEntities.at(id), "Entity ID {0} is not alive.", id);
+        AX_ASSERT(m_LivingEntities[id], "Entity ID {0} is not alive.", id);
 
         if (id >= MAX_ENTITIES) {
             return Expected<std::reference_wrapper<T>>::FromException(std::out_of_range("EntityID is out of range"));
         }
 
-        if (!m_LivingEntities.at(id)) {
+        if (!m_LivingEntities[id]) {
             return Expected<std::reference_wrapper<T>>::FromException(std::invalid_argument("Entity is not alive"));
         }
 
