@@ -35,8 +35,6 @@ namespace Axle {
          *
          * Important: This has to be called before using the macros and any other functionality.
          * This function is NOT thread safe so it must be called from only one thread and only once to be safe.
-         *
-         * It is safe to call multiple times, it simply displays a warning after the first call.
          */
         static void Init();
 
@@ -53,7 +51,7 @@ namespace Axle {
          *
          * @returns Returns a reference to the Event Handler
          */
-        inline static ECS& GetInstance() {
+        inline static ECS& GetInstance() noexcept {
             return *s_ECS;
         }
 
@@ -93,7 +91,6 @@ namespace Axle {
          */
         AXLE_TEST_API EntityID CreateEntity();
 
-        // TODO: Optmize the way components are stored. Because now we double copy them.
         /**
          * Adds a component to the entity with the given ID.
          *
@@ -101,7 +98,7 @@ namespace Axle {
          * @param component Component to be added.
          */
         template <typename T>
-        void Add(EntityID id, T component);
+        void Add(EntityID id, T&& component);
 
         /**
          * Deletes a component of type T from the entity with the given ID.
@@ -120,7 +117,10 @@ namespace Axle {
 
         /**
          * Gets a reference to the component of type T from the entity with the given ID.
-         * Not efficient when using frequently, use with caution.
+         *
+         * Even though the method is thread safe to the ECS class, it doesn't asure thread safety to the data
+         * retrieved. So 2 threads may get the same data and nodify it at the same time with no locking done via this
+         * class.
          *
          * @param id The ID of the entity to get the component from.
          *
@@ -128,16 +128,6 @@ namespace Axle {
          */
         template <typename T>
         Expected<std::reference_wrapper<T>> Get(EntityID id);
-
-        /**
-         * Gets the id of the last created entity.
-         *
-         * @returns The ID of the last created entity.
-         */
-        inline EntityID GetLastCreatedEntity() const noexcept {
-            std::scoped_lock lock(m_EntitiesMutex);
-            return m_InsertingIntoIndex;
-        }
 
         /**
          * Checks if the entity with the given ID has a component of type T.
@@ -219,7 +209,6 @@ namespace Axle {
         template <typename...>
         friend class View;
 
-        // TODO: Optmize the way components are stored. Because now we double copy them.
         /**
          * This is the unsafe/unlocked version of the Add method.
          *
@@ -227,7 +216,7 @@ namespace Axle {
          * @param component Component to be added.
          */
         template <typename T>
-        void AddUnsafe(EntityID id, T component);
+        void AddUnsafe(EntityID id, T&& component);
 
         /**
          * This is the unsafe/unlocked version of the Remove method.
@@ -263,10 +252,11 @@ namespace Axle {
          */
         template <typename T>
         inline bool HasUnsafe(EntityID id) const {
-            AX_ENSURE(
-                IsComponentRegistered<T>(), "Component {0} has not been registered before use.", typeid(T).name());
+            AX_ENSURE(IsComponentRegisteredUnsafe<T>(),
+                      "Component {0} has not been registered before use.",
+                      typeid(T).name());
 
-            Expected<std::reference_wrapper<const ComponentMask>> mask = GetMask(id);
+            Expected<std::reference_wrapper<const ComponentMask>> mask = GetMaskUnsafe(id);
 
             if (!mask.IsValid()) {
                 return false;
@@ -306,9 +296,7 @@ namespace Axle {
          */
         template <typename T>
         inline ComponentType GetComponentType() noexcept {
-            std::scoped_lock lock(s_StaticMutex);
-
-            static ComponentType typeID = s_NextComponentType++;
+            static ComponentType typeID = s_NextComponentType.fetch_add(1, std::memory_order_seq_cst);
             AX_ENSURE(typeID < MAX_COMPONENTS, "Too many components registered. The maximum is {0}.", MAX_COMPONENTS);
             return typeID;
         }
@@ -317,14 +305,13 @@ namespace Axle {
          * Set the bit of a component in the component mask of an entity. This method is not thread safe if used with
          * stored component masks.
          *
+         * Assumes all given components are registered correctly.
+         *
          * @param mask The component mask of the entity.
          * @param val The value to set the bit to.
          */
         template <typename T>
         void SetComponentBit(ComponentMask& mask, bool val = true) const noexcept {
-            AX_ENSURE(
-                IsComponentRegistered<T>(), "Component {0} has not been registered before use.", typeid(T).name());
-
             size_t bitPos = GetComponentType<T>();
             mask.set(bitPos, val);
         }
@@ -333,15 +320,14 @@ namespace Axle {
          * Gets the bit of a component in the component mask of an entity. This method is not thread safe if used with
          * stored component masks.
          *
+         * Assumes all given components are registered correctly.
+         *
          * @param mask The component mask of the entity.
          *
          * @returns True if the component is enabled, false otherwise.
          */
         template <typename T>
         bool GetComponentBit(const ComponentMask& mask) const noexcept {
-            AX_ENSURE(
-                IsComponentRegistered<T>(), "Component {0} has not been registered before use.", typeid(T).name());
-
             size_t bitPos = GetComponentType<T>();
             // It will never cause undefined behavior because we ensure that the component is registered,
             // and when a component is registered, its type ID is always less than MAX_COMPONENTS.
@@ -350,6 +336,8 @@ namespace Axle {
 
         /**
          * Returns a generic mask composed of the given component types. This method is thread safe.
+         *
+         * Assumes all given components are registered correctly.
          *
          * @returns A component mask with the bits set for the given component types.
          */
@@ -367,7 +355,7 @@ namespace Axle {
          *
          * @returns A reference to the component mask of the entity.
          */
-        inline Expected<std::reference_wrapper<ComponentMask>> GetMask(EntityID id) {
+        inline Expected<std::reference_wrapper<ComponentMask>> GetMaskUnsafe(EntityID id) {
             // AX_ASSERT(id < MAX_ENTITIES,
             //           "Entity {0} is out of bounce, the maximum id allowed is: {1}.",
             //           id,
@@ -392,7 +380,7 @@ namespace Axle {
          *
          * @returns A reference to the component mask of the entity.
          */
-        inline Expected<std::reference_wrapper<const ComponentMask>> GetMask(EntityID id) const {
+        inline Expected<std::reference_wrapper<const ComponentMask>> GetMaskUnsafe(EntityID id) const {
             // AX_ASSERT(id < MAX_ENTITIES,
             //           "Entity {0} is out of bounce, the maximum id allowed is: {1}.",
             //           id,
@@ -416,7 +404,7 @@ namespace Axle {
          * @returns True if the component has been registered, false otherwise.
          */
         template <typename T>
-        inline bool IsComponentRegistered() const {
+        inline bool IsComponentRegisteredUnsafe() const {
             // FIX: If a component has not been registered, its type ID will be registered for later use even if it's
             // not desired
             return m_ComponentArrays.find(GetComponentType<T>()) != m_ComponentArrays.end();
@@ -428,8 +416,8 @@ namespace Axle {
          * @returns A reference to the component array of the given type.
          */
         template <typename T>
-        SparseSet<T>& GetComponentArray() {
-            return *(GetComponentArrayPtr<T>());
+        SparseSet<T>& GetComponentArrayUnsafe() {
+            return *(GetComponentArrayPtrUnsafe<T>());
         }
 
         /**
@@ -438,11 +426,12 @@ namespace Axle {
          * @returns A pointer to the component array of the given type.
          */
         template <typename T>
-        SparseSet<T>* GetComponentArrayPtr() {
+        SparseSet<T>* GetComponentArrayPtrUnsafe() {
             ComponentType id = GetComponentType<T>();
 
-            AX_ENSURE(
-                IsComponentRegistered<T>(), "Component {0} has not been registered before use.", typeid(T).name());
+            AX_ENSURE(IsComponentRegisteredUnsafe<T>(),
+                      "Component {0} has not been registered before use.",
+                      typeid(T).name());
 
             return static_cast<SparseSet<T>*>(m_ComponentArrays.at(id).get());
         }
@@ -454,8 +443,7 @@ namespace Axle {
         std::mutex m_ComponentsMutex;
 
         /// Stores the next component type to be registered.
-        inline static ComponentType s_NextComponentType = 0;
-        static std::mutex s_StaticMutex;
+        inline static std::atomic<ComponentType> s_NextComponentType = 0;
 
         /// An array of bit masks for every entity.
         ///
@@ -468,9 +456,6 @@ namespace Axle {
         /// A vector that keeps track of which entities are alive and which are not.
         // std::vector<bool> m_LivingEntities;
         std::bitset<MAX_ENTITIES> m_LivingEntities;
-
-        /// The index of the last created entity
-        EntityID m_InsertingIntoIndex = 0;
 
         EntityID m_LargestAvailableEntityID = 0;
         /// Contains the deleted EntityIDs that are available once again to be used
@@ -511,14 +496,14 @@ namespace Axle {
     }
 
     template <typename T>
-    void ECS::Add(EntityID id, T component) {
+    void ECS::Add(EntityID id, T&& component) {
         std::scoped_lock lock(m_EntitiesMutex, m_ComponentsMutex);
-        AddUnsafe<T>(id, component);
+        AddUnsafe<T>(id, std::forward<T>(component));
     }
 
     template <typename T>
-    void ECS::AddUnsafe(EntityID id, T component) {
-        AX_ENSURE(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
+    void ECS::AddUnsafe(EntityID id, T&& component) {
+        AX_ENSURE(IsComponentRegisteredUnsafe<T>(), "Component of type {0} is not registered.", typeid(T).name());
         AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
         AX_ASSERT(m_LivingEntities[id], "Entity ID {0} is not alive.", id);
 
@@ -534,12 +519,11 @@ namespace Axle {
             return;
         }
 
-        // TODO: Consider making the sparset thread safe to avoid multiple problems here
-        SparseSet<T>& array = GetComponentArray<T>();
-        array.Add(id, component);
+        SparseSet<T>& array = GetComponentArrayUnsafe<T>();
+        array.Add(id, std::forward<T>(component));
 
         // We can safely unwrap here because we already checked the bounds of the entity ID
-        ComponentMask& entityMask = GetMask(id).Unwrap().get();
+        ComponentMask& entityMask = GetMaskUnsafe(id).Unwrap().get();
         SetComponentBit<T>(entityMask, true);
 
         AX_CORE_TRACE("Component {0} has been added to entity {1}.", typeid(T).name(), id);
@@ -553,7 +537,7 @@ namespace Axle {
 
     template <typename T>
     void ECS::RemoveUnsafe(EntityID id) {
-        AX_ENSURE(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
+        AX_ENSURE(IsComponentRegisteredUnsafe<T>(), "Component of type {0} is not registered.", typeid(T).name());
         AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
         AX_ASSERT(m_LivingEntities[id], "Entity ID {0} is not alive.", id);
 
@@ -571,11 +555,11 @@ namespace Axle {
             return;
         }
 
-        SparseSet<T>& array = GetComponentArray<T>();
+        SparseSet<T>& array = GetComponentArrayUnsafe<T>();
         array.Remove(id);
 
         // We can safely unwrap here because we already checked the bounds of the entity ID
-        ComponentMask& entityMask = GetMask(id).Unwrap().get();
+        ComponentMask& entityMask = GetMaskUnsafe(id).Unwrap().get();
         SetComponentBit<T>(entityMask, false);
 
         AX_CORE_TRACE("Component {0} has been removed from entity {1}.", typeid(T).name(), id);
@@ -589,7 +573,7 @@ namespace Axle {
 
     template <typename T>
     Expected<std::reference_wrapper<T>> ECS::GetUnsafe(EntityID id) {
-        AX_ENSURE(IsComponentRegistered<T>(), "Component of type {0} is not registered.", typeid(T).name());
+        AX_ENSURE(IsComponentRegisteredUnsafe<T>(), "Component of type {0} is not registered.", typeid(T).name());
         AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
         AX_ASSERT(m_LivingEntities[id], "Entity ID {0} is not alive.", id);
 
@@ -601,7 +585,7 @@ namespace Axle {
             return Expected<std::reference_wrapper<T>>::FromException(std::invalid_argument("Entity is not alive"));
         }
 
-        return GetComponentArray<T>().Get(id);
+        return GetComponentArrayUnsafe<T>().Get(id);
     }
     // ---------------------------
 
@@ -640,6 +624,31 @@ namespace Axle {
         }
 
         /**
+         * Gets all entities that have all the specified components and their components. This methods returns a copy of
+         * the components instead of a reference.
+         *
+         * @returns A pair containing a vector of EntityIDs and a vector of tuples with the components.
+         */
+        AXLE_TEST_API std::pair<std::vector<EntityID>, std::vector<std::tuple<Components...>>> GetAllCopy() {
+            std::scoped_lock lock(m_Entities->m_ComponentsMutex, m_Entities->m_EntitiesMutex);
+
+            std::vector<EntityID> temp = GetEntitiesUnsafe();
+            std::vector<EntityID> final;
+            final.reserve(temp.size());
+            std::vector<std::tuple<Components...>> components;
+
+            for (const EntityID& entity : temp) {
+                if (m_Entities->HasAllUnsafe<Components...>(entity)) {
+                    // We can safely unwrap here because we already checked that the entity has all the components
+                    components.emplace_back((m_Entities->GetUnsafe<Components>(entity)).Unwrap().get()...);
+                    final.push_back(entity);
+                }
+            }
+
+            return {std::move(final), std::move(components)};
+        }
+
+        /**
          * Only gets the components of the entities that have all the specified components.
          *
          * @returns A vector of tuples with the components of the entities that have all the specified components.
@@ -657,7 +666,29 @@ namespace Axle {
                 }
             }
 
-            return components;
+            return std::move(components);
+        }
+
+        /**
+         * Only gets the components of the entities that have all the specified components. Instead of recieving a
+         * reference to each component this method makes a copy.
+         *
+         * @returns A vector of tuples with the components of the entities that have all the specified components.
+         */
+        AXLE_TEST_API std::vector<std::tuple<Components...>> GetComponentsCopy() {
+            std::scoped_lock lock(m_Entities->m_ComponentsMutex, m_Entities->m_EntitiesMutex);
+
+            std::vector<EntityID> entities = GetEntitiesUnsafe();
+            std::vector<std::tuple<Components...>> components;
+
+            for (const EntityID& entity : entities) {
+                if (m_Entities->HasAllUnsafe<Components...>(entity)) {
+                    // We can safely unwrap here because we already checked that the entity has all the components
+                    components.emplace_back((m_Entities->GetUnsafe<Components>(entity)).Unwrap().get()...);
+                }
+            }
+
+            return std::move(components);
         }
 
     private:
@@ -705,7 +736,7 @@ namespace Axle {
         template <typename... Cs>
         static std::vector<ISparseSet*> MakeArrayVec(ECS* entities) {
             std::scoped_lock lock(entities->m_ComponentsMutex);
-            return {static_cast<ISparseSet*>(entities->GetComponentArrayPtr<Cs>())...};
+            return {static_cast<ISparseSet*>(entities->GetComponentArrayPtrUnsafe<Cs>())...};
         }
 
         std::vector<ISparseSet*> m_ComponentArrays;

@@ -11,7 +11,6 @@
 
 namespace Axle {
     std::unique_ptr<ECS> ECS::s_ECS;
-    std::mutex ECS::s_StaticMutex;
 
     void ECS::Init() {
         if (s_ECS != nullptr) {
@@ -44,8 +43,6 @@ namespace Axle {
         }
 
         m_LivingEntities.set(id, true);
-
-        m_InsertingIntoIndex = id;
         m_LivingEntityCount++;
 
         AX_CORE_TRACE("Entity {0} has been created.", id);

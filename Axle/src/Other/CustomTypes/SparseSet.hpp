@@ -73,7 +73,8 @@ namespace Axle {
         }
 
         /**
-         * Gets an element of type T from the given index
+         * Gets an element of type T from the given index. The returned reference is guaranted to be valid until the
+         * next Add/Remove call. So do not hold refereces for too long.
          *
          * @param id The index to get the element from
          *
@@ -82,7 +83,8 @@ namespace Axle {
         Expected<std::reference_wrapper<T>> Get(size_t id);
 
         /**
-         * Gets an inmutable element of type T from the given index
+         * Gets an inmutable element of type T from the given index. The returned reference is guaranted to be valid
+         * until the next Add/Remove call. So do not hold refereces for too long.
          *
          * @param id The index to get the element from
          *
@@ -158,8 +160,6 @@ namespace Axle {
 #endif // AX_DEBUG
 
     private:
-        // TODO: Consider using a deque instead of a vector to not invalidate references on insertion
-
         /// A dense array of elements of type T
         std::vector<T> m_Dense{};
 
