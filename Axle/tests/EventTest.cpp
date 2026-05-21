@@ -72,8 +72,8 @@ TEST_CASE("EventHandler") {
         Event event_1(EventType::AppRender, EventCategory::Render);
         Event event_2(EventType::AppTick, EventCategory::Render);
 
-        CHECK_NOTHROW(AX_ADD_EVENT(event_1));
-        CHECK_NOTHROW(AX_ADD_EVENT(event_2));
+        CHECK_NOTHROW(AX_DISPATCH_EVENT(event_1));
+        CHECK_NOTHROW(AX_DISPATCH_EVENT(event_2));
 
         instance.ProcessEvents();
 
@@ -86,7 +86,7 @@ TEST_CASE("EventHandler") {
 
         newEvent event_1(EventType::AppUpdate, EventCategory::Input);
 
-        CHECK_NOTHROW(AX_ADD_EVENT(event_1));
+        CHECK_NOTHROW(AX_DISPATCH_EVENT(event_1));
 
         instance.ProcessEvents();
 
@@ -98,7 +98,7 @@ TEST_CASE("EventHandler") {
 
         Event event_1(EventType::KeyPressed, EventCategory::Input);
 
-        CHECK_NOTHROW(AX_ADD_EVENT(event_1));
+        CHECK_NOTHROW(AX_DISPATCH_EVENT(event_1));
 
         instance.ProcessEvents();
 
@@ -111,7 +111,7 @@ TEST_CASE("EventHandler") {
         Event event_1(EventType::KeyPressed, EventCategory::Input);
         event_1.GetContext().raw_data = std::array<u16, 8>{12};
 
-        CHECK_NOTHROW(AX_ADD_EVENT(event_1));
+        CHECK_NOTHROW(AX_DISPATCH_EVENT(event_1));
 
         instance.ProcessEvents();
 
@@ -126,7 +126,7 @@ TEST_CASE("EventHandler") {
         Event event_1(EventType::KeyPressed, EventCategory::Input);
         event_1.GetContext().custom_data = pdata;
 
-        CHECK_NOTHROW(AX_ADD_EVENT(event_1));
+        CHECK_NOTHROW(AX_DISPATCH_EVENT(event_1));
 
         instance.ProcessEvents();
 
@@ -172,7 +172,7 @@ TEST_CASE("EventHandler no subscribers") {
     EventHandler& instance = EventHandler::GetInstance();
 
     Event e(EventType::AppRender, EventCategory::Render);
-    AX_ADD_EVENT(e);
+    AX_DISPATCH_EVENT(e);
     CHECK_NOTHROW(instance.ProcessEvents());
 
     EventHandler::ShutDown();
@@ -191,7 +191,7 @@ TEST_CASE("EventHandler unsubscribe before ProcessEvents") {
     size_t id = instance.Subscribe([](Event&) { g_callCount++; }, EventType::AppRender, EventCategory::Render);
 
     Event e(EventType::AppRender, EventCategory::Render);
-    AX_ADD_EVENT(e);
+    AX_DISPATCH_EVENT(e);
 
     instance.Unsubscribe(id); // remove before processing
     instance.ProcessEvents();
@@ -235,7 +235,7 @@ TEST_CASE("EventHandler multiple subscribers same type") {
     size_t id3 = instance.Subscribe(counter, EventType::AppRender, EventCategory::Render);
 
     Event e(EventType::AppRender, EventCategory::Render);
-    AX_ADD_EVENT(e);
+    AX_DISPATCH_EVENT(e);
     instance.ProcessEvents();
 
     CHECK(g_callCount == 3);
@@ -262,8 +262,8 @@ TEST_CASE("EventHandler category isolation") {
 
     Event render_event(EventType::AppRender, EventCategory::Render);
     Event input_event(EventType::KeyPressed, EventCategory::Input);
-    AX_ADD_EVENT(render_event);
-    AX_ADD_EVENT(input_event);
+    AX_DISPATCH_EVENT(render_event);
+    AX_DISPATCH_EVENT(input_event);
     instance.ProcessEvents();
 
     CHECK(g_callCount == 1); // only the Input event should have matched
@@ -303,7 +303,7 @@ TEST_CASE("EventHandler handled event stops propagation") {
         EventCategory::Render);
 
     Event e(EventType::AppRender, EventCategory::Render);
-    AX_ADD_EVENT(e);
+    AX_DISPATCH_EVENT(e);
     instance.ProcessEvents();
 
     // Exactly one handler should have fired
@@ -327,7 +327,7 @@ TEST_CASE("EventHandler queue is drained after ProcessEvents") {
     size_t id = instance.Subscribe([](Event&) { g_callCount++; }, EventType::AppRender, EventCategory::Render);
 
     Event e(EventType::AppRender, EventCategory::Render);
-    AX_ADD_EVENT(e);
+    AX_DISPATCH_EVENT(e);
     instance.ProcessEvents(); // processes the one event
     instance.ProcessEvents(); // queue is empty — nothing extra fires
 
@@ -352,9 +352,9 @@ TEST_CASE("EventHandler type routing") {
     size_t id2 = instance.Subscribe([&](Event&) { tickCount++; }, EventType::AppTick, EventCategory::Render);
 
     for (int i = 0; i < 5; ++i)
-        AX_ADD_EVENT(Event(EventType::AppRender, EventCategory::Render));
+        AX_DISPATCH_EVENT(Event(EventType::AppRender, EventCategory::Render));
     for (int i = 0; i < 3; ++i)
-        AX_ADD_EVENT(Event(EventType::AppTick, EventCategory::Render));
+        AX_DISPATCH_EVENT(Event(EventType::AppTick, EventCategory::Render));
 
     instance.ProcessEvents();
 
@@ -389,7 +389,7 @@ TEST_CASE("EventHandler concurrent AddEvent") {
     for (int t = 0; t < kThreads; ++t) {
         threads.emplace_back([&]() {
             for (int i = 0; i < kPerThread; ++i)
-                AX_ADD_EVENT(Event(EventType::AppRender, EventCategory::Render));
+                AX_DISPATCH_EVENT(Event(EventType::AppRender, EventCategory::Render));
         });
     }
     for (auto& th : threads)

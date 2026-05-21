@@ -188,6 +188,6 @@ namespace Axle {
         static std::unique_ptr<InputManager> m_InputManager;
 
         InputState m_InputState{};
-        std::shared_mutex m_Mutex;
+        mutable std::shared_mutex m_Mutex;
     };
 } // namespace Axle

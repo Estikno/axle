@@ -140,7 +140,7 @@ namespace Axle {
          * @returns True if the entity has the component, false otherwise.
          */
         template <typename T>
-        inline bool Has(EntityID id) const {
+        inline bool Has(EntityID id) {
             std::scoped_lock lock(m_EntitiesMutex, m_ComponentsMutex);
             return HasUnsafe<T>(id);
         }
@@ -153,7 +153,7 @@ namespace Axle {
          * @returns True if the entity has all the components, false otherwise.
          */
         template <typename... Ts>
-        inline bool HasAll(EntityID id) const {
+        inline bool HasAll(EntityID id) {
             std::scoped_lock lock(m_EntitiesMutex, m_ComponentsMutex);
             return HasAllUnsafe<Ts...>(id);
         }
@@ -166,7 +166,7 @@ namespace Axle {
          * @returns True if the entity has at least one of the components, false otherwise.
          */
         template <typename... Ts>
-        inline bool HasAny(EntityID id) const {
+        inline bool HasAny(EntityID id) {
             std::scoped_lock lock(m_EntitiesMutex, m_ComponentsMutex);
             return HasAnyUnsafe<Ts...>(id);
         }
@@ -203,6 +203,10 @@ namespace Axle {
         inline const std::unordered_map<ComponentType, ComponentDescriptorDebug>& GetDescriptors() const noexcept {
             return m_ComponentDescriptorsDebug;
         }
+
+        inline EntityID GetLivingEntityCount() const noexcept {
+            return m_LivingEntityCount;
+        }
 #endif // AXLE_TESTING
 
     private:
@@ -216,7 +220,7 @@ namespace Axle {
          * @param component Component to be added.
          */
         template <typename T>
-        void AddUnsafe(EntityID id, T&& component);
+        void AddUnsafe(EntityID id, T component);
 
         /**
          * This is the unsafe/unlocked version of the Remove method.
@@ -251,12 +255,12 @@ namespace Axle {
          * @returns True if the entity has the component, false otherwise.
          */
         template <typename T>
-        inline bool HasUnsafe(EntityID id) const {
+        inline bool HasUnsafe(EntityID id) {
             AX_ENSURE(IsComponentRegisteredUnsafe<T>(),
                       "Component {0} has not been registered before use.",
                       typeid(T).name());
 
-            Expected<std::reference_wrapper<const ComponentMask>> mask = GetMaskUnsafe(id);
+            Expected<std::reference_wrapper<ComponentMask>> mask = GetMaskUnsafe(id);
 
             if (!mask.IsValid()) {
                 return false;
@@ -273,7 +277,7 @@ namespace Axle {
          * @returns True if the entity has all the components, false otherwise.
          */
         template <typename... Ts>
-        inline bool HasAllUnsafe(EntityID id) const {
+        inline bool HasAllUnsafe(EntityID id) {
             return (HasUnsafe<Ts>(id) && ...);
         }
 
@@ -285,7 +289,7 @@ namespace Axle {
          * @returns True if the entity has at least one of the components, false otherwise.
          */
         template <typename... Ts>
-        inline bool HasAnyUnsafe(EntityID id) const {
+        inline bool HasAnyUnsafe(EntityID id) {
             return (HasUnsafe<Ts>(id) || ...);
         }
 
@@ -311,7 +315,7 @@ namespace Axle {
          * @param val The value to set the bit to.
          */
         template <typename T>
-        void SetComponentBit(ComponentMask& mask, bool val = true) const noexcept {
+        void SetComponentBit(ComponentMask& mask, bool val = true) noexcept {
             size_t bitPos = GetComponentType<T>();
             mask.set(bitPos, val);
         }
@@ -327,7 +331,7 @@ namespace Axle {
          * @returns True if the component is enabled, false otherwise.
          */
         template <typename T>
-        bool GetComponentBit(const ComponentMask& mask) const noexcept {
+        bool GetComponentBit(const ComponentMask& mask) noexcept {
             size_t bitPos = GetComponentType<T>();
             // It will never cause undefined behavior because we ensure that the component is registered,
             // and when a component is registered, its type ID is always less than MAX_COMPONENTS.
@@ -342,7 +346,7 @@ namespace Axle {
          * @returns A component mask with the bits set for the given component types.
          */
         template <typename... Ts>
-        ComponentMask GetComponentMask() const noexcept {
+        ComponentMask GetComponentMask() noexcept {
             ComponentMask mask;
             (SetComponentBit<Ts>(mask), ...);
             return mask;
@@ -404,7 +408,7 @@ namespace Axle {
          * @returns True if the component has been registered, false otherwise.
          */
         template <typename T>
-        inline bool IsComponentRegisteredUnsafe() const {
+        inline bool IsComponentRegisteredUnsafe() {
             // FIX: If a component has not been registered, its type ID will be registered for later use even if it's
             // not desired
             return m_ComponentArrays.find(GetComponentType<T>()) != m_ComponentArrays.end();
@@ -440,7 +444,7 @@ namespace Axle {
         /// TODO: Because ComponentType is just a number, we could use a vector instead of a hashmap. Or an array given
         /// that we now the maximum number of components at compile time.
         std::unordered_map<ComponentType, std::unique_ptr<ISparseSet>> m_ComponentArrays;
-        std::mutex m_ComponentsMutex;
+        mutable std::mutex m_ComponentsMutex;
 
         /// Stores the next component type to be registered.
         inline static std::atomic<ComponentType> s_NextComponentType = 0;
@@ -460,7 +464,7 @@ namespace Axle {
         EntityID m_LargestAvailableEntityID = 0;
         /// Contains the deleted EntityIDs that are available once again to be used
         std::priority_queue<EntityID, std::vector<EntityID>, std::greater<EntityID>> m_AvailableEntities;
-        std::mutex m_EntitiesMutex;
+        mutable std::mutex m_EntitiesMutex;
 
         /// The number of living entities in the ECS.
         EntityID m_LivingEntityCount = 0;
@@ -498,11 +502,11 @@ namespace Axle {
     template <typename T>
     void ECS::Add(EntityID id, T&& component) {
         std::scoped_lock lock(m_EntitiesMutex, m_ComponentsMutex);
-        AddUnsafe<T>(id, std::forward<T>(component));
+        AddUnsafe(id, std::forward<T>(component));
     }
 
     template <typename T>
-    void ECS::AddUnsafe(EntityID id, T&& component) {
+    void ECS::AddUnsafe(EntityID id, T component) {
         AX_ENSURE(IsComponentRegisteredUnsafe<T>(), "Component of type {0} is not registered.", typeid(T).name());
         AX_ASSERT(id < MAX_ENTITIES, "Entity ID {0} is out of bounds. Maximum ID is {1}.", id, MAX_ENTITIES - 1);
         AX_ASSERT(m_LivingEntities[id], "Entity ID {0} is not alive.", id);
@@ -520,7 +524,7 @@ namespace Axle {
         }
 
         SparseSet<T>& array = GetComponentArrayUnsafe<T>();
-        array.Add(id, std::forward<T>(component));
+        array.Add(id, std::move(component));
 
         // We can safely unwrap here because we already checked the bounds of the entity ID
         ComponentMask& entityMask = GetMaskUnsafe(id).Unwrap().get();

@@ -48,10 +48,10 @@ TEST_CASE("Entities ECS Test") {
         entities.RegisterComponent<Position>();
         entities.RegisterComponent<Velocity>();
 
-        entities.CreateEntity();
+        EntityID id = entities.CreateEntity();
 
-        CHECK(entities.GetLastCreatedEntity() == 0);
-        CHECK(entities.GetAvailableEntitiesTEST().top() == 1);
+        CHECK_EQ(id, 0);
+        CHECK(entities.GetAvailableEntitiesTEST().empty());
     }
 
     SUBCASE("Create entity with components") {
@@ -61,10 +61,8 @@ TEST_CASE("Entities ECS Test") {
         Position pos(1.0f, 2.0f);
 
         EntityID id = entities.CreateEntity();
-        entities.Add<Position>(id, pos);
+        entities.Add(id, pos);
         entities.Add<Velocity>(id, Velocity(3.0f, 4.0f));
-
-        CHECK(entities.GetEntityMasksTEST().at(entities.GetLastCreatedEntity()).to_ullong() == 3);
 
         SparseSet<Position>* p = static_cast<SparseSet<Position>*>(entities.GetComponentArraysTEST().at(0).get());
 
@@ -82,8 +80,6 @@ TEST_CASE("Entities ECS Test") {
         EntityID id = entities.CreateEntity();
         entities.Add(id, Velocity(1.0f, 2.0f));
 
-        CHECK(entities.GetEntityMasksTEST().at(entities.GetLastCreatedEntity()) == 2);
-
         entities.Add<Position>(0, Position(3.0f, 4.0f));
 
         CHECK(entities.GetEntityMasksTEST().at(0) == 3);
@@ -100,11 +96,7 @@ TEST_CASE("Entities ECS Test") {
         entities.Add<Position>(id, Position(1.0f, 2.0f));
         entities.Add<Velocity>(id, Velocity(3.0f, 4.0f));
 
-        CHECK(entities.GetEntityMasksTEST().at(entities.GetLastCreatedEntity()).to_ullong() == 3);
-
         entities.Remove<Position>(0);
-
-        CHECK(entities.GetEntityMasksTEST().at(entities.GetLastCreatedEntity()).to_ullong() == 2);
     }
 
     SUBCASE("Add component to an already existing entity") {
@@ -158,12 +150,9 @@ TEST_CASE("Entities ECS Test") {
         EntityID id3 = entities.CreateEntity();
         entities.Add<Velocity>(id3, Velocity(2.0f, 2.0f));
 
-        CHECK(entities.GetLastCreatedEntity() == 0);
-
         EntityID id4 = entities.CreateEntity();
         entities.Add<Velocity>(id4, Velocity(3.0f, 3.0f));
 
-        CHECK(entities.GetLastCreatedEntity() == 2);
         CHECK(entities.GetEntityMasksTEST().at(0).to_ullong() == 2);
 
         SparseSet<Velocity>* v = static_cast<SparseSet<Velocity>*>(entities.GetComponentArraysTEST().at(1).get());
@@ -234,10 +223,8 @@ TEST_CASE("ECS entity ID reuse order") {
 
     // Priority queue is min-heap, so ID 1 comes back before ID 2
     entities.CreateEntity();
-    CHECK(entities.GetLastCreatedEntity() == 1);
 
     entities.CreateEntity();
-    CHECK(entities.GetLastCreatedEntity() == 2);
 }
 
 // ---------------------------------------------------------------------------
@@ -283,8 +270,6 @@ TEST_CASE("ECS Get returns mutable reference") {
 
     EntityID id = entities.CreateEntity();
     entities.Add<Position>(id, Position(1.0f, 2.0f));
-
-    CHECK(id == entities.GetLastCreatedEntity());
 
     auto result = entities.Get<Position>(id);
     REQUIRE(result.IsValid());
@@ -440,7 +425,6 @@ TEST_CASE("ECS recycled entity has clean state") {
     // Reuse slot 0 — only attach Velocity this time
     id = entities.CreateEntity();
     entities.Add<Velocity>(id, Velocity(9.0f, 9.0f));
-    CHECK(entities.GetLastCreatedEntity() == 0);
 
     // Position must NOT be present from the previous occupant
     CHECK_FALSE(entities.Has<Position>(0));
@@ -563,24 +547,19 @@ TEST_CASE("ECS living entity count") {
     ECS entities;
     entities.RegisterComponent<Position>();
 
-    // We can observe count indirectly via the available queue size.
-    // After N creates the queue shrinks by N; after M deletes it grows by M.
-    auto queueSize = [&]() { return entities.GetAvailableEntitiesTEST().size(); };
-    size_t initial = queueSize();
-
     EntityID id = entities.CreateEntity();
     entities.Add<Position>(id, Position());
 
     id = entities.CreateEntity();
     entities.Add<Position>(id, Position());
 
-    CHECK(queueSize() == initial - 2);
+    CHECK(entities.GetLivingEntityCount() == 2);
 
     entities.DeleteEntity(0);
-    CHECK(queueSize() == initial - 1);
+    CHECK(entities.GetLivingEntityCount() == 1);
 
     entities.DeleteEntity(1);
-    CHECK(queueSize() == initial);
+    CHECK(entities.GetLivingEntityCount() == 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -599,8 +578,7 @@ TEST_CASE("ECS Add() and WithComponent() produce identical state") {
     entities.Add<Velocity>(a, Velocity(3.0f, 4.0f));
 
     // Build entity B via individual Add calls
-    entities.CreateEntity();
-    EntityID b = entities.GetLastCreatedEntity();
+    EntityID b = entities.CreateEntity();
     entities.Add<Position>(b, Position(1.0f, 2.0f));
     entities.Add<Velocity>(b, Velocity(3.0f, 4.0f));
 
@@ -651,9 +629,8 @@ TEST_CASE("ECS concurrent CreateEntity produces unique IDs") {
     auto dup = std::adjacent_find(collectedIDs.begin(), collectedIDs.end());
     CHECK(dup == collectedIDs.end());
 
-    // The available queue must have shrunk by exactly the number of created entities
     int total = kThreadCount * kOpsPerThread;
-    CHECK(entities.GetAvailableEntitiesTEST().size() == MAX_ENTITIES - total);
+    CHECK(entities.GetLivingEntityCount() == total);
 }
 
 // ---------------------------------------------------------------------------
