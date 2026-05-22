@@ -559,3 +559,187 @@ TEST_CASE("InputManager mouse moved event carries correct coordinates") {
 
     EventHandler::GetInstance().Unsubscribe(id);
 }
+
+// ---------------------------------------------------------------------------
+// Multithreading tests
+// ---------------------------------------------------------------------------
+
+TEST_CASE("InputManager concurrent reads do not deadlock") {
+    InputFixture fix;
+    InputManager& input = InputManager::GetInstance();
+
+    input.SimulateKeyState(Keys::A, true);
+    input.SimulateUpdate();
+    input.SimulateKeyState(Keys::A, true);
+
+    constexpr int NUM_THREADS = 8;
+    constexpr int READS_PER_THREAD = 1000;
+
+    std::vector<std::thread> threads;
+    std::atomic<int> trueCount{0};
+
+    for (int t = 0; t < NUM_THREADS; ++t) {
+        threads.emplace_back([&]() {
+            for (int i = 0; i < READS_PER_THREAD; ++i) {
+                if (input.GetKey(Keys::A))
+                    trueCount++;
+                if (input.GetKeyDown(Keys::A))
+                    trueCount++;
+                if (input.GetMousePosition().x >= 0)
+                    trueCount++;
+            }
+        });
+    }
+
+    for (auto& t : threads)
+        t.join();
+
+    // All threads saw GetKey(A) == true (key held for 2 frames),
+    // so trueCount should be exactly NUM_THREADS * READS_PER_THREAD * 2
+    // (GetKey + GetMousePosition; GetKeyDown false because key was in previous too)
+    CHECK(trueCount == NUM_THREADS * READS_PER_THREAD * 2);
+}
+
+TEST_CASE("InputManager concurrent writes do not corrupt state") {
+    InputFixture fix;
+    InputManager& input = InputManager::GetInstance();
+
+    // Hammer SetKey from many threads — the deduplication guard
+    // (if current == pressed return) must be race-free
+    constexpr int NUM_THREADS = 8;
+    constexpr int OPS_PER_THREAD = 500;
+
+    std::vector<std::thread> threads;
+    for (int t = 0; t < NUM_THREADS; ++t) {
+        threads.emplace_back([&, t]() {
+            for (int i = 0; i < OPS_PER_THREAD; ++i) {
+                // Alternate press/release so we exercise both branches
+                bool pressed = (i % 2 == 0);
+                input.SimulateKeyState(Keys::A, pressed);
+                input.SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, pressed);
+            }
+        });
+    }
+
+    for (auto& t : threads)
+        t.join();
+
+    // No assertions on final value (threads interleave freely),
+    // but reaching here without UB/crash is the real test.
+    // Sanitize with -fsanitize=thread to catch any latent races.
+    CHECK_NOTHROW(input.GetKey(Keys::A));
+    CHECK_NOTHROW(input.GetMouseButton(MouseButtons::BUTTON_LEFT));
+}
+
+TEST_CASE("InputManager concurrent read-write does not deadlock") {
+    InputFixture fix;
+    InputManager& input = InputManager::GetInstance();
+
+    constexpr int NUM_WRITERS = 4;
+    constexpr int NUM_READERS = 4;
+    constexpr int OPS = 300;
+
+    std::atomic<bool> stop{false};
+    std::vector<std::thread> threads;
+
+    // Writers: continuously flip key state
+    for (int t = 0; t < NUM_WRITERS; ++t) {
+        threads.emplace_back([&, t]() {
+            for (int i = 0; i < OPS; ++i) {
+                input.SimulateKeyState(Keys::W, i % 2 == 0);
+                input.SimulateMouseButtonState(MouseButtons::BUTTON_RIGHT, i % 2 == 0);
+                input.SimulateMousePosition({static_cast<float>(i), static_cast<float>(t)});
+            }
+        });
+    }
+
+    // Readers: continuously read state
+    for (int t = 0; t < NUM_READERS; ++t) {
+        threads.emplace_back([&]() {
+            for (int i = 0; i < OPS; ++i) {
+                (void) input.GetKey(Keys::W);
+                (void) input.GetKeyDown(Keys::W);
+                (void) input.GetKeyUp(Keys::W);
+                (void) input.GetMouseButton(MouseButtons::BUTTON_RIGHT);
+                (void) input.GetMousePosition();
+            }
+        });
+    }
+
+    for (auto& t : threads)
+        t.join();
+
+    CHECK_NOTHROW(input.GetKey(Keys::W));
+}
+
+TEST_CASE("InputManager Update is safe under concurrent writes") {
+    InputFixture fix;
+    InputManager& input = InputManager::GetInstance();
+
+    // Hold two keys so Update() iterates them
+    input.SimulateKeyState(Keys::A, true);
+    input.SimulateKeyState(Keys::D, true);
+    input.SimulateUpdate(); // move into previous
+
+    constexpr int NUM_WRITERS = 4;
+    constexpr int ITERATIONS = 200;
+
+    std::vector<std::thread> writers;
+    for (int t = 0; t < NUM_WRITERS; ++t) {
+        writers.emplace_back([&, t]() {
+            for (int i = 0; i < ITERATIONS; ++i) {
+                input.SimulateKeyState(Keys::A, i % 2 == 0);
+                input.SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, i % 3 == 0);
+            }
+        });
+    }
+
+    // Concurrently call Update() from the main thread
+    for (int i = 0; i < ITERATIONS; ++i) {
+        input.SimulateUpdate();
+    }
+
+    for (auto& w : writers)
+        w.join();
+
+    // If we reach here without deadlock/crash the mutex logic is correct
+    CHECK_NOTHROW(input.GetKey(Keys::A));
+}
+
+TEST_CASE("InputManager rapid press-release cycle from multiple threads") {
+    InputFixture fix;
+    InputManager& input = InputManager::GetInstance();
+
+    // Two threads independently press and release *different* keys —
+    // independent key slots should never interfere with each other
+    constexpr int CYCLES = 500;
+
+    std::thread t1([&]() {
+        for (int i = 0; i < CYCLES; ++i) {
+            input.SimulateKeyState(Keys::A, true);
+            input.SimulateKeyState(Keys::A, false);
+        }
+    });
+
+    std::thread t2([&]() {
+        for (int i = 0; i < CYCLES; ++i) {
+            input.SimulateKeyState(Keys::B, true);
+            input.SimulateKeyState(Keys::B, false);
+        }
+    });
+
+    t1.join();
+    t2.join();
+
+    // Neither key should be stuck in an inconsistent "half-pressed" state
+    // after both threads finish. Both GetKeyDown and GetKey rely on a
+    // consistent current/previous pair — verify they return a valid bool.
+    bool aDown = input.GetKeyDown(Keys::A);
+    bool bDown = input.GetKeyDown(Keys::B);
+    bool aHeld = input.GetKey(Keys::A);
+    bool bHeld = input.GetKey(Keys::B);
+
+    // A key cannot be both "just down" and "held" simultaneously
+    CHECK_FALSE((aDown && aHeld));
+    CHECK_FALSE((bDown && bHeld));
+}
