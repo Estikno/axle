@@ -15,9 +15,11 @@
 #include <array>
 #include <deque>
 #include <unordered_map>
+#include <unordered_set>
 #include <set>
 #include <typeindex>
 #include <typeinfo>
+#include <type_traits>
 #include <limits>
 #include <ranges>
 #include <variant>

@@ -185,6 +185,18 @@ namespace Axle {
             return m_LivingEntities[id];
         }
 
+        /**
+         * Returns the type of a component that has been registered.
+         *
+         * @returns The type of the component
+         */
+        template <typename T>
+        inline ComponentType GetComponentType() noexcept {
+            static ComponentType typeID = s_NextComponentType.fetch_add(1, std::memory_order_seq_cst);
+            AX_ENSURE(typeID < MAX_COMPONENTS, "Too many components registered. The maximum is {0}.", MAX_COMPONENTS);
+            return typeID;
+        }
+
 #ifdef AXLE_TESTING
         inline const std::unordered_map<ComponentType, std::unique_ptr<ISparseSet>>&
         GetComponentArraysTEST() const noexcept {
@@ -200,7 +212,7 @@ namespace Axle {
             return m_AvailableEntities;
         }
 
-        inline const std::unordered_map<ComponentType, ComponentDescriptorDebug>& GetDescriptors() const noexcept {
+        inline std::unordered_map<ComponentType, ComponentDescriptorDebug>& GetDescriptors() noexcept {
             return m_ComponentDescriptorsDebug;
         }
 
@@ -291,18 +303,6 @@ namespace Axle {
         template <typename... Ts>
         inline bool HasAnyUnsafe(EntityID id) {
             return (HasUnsafe<Ts>(id) || ...);
-        }
-
-        /**
-         * Returns the type of a component that has been registered. This method is thread safe.
-         *
-         * @returns The type of the component
-         */
-        template <typename T>
-        inline ComponentType GetComponentType() noexcept {
-            static ComponentType typeID = s_NextComponentType.fetch_add(1, std::memory_order_seq_cst);
-            AX_ENSURE(typeID < MAX_COMPONENTS, "Too many components registered. The maximum is {0}.", MAX_COMPONENTS);
-            return typeID;
         }
 
         /**
@@ -596,6 +596,9 @@ namespace Axle {
     template <typename... Components>
     class View {
     public:
+        AXLE_TEST_API View()
+            : View(ECS::GetInstance()) {} // delegates to pointer version
+
         AXLE_TEST_API View(ECS& entities)
             : View(&entities) {} // delegates to pointer version
 
@@ -619,7 +622,8 @@ namespace Axle {
             for (const EntityID& entity : temp) {
                 if (m_Entities->HasAllUnsafe<Components...>(entity)) {
                     // We can safely unwrap here because we already checked that the entity has all the components
-                    components.emplace_back((m_Entities->GetUnsafe<Components>(entity)).Unwrap().get()...);
+                    components.emplace_back(
+                        (m_Entities->GetUnsafe<std::remove_const_t<Components>>(entity)).Unwrap().get()...);
                     final.push_back(entity);
                 }
             }
@@ -644,7 +648,8 @@ namespace Axle {
             for (const EntityID& entity : temp) {
                 if (m_Entities->HasAllUnsafe<Components...>(entity)) {
                     // We can safely unwrap here because we already checked that the entity has all the components
-                    components.emplace_back((m_Entities->GetUnsafe<Components>(entity)).Unwrap().get()...);
+                    components.emplace_back(
+                        (m_Entities->GetUnsafe<std::remove_const_t<Components>>(entity)).Unwrap().get()...);
                     final.push_back(entity);
                 }
             }
@@ -666,11 +671,12 @@ namespace Axle {
             for (const EntityID& entity : entities) {
                 if (m_Entities->HasAllUnsafe<Components...>(entity)) {
                     // We can safely unwrap here because we already checked that the entity has all the components
-                    components.emplace_back((m_Entities->GetUnsafe<Components>(entity)).Unwrap().get()...);
+                    components.emplace_back(
+                        (m_Entities->GetUnsafe<std::remove_const_t<Components>>(entity)).Unwrap().get()...);
                 }
             }
 
-            return std::move(components);
+            return components;
         }
 
         /**
@@ -688,11 +694,12 @@ namespace Axle {
             for (const EntityID& entity : entities) {
                 if (m_Entities->HasAllUnsafe<Components...>(entity)) {
                     // We can safely unwrap here because we already checked that the entity has all the components
-                    components.emplace_back((m_Entities->GetUnsafe<Components>(entity)).Unwrap().get()...);
+                    components.emplace_back(
+                        (m_Entities->GetUnsafe<std::remove_const_t<Components>>(entity)).Unwrap().get()...);
                 }
             }
 
-            return std::move(components);
+            return components;
         }
 
     private:

@@ -204,6 +204,8 @@ namespace Axle {
     /**
      * A simple wrapper around some data used in the job future logic
      * */
+    // TODO: A possible optimization is to ditch the mutex and meke the isReady variable atomic, and only check the data
+    // when isReady was checked to be true
     template <typename T>
     struct JobFutureInner {
         bool isReady{false};
