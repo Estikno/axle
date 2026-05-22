@@ -5,7 +5,6 @@
 #include "Core/Types.hpp"
 
 #include "Debug/Console.hpp"
-#include "Debug/ECSEditor.hpp"
 
 namespace Axle {
     class ImGuiLayer : public Layer {
@@ -25,6 +24,5 @@ namespace Axle {
         // Renderer variables
         Debug::DebugConsole m_Console;
         bool m_OpenOverlay = true;
-        Debug::ECSEditor m_ECSEditor;
     };
 } // namespace Axle

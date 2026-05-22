@@ -63,14 +63,6 @@ namespace Axle {
             },
             EventType::KeyPressed,
             EventCategory::Input);
-        // Key to toggle the ECS editor
-        EventHandler::GetInstance().Subscribe(
-            [&](Event& event) {
-                if (std::get<std::array<u16, 8>>(event.GetContext().raw_data).at(0) == static_cast<u16>(Keys::F3))
-                    m_ECSEditor.m_Open = !m_ECSEditor.m_Open;
-            },
-            EventType::KeyPressed,
-            EventCategory::Input);
     }
 
     void ImGuiLayer::OnRender(f64 DeltaTime) {
@@ -87,9 +79,6 @@ namespace Axle {
         // Debug Information
         if (m_OpenOverlay)
             Debug::ShowSimpleOverlay(&m_OpenOverlay, DeltaTime, JobSystem::GetInstance().GetAvailableJobs());
-        // ECS Editor
-        if (m_ECSEditor.m_Open)
-            m_ECSEditor.Draw("ECS Editor", &m_ECSEditor.m_Open);
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

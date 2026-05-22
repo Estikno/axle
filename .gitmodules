@@ -19,3 +19,6 @@
 [submodule "vendor/flatbuffers"]
 	path = vendor/flatbuffers
 	url = https://github.com/google/flatbuffers.git
+[submodule "Axle/vendor/entt"]
+	path = Axle/vendor/entt
+	url = https://github.com/skypjack/entt.git
