@@ -1,5 +1,4 @@
 #include <glad/gl.h>
-
 #include <Axle.hpp>
 
 using namespace Axle;
@@ -17,110 +16,83 @@ public:
     }
 
     void OnAttachRender() override {
-        // Create the vertext shader and compile it at run-time
-        vertexShader = glCreateShader(GL_VERTEX_SHADER);
-        glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+        // Load shader files
+        ResourceManager::ManagedFileHandle VertexShaderHandle =
+            ResourceManager::GetInstance().Load("Sandbox/src/Shaders/default.vert").Unwrap();
+        ResourceManager::ManagedFileHandle FragmentShaderHandle =
+            ResourceManager::GetInstance().Load("Sandbox/src/Shaders/default.frag").Unwrap();
+
+        ResourceManager::ReadGuard rVertex =
+            std::move(ResourceManager::GetInstance().DataConst(VertexShaderHandle).Unwrap());
+        const char* rVertexData = rVertex.Data();
+        GLint vertexSize = (GLint) rVertex.Size();
+        ResourceManager::ReadGuard rFrag =
+            std::move(ResourceManager::GetInstance().DataConst(FragmentShaderHandle).Unwrap());
+        const char* rFragData = rFrag.Data();
+        GLint fragSize = (GLint) rFrag.Size();
+
+        // Compile vertex shader
+        GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+        glShaderSource(vertexShader, 1, &rVertexData, &vertexSize);
         glCompileShader(vertexShader);
 
-        // Create the fragment shader and compile it at run-time
-        fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-        glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+        i32 success;
+        char infoLog[512];
+        glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+        if (!success) {
+            glGetShaderInfoLog(vertexShader, 512, nullptr, infoLog);
+            AX_PANIC("ERROR::SHADER::VERTEX::COMPILATION_FAILED: {0}", infoLog);
+        }
+
+        // Compile fragment shader
+        GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+        glShaderSource(fragmentShader, 1, &rFragData, &fragSize);
         glCompileShader(fragmentShader);
 
-        // Create a program object to be able to use the shaders
-        shaderProgram = glCreateProgram();
-        glAttachShader(shaderProgram, vertexShader);
-        glAttachShader(shaderProgram, fragmentShader);
-        glLinkProgram(shaderProgram);
+        glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+        if (!success) {
+            glGetShaderInfoLog(fragmentShader, 512, nullptr, infoLog);
+            AX_PANIC("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED: {0}", infoLog);
+        }
 
-        // We dont need the shaders anymore, they are already linked into the program
+        // Create the shader program
+        program = glCreateProgram();
+        glAttachShader(program, vertexShader);
+        glAttachShader(program, fragmentShader);
+        glLinkProgram(program);
+
+        glGetProgramiv(program, GL_LINK_STATUS, &success);
+        if (!success) {
+            glGetProgramInfoLog(program, 512, nullptr, infoLog);
+            AX_PANIC("ERROR::SHADER::PROGRAM::LINK_FAILED: {0}", infoLog);
+        }
+
+        glUseProgram(program);
+        // We no longer need the shader objects since we linked with the program
         glDeleteShader(vertexShader);
         glDeleteShader(fragmentShader);
 
-        // Create a vertex array object and a vertex buffer object to pass information to the GPU
-        glGenVertexArrays(1, VAOs);
-        glGenBuffers(1, VBOs);
-        glGenBuffers(1, &EBO);
+        glGenVertexArrays(1, &VAO);
+        glBindVertexArray(VAO);
 
-        // We tell OpenGL to use these VAO and VBO on the subsequent calls
-        glBindVertexArray(VAOs[0]);
-        glBindBuffer(GL_ARRAY_BUFFER, VBOs[0]);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-
-        // We transfer the vertex data to the GPU
+        GLuint VBO;
+        glGenBuffers(1, &VBO);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
         glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-        // We define how to interpret the vertex data
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(f32), (void*) 0);
         glEnableVertexAttribArray(0);
-
-        // We reset the VAO and VBO bindings to their defaults to prevent accidental modification
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
-
-        // Important: Do NOT unbind the EBO while a VAO is active as the bound EBO is stored in the VAO.
-        // Unbinding it will mean that OpenGL will think we dont want to use the EBO.
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     }
-    void OnDettachRender() override {
-        // We clean up the used resources
-        glDeleteVertexArrays(1, VAOs);
-        glDeleteBuffers(1, VBOs);
-        glDeleteBuffers(1, &EBO);
-        glDeleteProgram(shaderProgram);
-    }
+    void OnDettachRender() override {}
     void OnRender(f64 DeltaTime) override {
-        // We specify OpenGL to use our program and our VAO
-        glUseProgram(shaderProgram);
-        glBindVertexArray(VAOs[0]);
-
-        // We draw the triangle
-        // glDrawArrays(GL_TRIANGLES, 0, 3);
-        glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
+        glUseProgram(program);
+        glBindVertexArray(VAO);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
     }
 
 private:
-    f32 vertices[18] = {
-        0.0f,
-        0.5f,
-        0.0f,
-
-        -0.5f * float(sqrt(3.0)) / 2.0f,
-        -0.5f * 0.5f,
-        0.0f,
-
-        0.5f * float(sqrt(3.0)) / 2.0f,
-        -0.5f * 0.5f,
-        0.0f,
-
-        0.0f,
-        -0.5f,
-        0.0f,
-
-        -0.6f,
-        0.2f,
-        0.0f,
-
-        0.6f,
-        0.2f,
-        0.0f,
-    };
-    u32 indices[9] = {1, 3, 4, 3, 5, 2, 0, 4, 5};
-    u32 vertexShader, fragmentShader, shaderProgram, EBO;
-    u32 VBOs[1], VAOs[1];
-    const char* vertexShaderSource = "#version 460 core\n"
-                                     "layout (location = 0) in vec3 aPos;\n"
-                                     "void main()\n"
-                                     "{\n"
-                                     "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-                                     "}\0";
-    const char* fragmentShaderSource = "#version 460 core\n"
-                                       "out vec4 FragColor;\n"
-                                       "void main()\n"
-                                       "{\n"
-                                       "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-                                       "}\n\0";
+    f32 vertices[9] = {-0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f, 0.0f, 0.5f, 0.0f};
+    GLuint program, VAO;
 };
 
 class Sandbox : public Axle::Application {

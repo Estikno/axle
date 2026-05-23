@@ -29,7 +29,6 @@ namespace Axle {
             [&](Event& e) { OnWindowClose(e); }, EventType::WindowClose, EventCategory::Window);
 
         s_Instance = this;
-        // m_Window = std::unique_ptr<Window>(Window::Create());
 
         // Layers setup
         m_LayerStack = new LayerStack();
@@ -45,16 +44,27 @@ namespace Axle {
 
     void Application::PushLayer(Layer* layer) {
         AX_CORE_INFO("{0} layer attached", layer->GetName());
+        AX_ENSURE(!m_Running, "Cannot push layers after Run() has been called — not thread safe");
         m_LayerStack->PushLayer(layer);
     }
 
     void Application::PushOverlay(Layer* layer) {
         AX_CORE_INFO("{0} overlay attached", layer->GetName());
+        AX_ENSURE(!m_Running, "Cannot push overlays after Run() has been called — not thread safe");
         m_LayerStack->PushOverlay(layer);
     }
 
     void Application::Run() {
-        std::thread RenderThread(&Application::Render, this);
+        m_Running = true;
+        std::barrier initBarrier(2);
+
+        std::thread RenderThread([this, &initBarrier]() {
+            m_Window = std::unique_ptr<Window>(Window::Create()); // GLFW + GLAD init
+            initBarrier.arrive_and_wait();                        // signal main thread that init is done
+            Render();
+        });
+
+        initBarrier.arrive_and_wait();
         Update();
 
         RenderThread.join();
@@ -106,8 +116,8 @@ namespace Axle {
     void Application::Render() {
         AX_CORE_INFO("Welcome from thread {0}", std::hash<std::thread::id>{}(std::this_thread::get_id()));
 
-        // Sets up imporant stuff
-        m_Window = std::unique_ptr<Window>(Window::Create());
+        // // Sets up imporant stuff
+        // m_Window = std::unique_ptr<Window>(Window::Create());
 
         for (Layer* layer : *m_LayerStack)
             layer->OnAttachRender();

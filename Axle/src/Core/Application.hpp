@@ -42,7 +42,7 @@ namespace Axle {
         static Application* s_Instance;
 
         std::unique_ptr<Window> m_Window;
-        std::atomic<bool> m_Running = true;
+        std::atomic<bool> m_Running = false;
         LayerStack* m_LayerStack;
 
         /// Time between update loops

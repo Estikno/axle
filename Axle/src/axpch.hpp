@@ -35,5 +35,6 @@
 #include <atomic>
 #include <mutex>
 #include <shared_mutex>
+#include <barrier>
 
 #include <chrono>

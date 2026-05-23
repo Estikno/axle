@@ -46,7 +46,8 @@ set_target_properties(Glad PROPERTIES
 # PIC required on Linux so it can be linked into the Axle shared lib
 if(UNIX)
     set_target_properties(Glad PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    target_compile_options(Glad PRIVATE -fvisibility=hidden)
+    # Avoid reduplication of simbols. Keep comented for now to avoid errors with glad
+    # target_compile_options(Glad PRIVATE -fvisibility=hidden)
 endif()
 
 # ══════════════════════════════════════════════════════════════════════════════

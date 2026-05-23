@@ -51,7 +51,7 @@ namespace Axle {
         glfwMakeContextCurrent(m_Window);
 
         // Initialize Glad
-        int version = gladLoadGL(glfwGetProcAddress);
+        int version = gladLoaderLoadGL();
         AX_ASSERT(version != 0, "Failed to initialize Glad!");
         glViewport(0, 0, props.Width, props.Height);
 
@@ -75,6 +75,7 @@ namespace Axle {
     }
 
     Window::~Window() {
+        gladLoaderUnloadGL();
         glfwDestroyWindow(m_Window);
 
         // If it's the last window terminate GLFW
