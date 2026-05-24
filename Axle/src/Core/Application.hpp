@@ -19,18 +19,6 @@ namespace Axle {
 
         void PushLayer(Layer* layer);
         void PushOverlay(Layer* layer);
-        std::vector<Layer*>::iterator LayerStackBegin() {
-            return m_LayerStack->begin();
-        }
-        std::vector<Layer*>::iterator LayerStackEnd() {
-            return m_LayerStack->end();
-        }
-        std::vector<Layer*>::reverse_iterator LaterStackrbegin() {
-            return m_LayerStack->rbegin();
-        }
-        std::vector<Layer*>::reverse_iterator LayerStackrend() {
-            return m_LayerStack->rend();
-        }
 
         /**
          * Returns the window of the application.

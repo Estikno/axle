@@ -39,16 +39,18 @@ namespace Axle {
         m_EventQueue.emplace_back(std::move(event));
     }
 
-    void EventHandler::Notify(Event& event) {
-        for (auto it = Application::GetInstance().LaterStackrbegin(); it != Application::GetInstance().LayerStackrend();
-             it++) {
+    void EventHandler::Notify(Event& event,
+                              std::vector<Layer*>::reverse_iterator begin,
+                              std::vector<Layer*>::reverse_iterator end) {
+        for (; begin != end; begin++) {
             if (event.IsHandled())
                 break;
-            (*it)->OnEvent(event);
+            (*begin)->OnEvent(event);
         }
     }
 
-    void EventHandler::ProcessEvents() {
+    void EventHandler::ProcessEvents(std::vector<Layer*>::reverse_iterator begin,
+                                     std::vector<Layer*>::reverse_iterator end) {
         std::vector<Event> eventsToProcess;
 
         // Swap the event queue with a local vector to minimize lock time and to also clear the queue for new events
@@ -58,7 +60,7 @@ namespace Axle {
         }
 
         for (auto& event : eventsToProcess) {
-            Notify(event);
+            Notify(event, begin, end);
         }
     }
 } // namespace Axle

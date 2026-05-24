@@ -94,7 +94,7 @@ namespace Axle {
             while (lag >= m_DeltaTime) {
                 // Update logic
                 // --------------------------
-                EventHandler::GetInstance().ProcessEvents();
+                EventHandler::GetInstance().ProcessEvents(m_LayerStack->rbegin(), m_LayerStack->rend());
                 InputManager::GetInstance().Update();
 
                 for (Layer* layer : *m_LayerStack)

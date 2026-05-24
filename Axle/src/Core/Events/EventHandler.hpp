@@ -4,6 +4,7 @@
 
 #include "../Core.hpp"
 #include "Event.hpp"
+#include "Core/Layer/Layer.hpp"
 
 namespace Axle {
     /**
@@ -73,7 +74,7 @@ namespace Axle {
          *
          * It is safe to call this method multiple times per frame, but it is recommended to call it only once.
          */
-        void ProcessEvents();
+        void ProcessEvents(std::vector<Layer*>::reverse_iterator begin, std::vector<Layer*>::reverse_iterator end);
 
     private:
         /**
@@ -81,7 +82,8 @@ namespace Axle {
          *
          * Only notifies suscribers that are interested in the type of the event.
          */
-        void Notify(Event& event);
+        void
+        Notify(Event& event, std::vector<Layer*>::reverse_iterator begin, std::vector<Layer*>::reverse_iterator end);
 
         /// The singleton of the event handler class
         static std::unique_ptr<EventHandler> m_EventHandler;
