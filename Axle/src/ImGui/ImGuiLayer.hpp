@@ -20,6 +20,9 @@ namespace Axle {
         void OnRender(f64 DeltaTime) override;
         void OnDettachRender() override;
 
+        void OnEvent(Event& event) override;
+        void InputEvents(Event& event);
+
     private:
         // Renderer variables
         Debug::DebugConsole m_Console;

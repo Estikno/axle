@@ -67,21 +67,6 @@ namespace Axle {
         void DispatchEvent(Event&& event);
 
         /**
-         * Subscribes a handler (function) to the event system.
-         *
-         * Note that the order is first in last out. The last subscribed handler will be the first to be called.
-         *
-         * @param handler The function that has to be called when receiving a cerating event
-         * @param type The type of event it is interested in
-         * @param category The category of the event
-         *
-         * If you want to receive notifications of all events with in a category simply left the type as NONE
-         *
-         * @returns A a subscription id that can be used to unsubscribe later
-         */
-        size_t Subscribe(const HandlerType& handler, EventType type, EventCategory category);
-
-        /**
          * Processes all the events in the queue and notifies the subscribers.
          *
          * This method should be called every frame to ensure that all events are processed.
@@ -90,16 +75,7 @@ namespace Axle {
          */
         void ProcessEvents();
 
-        /**
-         * Deletes the handler type from the hashmap related to the given id.
-         *
-         * This method is called internally and should only be called by the "Subscription" class
-         *
-         * @param id Id to delete
-         */
-        void Unsubscribe(size_t id);
-
-    protected:
+    private:
         /**
          * The notify method is called internally and it notifies the suscribers about the new event that has arrived.
          *
@@ -107,19 +83,12 @@ namespace Axle {
          */
         void Notify(Event& event);
 
-    private:
         /// The singleton of the event handler class
         static std::unique_ptr<EventHandler> m_EventHandler;
 
         std::vector<Event> m_EventQueue;
 
         std::mutex m_EventMutex;
-        std::mutex m_HandlersMutex;
-
-        /// Active handlers mapped by their ID
-        std::unordered_map<size_t, std::tuple<HandlerType, EventCategory, EventType>> m_handlers;
-        /// Next unique ID for new subscriptions
-        size_t m_nextId = 0;
     };
 } // namespace Axle
 

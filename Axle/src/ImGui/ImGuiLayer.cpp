@@ -32,6 +32,7 @@ namespace Axle {
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
+        // TODO: In the future wire the inputs directly with the event system to IMGUI
         ImGuiIO& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
@@ -47,22 +48,6 @@ namespace Axle {
 
         // Setup sonsole
         m_Console.Init();
-        // Key to toggle the console
-        EventHandler::GetInstance().Subscribe(
-            [&](Event& event) {
-                if (std::get<std::array<u16, 8>>(event.GetContext().raw_data).at(0) == static_cast<u16>(Keys::F1))
-                    m_Console.Open = !m_Console.Open;
-            },
-            EventType::KeyPressed,
-            EventCategory::Input);
-        // Key to toggle the overlay
-        EventHandler::GetInstance().Subscribe(
-            [&](Event& event) {
-                if (std::get<std::array<u16, 8>>(event.GetContext().raw_data).at(0) == static_cast<u16>(Keys::F2))
-                    m_OpenOverlay = !m_OpenOverlay;
-            },
-            EventType::KeyPressed,
-            EventCategory::Input);
     }
 
     void ImGuiLayer::OnRender(f64 DeltaTime) {
@@ -91,5 +76,28 @@ namespace Axle {
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
+    }
+
+    void ImGuiLayer::OnEvent(Event& event) {
+        if (event.GetEventCategory() == EventCategory::Input)
+            InputEvents(event);
+    }
+
+    void ImGuiLayer::InputEvents(Event& event) {
+        // TODO: In the future wire the inputs directly with the event system to IMGUI
+        // ImGuiIO& io = ImGui::GetIO();
+
+        // FIX: There might be a race condition between the boolean variables as this method is not called by the render
+        // one
+        if (event.GetEventType() == EventType::KeyPressed) {
+            if (std::get<std::array<u16, 8>>(event.GetContext().raw_data).at(0) == static_cast<u16>(Keys::F2)) {
+                m_OpenOverlay = !m_OpenOverlay;
+                event.Handle();
+            }
+            if (std::get<std::array<u16, 8>>(event.GetContext().raw_data).at(0) == static_cast<u16>(Keys::F1)) {
+                m_Console.Open = !m_Console.Open;
+                event.Handle();
+            }
+        }
     }
 } // namespace Axle

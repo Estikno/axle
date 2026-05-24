@@ -67,7 +67,7 @@ namespace Axle {
         /**
          * Returns if the event has already been handled.
          *
-         * @returns If the event has already been handled.
+         * @returns true if the event has already been handled, false otherwise
          */
         bool IsHandled() const noexcept {
             return m_Handled;

@@ -19,6 +19,18 @@ namespace Axle {
 
         void PushLayer(Layer* layer);
         void PushOverlay(Layer* layer);
+        std::vector<Layer*>::iterator LayerStackBegin() {
+            return m_LayerStack->begin();
+        }
+        std::vector<Layer*>::iterator LayerStackEnd() {
+            return m_LayerStack->end();
+        }
+        std::vector<Layer*>::reverse_iterator LaterStackrbegin() {
+            return m_LayerStack->rbegin();
+        }
+        std::vector<Layer*>::reverse_iterator LayerStackrend() {
+            return m_LayerStack->rend();
+        }
 
         /**
          * Returns the window of the application.
@@ -37,6 +49,8 @@ namespace Axle {
         }
 
     private:
+        friend class BaseLayer;
+
         void OnWindowClose(Event& event);
 
         static Application* s_Instance;
@@ -51,4 +65,29 @@ namespace Axle {
 
     // To be defined in client
     Application* CreateApplication();
+
+    // This will be the deepest layer of the engine
+    class AXLE_TEST_API BaseLayer : public Layer {
+    public:
+        BaseLayer()
+            : Layer("BaseLayer") {}
+        ~BaseLayer() override = default;
+
+        void OnAttach() override {}
+        void OnUpdate(f64 FixedDeltaTime) override {}
+        void OnDettach() override {}
+
+        void OnAttachRender() override {}
+        void OnRender(f64 DeltaTime) override {}
+        void OnDettachRender() override {}
+
+        void OnEvent(Event& event) override {
+            if (event.GetEventCategory() == EventCategory::Window && event.GetEventType() == EventType::WindowClose) {
+                Application::GetInstance().OnWindowClose(event);
+                event.Handle();
+            }
+        }
+
+    private:
+    };
 } // namespace Axle

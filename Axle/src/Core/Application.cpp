@@ -25,13 +25,11 @@ namespace Axle {
             AX_PANIC("Application already exists!");
         }
 
-        EventHandler::GetInstance().Subscribe(
-            [&](Event& e) { OnWindowClose(e); }, EventType::WindowClose, EventCategory::Window);
-
         s_Instance = this;
 
         // Layers setup
         m_LayerStack = new LayerStack();
+        PushLayer(new BaseLayer());
         PushOverlay(new ImGuiLayer());
     }
 

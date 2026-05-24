@@ -1,10 +1,10 @@
 #include "axpch.hpp"
 
+#include "Core/Application.hpp"
 #include "../Types.hpp"
 #include "EventHandler.hpp"
 #include "../Logger/Log.hpp"
 #include "Event.hpp"
-#include <tuple>
 
 namespace Axle {
     std::unique_ptr<EventHandler> EventHandler::m_EventHandler;
@@ -39,40 +39,12 @@ namespace Axle {
         m_EventQueue.emplace_back(std::move(event));
     }
 
-    size_t EventHandler::Subscribe(const HandlerType& handler, EventType type, EventCategory category) {
-        std::scoped_lock lock(m_HandlersMutex);
-
-        size_t id = m_nextId++;
-        m_handlers[id] = std::make_tuple(handler, category, type);
-
-        return id;
-    }
-
-    void EventHandler::Unsubscribe(size_t id) {
-        std::scoped_lock lock(m_HandlersMutex);
-
-        m_handlers.erase(id);
-    }
-
     void EventHandler::Notify(Event& event) {
-        if (event.IsHandled())
-            return;
-
-        std::vector<HandlerType> snapshot;
-
-        {
-            std::scoped_lock lock(m_HandlersMutex);
-            for (auto& [id, tuple] : m_handlers) {
-                auto& [handler, category, type] = tuple;
-                if (category == event.GetEventCategory() && (type == EventType::None || type == event.GetEventType()))
-                    snapshot.push_back(handler);
-            }
-        }
-
-        for (auto& handler : snapshot) {
+        for (auto it = Application::GetInstance().LaterStackrbegin(); it != Application::GetInstance().LayerStackrend();
+             it++) {
             if (event.IsHandled())
-                return;
-            handler(event);
+                break;
+            (*it)->OnEvent(event);
         }
     }
 

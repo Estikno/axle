@@ -4,6 +4,7 @@
 
 #include "Core/Core.hpp"
 #include "Core/Types.hpp"
+#include "Core/Events/Event.hpp"
 
 namespace Axle {
     class AXLE_API Layer {
@@ -35,7 +36,8 @@ namespace Axle {
 
         /**
          * Called every frame in the render thread.
-         * All OpenGL calls must be done here. */
+         * All OpenGL calls must be done here.
+         * */
         virtual void OnRender(f64 DeltaTime) = 0;
 
         /**
@@ -44,14 +46,16 @@ namespace Axle {
          * */
         virtual void OnDettachRender() = 0;
 
+        /**
+         * Called when an event is passed to the layer
+         * */
+        virtual void OnEvent(Event& event) = 0;
+
         inline const std::string& GetName() const {
             return m_DebugName;
         }
 
     protected:
         std::string m_DebugName;
-
-        /// The indexes of the events the layer is subscribed to.
-        std::vector<size_t> m_EventSubscribeIndexes;
     };
 } // namespace Axle
