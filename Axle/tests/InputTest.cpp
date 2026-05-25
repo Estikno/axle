@@ -1,745 +1,671 @@
-// #include <doctest.h>
-// #include <glm/vec2.hpp>
-//
-// #include "Core/Input/InputManager.hpp"
-// #include "Core/Events/Event.hpp"
-// #include "Core/Events/EventHandler.hpp"
-// #include "Core/Input/InputState.hpp"
-// #include "Core/Logger/Log.hpp"
-//
-// using namespace Axle;
-//
-// void TestKeyEvents(Event& event) {
-//     CHECK(event.GetEventCategory() == Axle::EventCategory::Input);
-//     // CHECK(event->GetContext().u16_values[0] == (unsigned short) Keys::A);
-//     CHECK(std::get<std::array<u16, 8>>(event.GetContext().raw_data).at(0) == (u16) Keys::A);
-// }
-//
-// void TestMouseButtonEvents(Event& event) {
-//     CHECK(event.GetEventCategory() == Axle::EventCategory::Input);
-//     // CHECK(event->GetContext().u16_values[0] == (unsigned short) MouseButtons::BUTTON_LEFT);
-//     CHECK(std::get<std::array<u16, 8>>(event.GetContext().raw_data).at(0) == (u16) MouseButtons::BUTTON_LEFT);
-// }
-//
-// void TestMouseWheelEvents(Event& event) {
-//     CHECK(event.GetEventCategory() == Axle::EventCategory::Input);
-//     // CHECK(event->GetContext().f32_values[0] == doctest::Approx(1.0));
-//     CHECK(std::get<std::array<f32, 4>>(event.GetContext().raw_data).at(0) == doctest::Approx(1.0));
-// }
-//
-// TEST_CASE("Input system key handling") {
-//     EventHandler::Init();
-//
-//     InputManager::Init();
-//     InputManager::GetInstance().SimulateReset();
-//
-//     size_t id = EventHandler::GetInstance().Subscribe(TestKeyEvents, EventType::None, EventCategory::Input);
-//
-//     SUBCASE("No key action") {
-//         CHECK_FALSE(InputManager::GetInstance().GetKeyDown(Keys::A));
-//         CHECK_FALSE(InputManager::GetInstance().GetKeyUp(Keys::A));
-//         CHECK_FALSE(InputManager::GetInstance().GetKey(Keys::A));
-//     }
-//
-//     SUBCASE("Key Down") {
-//         InputManager::GetInstance().SimulateKeyState(Keys::A, true);
-//
-//         CHECK(InputManager::GetInstance().GetKeyDown(Keys::A));
-//         CHECK_FALSE(InputManager::GetInstance().GetKey(Keys::A));
-//         CHECK_FALSE(InputManager::GetInstance().GetKeyUp(Keys::A));
-//
-//         EventHandler::GetInstance().ProcessEvents();
-//     }
-//
-//     SUBCASE("Key Up") {
-//         InputManager::GetInstance().SimulateKeyState(Keys::A, true);
-//         EventHandler::GetInstance().ProcessEvents();
-//
-//         InputManager::GetInstance().SimulateUpdate();
-//         InputManager::GetInstance().SimulateKeyState(Keys::A, false);
-//         EventHandler::GetInstance().ProcessEvents();
-//
-//         CHECK(InputManager::GetInstance().GetKeyUp(Keys::A));
-//         CHECK_FALSE(InputManager::GetInstance().GetKeyDown(Keys::A));
-//         CHECK_FALSE(InputManager::GetInstance().GetKey(Keys::A));
-//     }
-//
-//     SUBCASE("Key Is Pressed") {
-//         InputManager::GetInstance().SimulateKeyState(Keys::A, true);
-//         EventHandler::GetInstance().ProcessEvents();
-//
-//         CHECK_FALSE(InputManager::GetInstance().GetKey(Keys::A));
-//
-//         InputManager::GetInstance().SimulateUpdate();
-//         InputManager::GetInstance().SimulateKeyState(Keys::A, true);
-//         EventHandler::GetInstance().ProcessEvents();
-//
-//         CHECK(InputManager::GetInstance().GetKey(Keys::A));
-//         CHECK_FALSE(InputManager::GetInstance().GetKeyUp(Keys::A));
-//         CHECK_FALSE(InputManager::GetInstance().GetKeyDown(Keys::A));
-//     }
-//
-//     EventHandler::GetInstance().Unsubscribe(id);
-// }
-//
-// TEST_CASE("Input system mouse button handling") {
-//     EventHandler::Init();
-//
-//     InputManager::Init();
-//     InputManager::GetInstance().SimulateReset();
-//
-//     size_t id = EventHandler::GetInstance().Subscribe(TestMouseButtonEvents, EventType::None, EventCategory::Input);
-//
-//     SUBCASE("No mouse button action") {
-//         CHECK_FALSE(InputManager::GetInstance().GetMouseButtonDown(MouseButtons::BUTTON_LEFT));
-//         CHECK_FALSE(InputManager::GetInstance().GetMouseButtonUp(MouseButtons::BUTTON_LEFT));
-//         CHECK_FALSE(InputManager::GetInstance().GetMouseButton(MouseButtons::BUTTON_LEFT));
-//     }
-//
-//     SUBCASE("Mouse button Down") {
-//         InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, true);
-//         EventHandler::GetInstance().ProcessEvents();
-//
-//         CHECK(InputManager::GetInstance().GetMouseButtonDown(MouseButtons::BUTTON_LEFT));
-//         CHECK_FALSE(InputManager::GetInstance().GetMouseButtonUp(MouseButtons::BUTTON_LEFT));
-//         CHECK_FALSE(InputManager::GetInstance().GetMouseButton(MouseButtons::BUTTON_LEFT));
-//     }
-//
-//     SUBCASE("Mouse button Up") {
-//         InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, true);
-//         EventHandler::GetInstance().ProcessEvents();
-//         InputManager::GetInstance().SimulateUpdate();
-//         InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, false);
-//         EventHandler::GetInstance().ProcessEvents();
-//
-//         CHECK(InputManager::GetInstance().GetMouseButtonUp(MouseButtons::BUTTON_LEFT));
-//         CHECK_FALSE(InputManager::GetInstance().GetMouseButtonDown(MouseButtons::BUTTON_LEFT));
-//         CHECK_FALSE(InputManager::GetInstance().GetMouseButton(MouseButtons::BUTTON_LEFT));
-//     }
-//
-//     SUBCASE("Mouse button Is Pressed") {
-//         InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, true);
-//         EventHandler::GetInstance().ProcessEvents();
-//
-//         CHECK_FALSE(InputManager::GetInstance().GetMouseButton(MouseButtons::BUTTON_LEFT));
-//
-//         InputManager::GetInstance().SimulateUpdate();
-//         InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, true);
-//         EventHandler::GetInstance().ProcessEvents();
-//
-//         CHECK_FALSE(InputManager::GetInstance().GetMouseButtonUp(MouseButtons::BUTTON_LEFT));
-//         CHECK_FALSE(InputManager::GetInstance().GetMouseButtonDown(MouseButtons::BUTTON_LEFT));
-//         CHECK(InputManager::GetInstance().GetMouseButton(MouseButtons::BUTTON_LEFT));
-//     }
-//
-//     EventHandler::GetInstance().Unsubscribe(id);
-// }
-//
-// TEST_CASE("Mouse position handling") {
-//     EventHandler::Init();
-//
-//     InputManager::Init();
-//     InputManager::GetInstance().SimulateReset();
-//
-//     glm::vec2 testPosition(100.0f, 200.0f);
-//     InputManager::GetInstance().SimulateMousePosition(testPosition);
-//
-//     SUBCASE("Get Mouse Position") {
-//         glm::vec2 mousePos = InputManager::GetInstance().GetMousePosition();
-//
-//         CHECK(mousePos == testPosition);
-//     }
-//
-//     SUBCASE("Set Mouse Position") {
-//         glm::vec2 newPosition(300.0f, 400.0f);
-//
-//         InputManager::GetInstance().SimulateMousePosition(newPosition);
-//         glm::vec2 mousePos = InputManager::GetInstance().GetMousePosition();
-//
-//         CHECK(mousePos == newPosition);
-//     }
-// }
-//
-// TEST_CASE("Mouse wheel handling") {
-//     EventHandler::Init();
-//
-//     InputManager::Init();
-//     InputManager::GetInstance().SimulateReset();
-//
-//     size_t id =
-//         EventHandler::GetInstance().Subscribe(TestMouseWheelEvents, EventType::MouseScrolled, EventCategory::Input);
-//
-//     InputManager::GetInstance().SimulateMouseWheel(1.0f);
-//     InputManager::GetInstance().SimulateUpdate();
-//     EventHandler::GetInstance().ProcessEvents();
-//
-//     EventHandler::GetInstance().Unsubscribe(id);
-// }
-// // ─── Additional edge cases for InputManager ───────────────────────────────
-//
-// // ---------------------------------------------------------------------------
-// // Helpers / fixtures
-// // ---------------------------------------------------------------------------
-//
-// // Sets up both managers and resets input state. Call at the top of each TEST_CASE.
-// struct InputFixture {
-//     InputFixture() {
-//         Log::Init();
-//         EventHandler::Init();
-//         InputManager::Init();
-//         InputManager::GetInstance().SimulateReset();
-//     }
-//     ~InputFixture() {
-//         InputManager::ShutDown();
-//         EventHandler::ShutDown();
-//     }
-// };
-//
-// // ---------------------------------------------------------------------------
-// // 1. Singleton lifecycle
-// // ---------------------------------------------------------------------------
-//
-// TEST_CASE("InputManager singleton lifecycle") {
-//     Log::Init();
-//     EventHandler::Init();
-//
-//     InputManager::Init();
-//     InputManager& first = InputManager::GetInstance();
-//     InputManager::Init(); // second call should warn and be a no-op
-//     InputManager& second = InputManager::GetInstance();
-//
-//     CHECK(&first == &second);
-//
-//     InputManager::ShutDown();
-//
-//     // Re-init after shutdown must work cleanly
-//     InputManager::Init();
-//     CHECK_NOTHROW(InputManager::GetInstance());
-//     InputManager::ShutDown();
-//
-//     EventHandler::ShutDown();
-// }
-//
-// // ---------------------------------------------------------------------------
-// // 2. SetKey deduplication — no event fired on redundant press
-// // ---------------------------------------------------------------------------
-//
-// TEST_CASE("InputManager SetKey deduplication") {
-//     InputFixture fix;
-//
-//     int eventCount = 0;
-//     size_t id = EventHandler::GetInstance().Subscribe(
-//         [&](Event&) { eventCount++; }, EventType::KeyPressed, EventCategory::Input);
-//
-//     InputManager::GetInstance().SimulateKeyState(Keys::A, true); // real change → event
-//     InputManager::GetInstance().SimulateKeyState(Keys::A, true); // duplicate → no event
-//     InputManager::GetInstance().SimulateKeyState(Keys::A, true); // duplicate → no event
-//     EventHandler::GetInstance().ProcessEvents();
-//
-//     CHECK(eventCount == 1);
-//
-//     EventHandler::GetInstance().Unsubscribe(id);
-// }
-//
-// // ---------------------------------------------------------------------------
-// // 3. SetKey deduplication — no event fired on redundant release
-// // ---------------------------------------------------------------------------
-//
-// TEST_CASE("InputManager SetKey release deduplication") {
-//     InputFixture fix;
-//
-//     int releaseCount = 0;
-//     size_t id = EventHandler::GetInstance().Subscribe(
-//         [&](Event&) { releaseCount++; }, EventType::KeyReleased, EventCategory::Input);
-//
-//     // Press and advance a frame so the key is fully "held"
-//     InputManager::GetInstance().SimulateKeyState(Keys::Space, true);
-//     InputManager::GetInstance().SimulateUpdate();
-//
-//     // Release once — real change
-//     InputManager::GetInstance().SimulateKeyState(Keys::Space, false);
-//     // Release again — duplicate, no new event
-//     InputManager::GetInstance().SimulateKeyState(Keys::Space, false);
-//     EventHandler::GetInstance().ProcessEvents();
-//
-//     CHECK(releaseCount == 1);
-//
-//     EventHandler::GetInstance().Unsubscribe(id);
-// }
-//
-// // ---------------------------------------------------------------------------
-// // 4. GetKeyDown is only true for exactly one frame
-// // ---------------------------------------------------------------------------
-//
-// TEST_CASE("InputManager GetKeyDown is single-frame") {
-//     InputFixture fix;
-//
-//     InputManager& input = InputManager::GetInstance();
-//
-//     // Frame 1: key goes down
-//     input.SimulateKeyState(Keys::W, true);
-//     CHECK(input.GetKeyDown(Keys::W));
-//
-//     // Frame 2: Update() copies current → previous; key still held
-//     input.SimulateUpdate();
-//     input.SimulateKeyState(Keys::W, true);  // SetKey deduplicates, no change
-//     CHECK_FALSE(input.GetKeyDown(Keys::W)); // no longer "just pressed"
-//     CHECK(input.GetKey(Keys::W));           // but still held
-// }
-//
-// // ---------------------------------------------------------------------------
-// // 5. GetKeyUp is only true for exactly one frame
-// // ---------------------------------------------------------------------------
-//
-// TEST_CASE("InputManager GetKeyUp is single-frame") {
-//     InputFixture fix;
-//
-//     InputManager& input = InputManager::GetInstance();
-//
-//     // Press and hold for two frames
-//     input.SimulateKeyState(Keys::S, true);
-//     input.SimulateUpdate();
-//
-//     // Release on frame 3
-//     input.SimulateKeyState(Keys::S, false);
-//     CHECK(input.GetKeyUp(Keys::S));
-//
-//     // Frame 4: state has been advanced, key is simply not held
-//     input.SimulateUpdate();
-//     CHECK_FALSE(input.GetKeyUp(Keys::S));
-//     CHECK_FALSE(input.GetKey(Keys::S));
-//     CHECK_FALSE(input.GetKeyDown(Keys::S));
-// }
-//
-// // ---------------------------------------------------------------------------
-// // 6. Multiple keys are tracked independently
-// // ---------------------------------------------------------------------------
-//
-// TEST_CASE("InputManager independent key tracking") {
-//     InputFixture fix;
-//
-//     InputManager& input = InputManager::GetInstance();
-//
-//     input.SimulateKeyState(Keys::A, true);
-//     input.SimulateKeyState(Keys::B, true);
-//     input.SimulateUpdate();
-//     input.SimulateKeyState(Keys::A, false); // release A, keep B
-//
-//     CHECK(input.GetKeyUp(Keys::A));
-//     CHECK_FALSE(input.GetKeyUp(Keys::B));
-//
-//     CHECK(input.GetKey(Keys::B));
-//     CHECK_FALSE(input.GetKey(Keys::A));
-// }
-//
-// // ---------------------------------------------------------------------------
-// // 7. Mouse button — GetMouseButtonDown is single-frame
-// // ---------------------------------------------------------------------------
-//
-// TEST_CASE("InputManager GetMouseButtonDown is single-frame") {
-//     InputFixture fix;
-//
-//     InputManager& input = InputManager::GetInstance();
-//
-//     input.SimulateMouseButtonState(MouseButtons::BUTTON_RIGHT, true);
-//     CHECK(input.GetMouseButtonDown(MouseButtons::BUTTON_RIGHT));
-//
-//     input.SimulateUpdate();
-//     // Still held but no longer "just down"
-//     CHECK_FALSE(input.GetMouseButtonDown(MouseButtons::BUTTON_RIGHT));
-//     CHECK(input.GetMouseButton(MouseButtons::BUTTON_RIGHT));
-// }
-//
-// // ---------------------------------------------------------------------------
-// // 8. Mouse button — GetMouseButtonUp is single-frame
-// // ---------------------------------------------------------------------------
-//
-// TEST_CASE("InputManager GetMouseButtonUp is single-frame") {
-//     InputFixture fix;
-//
-//     InputManager& input = InputManager::GetInstance();
-//
-//     input.SimulateMouseButtonState(MouseButtons::BUTTON_RIGHT, true);
-//     input.SimulateUpdate();
-//     input.SimulateMouseButtonState(MouseButtons::BUTTON_RIGHT, false);
-//     CHECK(input.GetMouseButtonUp(MouseButtons::BUTTON_RIGHT));
-//
-//     input.SimulateUpdate();
-//     CHECK_FALSE(input.GetMouseButtonUp(MouseButtons::BUTTON_RIGHT));
-// }
-//
-// // ---------------------------------------------------------------------------
-// // 9. SetMousePosition deduplication — no event when position unchanged
-// // ---------------------------------------------------------------------------
-//
-// TEST_CASE("InputManager mouse position deduplication") {
-//     InputFixture fix;
-//
-//     int moveEventCount = 0;
-//     size_t id = EventHandler::GetInstance().Subscribe(
-//         [&](Event&) { moveEventCount++; }, EventType::MouseMoved, EventCategory::Input);
-//
-//     glm::vec2 pos(50.0f, 75.0f);
-//     InputManager::GetInstance().SimulateMousePosition(pos); // real change
-//     InputManager::GetInstance().SimulateMousePosition(pos); // duplicate
-//     InputManager::GetInstance().SimulateMousePosition(pos); // duplicate
-//     EventHandler::GetInstance().ProcessEvents();
-//
-//     CHECK(moveEventCount == 1);
-//
-//     EventHandler::GetInstance().Unsubscribe(id);
-// }
-//
-// // ---------------------------------------------------------------------------
-// // 10. Mouse wheel always fires an event (no deduplication)
-// // ---------------------------------------------------------------------------
-//
-// TEST_CASE("InputManager mouse wheel always fires event") {
-//     InputFixture fix;
-//
-//     int scrollCount = 0;
-//     size_t id = EventHandler::GetInstance().Subscribe(
-//         [&](Event&) { scrollCount++; }, EventType::MouseScrolled, EventCategory::Input);
-//
-//     InputManager::GetInstance().SimulateMouseWheel(1.0f);
-//     InputManager::GetInstance().SimulateMouseWheel(1.0f); // same value, but still fires
-//     InputManager::GetInstance().SimulateMouseWheel(-1.0f);
-//     EventHandler::GetInstance().ProcessEvents();
-//
-//     CHECK(scrollCount == 3);
-//
-//     EventHandler::GetInstance().Unsubscribe(id);
-// }
-//
-// // ---------------------------------------------------------------------------
-// // 11. Update() fires KeyIsPressed for every currently-held key
-// // ---------------------------------------------------------------------------
-//
-// TEST_CASE("InputManager Update fires KeyIsPressed events for held keys") {
-//     InputFixture fix;
-//
-//     int isHeldCount = 0;
-//     size_t id = EventHandler::GetInstance().Subscribe(
-//         [&](Event&) { isHeldCount++; }, EventType::KeyIsPressed, EventCategory::Input);
-//
-//     // Hold two keys for two full frames
-//     InputManager::GetInstance().SimulateKeyState(Keys::A, true);
-//     InputManager::GetInstance().SimulateKeyState(Keys::D, true);
-//     InputManager::GetInstance().SimulateUpdate(); // frame 1: both now
-//     InputManager::GetInstance().SimulateKeyState(Keys::A, true);
-//     InputManager::GetInstance().SimulateKeyState(Keys::D, true);
-//     InputManager::GetInstance().SimulateUpdate(); // frame 2: both now in previous too
-//                                                   //
-//     EventHandler::GetInstance().ProcessEvents();
-//
-//     // Update() iterates all keys — 2 held × 1 Update() call = 2 events
-//     CHECK(isHeldCount == 2);
-//
-//     // Second frame: still held → 2 more events
-//     isHeldCount = 0;
-//     InputManager::GetInstance().SimulateUpdate();
-//     EventHandler::GetInstance().ProcessEvents();
-//     CHECK(isHeldCount == 2);
-//
-//     EventHandler::GetInstance().Unsubscribe(id);
-// }
-//
-// // ---------------------------------------------------------------------------
-// // 12. Update() does NOT fire KeyIsPressed for keys that are only in current
-// //     (i.e. just pressed this frame, not yet in previous)
-// // ---------------------------------------------------------------------------
-//
-// TEST_CASE("InputManager Update does not fire KeyIsPressed on frame of press") {
-//     InputFixture fix;
-//
-//     int isHeldCount = 0;
-//     size_t id = EventHandler::GetInstance().Subscribe(
-//         [&](Event&) { isHeldCount++; }, EventType::KeyIsPressed, EventCategory::Input);
-//
-//     // Press but do NOT call SimulateUpdate — key is only in "current"
-//     InputManager::GetInstance().SimulateKeyState(Keys::E, true);
-//     // Call Update() to fire events (but GetKeyUnsafe checks current AND previous)
-//     InputManager::GetInstance().SimulateUpdate();
-//     EventHandler::GetInstance().ProcessEvents();
-//
-//     CHECK(isHeldCount == 0); // not yet in "previous", so GetKeyUnsafe returns false
-//
-//     EventHandler::GetInstance().Unsubscribe(id);
-// }
-//
-// // ---------------------------------------------------------------------------
-// // 13. SimulateReset clears all state — nothing fires after reset
-// // ---------------------------------------------------------------------------
-//
-// TEST_CASE("InputManager SimulateReset clears all state") {
-//     InputFixture fix;
-//
-//     InputManager& input = InputManager::GetInstance();
-//
-//     // Build up some state
-//     input.SimulateKeyState(Keys::A, true);
-//     input.SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, true);
-//     input.SimulateMousePosition({100.0f, 200.0f});
-//     input.SimulateUpdate();
-//
-//     // Now wipe it all
-//     input.SimulateReset();
-//
-//     CHECK_FALSE(input.GetKey(Keys::A));
-//     CHECK_FALSE(input.GetKeyDown(Keys::A));
-//     CHECK_FALSE(input.GetKeyUp(Keys::A));
-//
-//     CHECK_FALSE(input.GetMouseButton(MouseButtons::BUTTON_LEFT));
-//     CHECK_FALSE(input.GetMouseButtonDown(MouseButtons::BUTTON_LEFT));
-//     CHECK_FALSE(input.GetMouseButtonUp(MouseButtons::BUTTON_LEFT));
-//
-//     CHECK(input.GetMousePosition() == glm::vec2(0.0f, 0.0f));
-// }
-//
-// // ---------------------------------------------------------------------------
-// // 14. Press → release → re-press cycle produces correct events each frame
-// // ---------------------------------------------------------------------------
-//
-// TEST_CASE("InputManager press-release-press cycle") {
-//     InputFixture fix;
-//
-//     InputManager& input = InputManager::GetInstance();
-//
-//     // Frame 1: press
-//     input.SimulateKeyState(Keys::Space, true);
-//     CHECK(input.GetKeyDown(Keys::Space));
-//     CHECK_FALSE(input.GetKey(Keys::Space));
-//     input.SimulateUpdate();
-//
-//     // Frame 2: still held
-//     CHECK_FALSE(input.GetKeyDown(Keys::Space));
-//     CHECK(input.GetKey(Keys::Space));
-//     CHECK_FALSE(input.GetKeyDown(Keys::Space));
-//     input.SimulateUpdate();
-//
-//     // Frame 3: release
-//     input.SimulateKeyState(Keys::Space, false);
-//     CHECK(input.GetKeyUp(Keys::Space));
-//     CHECK_FALSE(input.GetKey(Keys::Space));
-//     input.SimulateUpdate();
-//
-//     // Frame 4: idle
-//     CHECK_FALSE(input.GetKeyUp(Keys::Space));
-//     CHECK_FALSE(input.GetKey(Keys::Space));
-//     CHECK_FALSE(input.GetKeyDown(Keys::Space));
-//     input.SimulateUpdate();
-//
-//     // Frame 5: re-press
-//     input.SimulateKeyState(Keys::Space, true);
-//     CHECK(input.GetKeyDown(Keys::Space));
-//     CHECK_FALSE(input.GetKey(Keys::Space));
-// }
-//
-// // ---------------------------------------------------------------------------
-// // 15. Mouse position event carries correct coordinates
-// // ---------------------------------------------------------------------------
-//
-// TEST_CASE("InputManager mouse moved event carries correct coordinates") {
-//     InputFixture fix;
-//
-//     glm::vec2 captured(-1.0f, -1.0f);
-//     size_t id = EventHandler::GetInstance().Subscribe(
-//         [&](Event& e) {
-//             auto& data = std::get<std::array<u16, 8>>(e.GetContext().raw_data);
-//             captured = {static_cast<float>(data.at(0)), static_cast<float>(data.at(1))};
-//         },
-//         EventType::MouseMoved,
-//         EventCategory::Input);
-//
-//     InputManager::GetInstance().SimulateMousePosition({320.0f, 240.0f});
-//     EventHandler::GetInstance().ProcessEvents();
-//
-//     CHECK(captured.x == doctest::Approx(320.0f));
-//     CHECK(captured.y == doctest::Approx(240.0f));
-//
-//     EventHandler::GetInstance().Unsubscribe(id);
-// }
-//
-// // ---------------------------------------------------------------------------
-// // Multithreading tests
-// // ---------------------------------------------------------------------------
-//
-// TEST_CASE("InputManager concurrent reads do not deadlock") {
-//     InputFixture fix;
-//     InputManager& input = InputManager::GetInstance();
-//
-//     input.SimulateKeyState(Keys::A, true);
-//     input.SimulateUpdate();
-//     input.SimulateKeyState(Keys::A, true);
-//
-//     constexpr int NUM_THREADS = 8;
-//     constexpr int READS_PER_THREAD = 1000;
-//
-//     std::vector<std::thread> threads;
-//     std::atomic<int> trueCount{0};
-//
-//     for (int t = 0; t < NUM_THREADS; ++t) {
-//         threads.emplace_back([&]() {
-//             for (int i = 0; i < READS_PER_THREAD; ++i) {
-//                 if (input.GetKey(Keys::A))
-//                     trueCount++;
-//                 if (input.GetKeyDown(Keys::A))
-//                     trueCount++;
-//                 if (input.GetMousePosition().x >= 0)
-//                     trueCount++;
-//             }
-//         });
-//     }
-//
-//     for (auto& t : threads)
-//         t.join();
-//
-//     // All threads saw GetKey(A) == true (key held for 2 frames),
-//     // so trueCount should be exactly NUM_THREADS * READS_PER_THREAD * 2
-//     // (GetKey + GetMousePosition; GetKeyDown false because key was in previous too)
-//     CHECK(trueCount == NUM_THREADS * READS_PER_THREAD * 2);
-// }
-//
-// TEST_CASE("InputManager concurrent writes do not corrupt state") {
-//     InputFixture fix;
-//     InputManager& input = InputManager::GetInstance();
-//
-//     // Hammer SetKey from many threads — the deduplication guard
-//     // (if current == pressed return) must be race-free
-//     constexpr int NUM_THREADS = 8;
-//     constexpr int OPS_PER_THREAD = 500;
-//
-//     std::vector<std::thread> threads;
-//     for (int t = 0; t < NUM_THREADS; ++t) {
-//         threads.emplace_back([&, t]() {
-//             for (int i = 0; i < OPS_PER_THREAD; ++i) {
-//                 // Alternate press/release so we exercise both branches
-//                 bool pressed = (i % 2 == 0);
-//                 input.SimulateKeyState(Keys::A, pressed);
-//                 input.SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, pressed);
-//             }
-//         });
-//     }
-//
-//     for (auto& t : threads)
-//         t.join();
-//
-//     // No assertions on final value (threads interleave freely),
-//     // but reaching here without UB/crash is the real test.
-//     // Sanitize with -fsanitize=thread to catch any latent races.
-//     CHECK_NOTHROW(input.GetKey(Keys::A));
-//     CHECK_NOTHROW(input.GetMouseButton(MouseButtons::BUTTON_LEFT));
-// }
-//
-// TEST_CASE("InputManager concurrent read-write does not deadlock") {
-//     InputFixture fix;
-//     InputManager& input = InputManager::GetInstance();
-//
-//     constexpr int NUM_WRITERS = 4;
-//     constexpr int NUM_READERS = 4;
-//     constexpr int OPS = 300;
-//
-//     std::atomic<bool> stop{false};
-//     std::vector<std::thread> threads;
-//
-//     // Writers: continuously flip key state
-//     for (int t = 0; t < NUM_WRITERS; ++t) {
-//         threads.emplace_back([&, t]() {
-//             for (int i = 0; i < OPS; ++i) {
-//                 input.SimulateKeyState(Keys::W, i % 2 == 0);
-//                 input.SimulateMouseButtonState(MouseButtons::BUTTON_RIGHT, i % 2 == 0);
-//                 input.SimulateMousePosition({static_cast<float>(i), static_cast<float>(t)});
-//             }
-//         });
-//     }
-//
-//     // Readers: continuously read state
-//     for (int t = 0; t < NUM_READERS; ++t) {
-//         threads.emplace_back([&]() {
-//             for (int i = 0; i < OPS; ++i) {
-//                 (void) input.GetKey(Keys::W);
-//                 (void) input.GetKeyDown(Keys::W);
-//                 (void) input.GetKeyUp(Keys::W);
-//                 (void) input.GetMouseButton(MouseButtons::BUTTON_RIGHT);
-//                 (void) input.GetMousePosition();
-//             }
-//         });
-//     }
-//
-//     for (auto& t : threads)
-//         t.join();
-//
-//     CHECK_NOTHROW(input.GetKey(Keys::W));
-// }
-//
-// TEST_CASE("InputManager Update is safe under concurrent writes") {
-//     InputFixture fix;
-//     InputManager& input = InputManager::GetInstance();
-//
-//     // Hold two keys so Update() iterates them
-//     input.SimulateKeyState(Keys::A, true);
-//     input.SimulateKeyState(Keys::D, true);
-//     input.SimulateUpdate(); // move into previous
-//
-//     constexpr int NUM_WRITERS = 4;
-//     constexpr int ITERATIONS = 200;
-//
-//     std::vector<std::thread> writers;
-//     for (int t = 0; t < NUM_WRITERS; ++t) {
-//         writers.emplace_back([&, t]() {
-//             for (int i = 0; i < ITERATIONS; ++i) {
-//                 input.SimulateKeyState(Keys::A, i % 2 == 0);
-//                 input.SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, i % 3 == 0);
-//             }
-//         });
-//     }
-//
-//     // Concurrently call Update() from the main thread
-//     for (int i = 0; i < ITERATIONS; ++i) {
-//         input.SimulateUpdate();
-//     }
-//
-//     for (auto& w : writers)
-//         w.join();
-//
-//     // If we reach here without deadlock/crash the mutex logic is correct
-//     CHECK_NOTHROW(input.GetKey(Keys::A));
-// }
-//
-// TEST_CASE("InputManager rapid press-release cycle from multiple threads") {
-//     InputFixture fix;
-//     InputManager& input = InputManager::GetInstance();
-//
-//     // Two threads independently press and release *different* keys —
-//     // independent key slots should never interfere with each other
-//     constexpr int CYCLES = 500;
-//
-//     std::thread t1([&]() {
-//         for (int i = 0; i < CYCLES; ++i) {
-//             input.SimulateKeyState(Keys::A, true);
-//             input.SimulateKeyState(Keys::A, false);
-//         }
-//     });
-//
-//     std::thread t2([&]() {
-//         for (int i = 0; i < CYCLES; ++i) {
-//             input.SimulateKeyState(Keys::B, true);
-//             input.SimulateKeyState(Keys::B, false);
-//         }
-//     });
-//
-//     t1.join();
-//     t2.join();
-//
-//     // Neither key should be stuck in an inconsistent "half-pressed" state
-//     // after both threads finish. Both GetKeyDown and GetKey rely on a
-//     // consistent current/previous pair — verify they return a valid bool.
-//     bool aDown = input.GetKeyDown(Keys::A);
-//     bool bDown = input.GetKeyDown(Keys::B);
-//     bool aHeld = input.GetKey(Keys::A);
-//     bool bHeld = input.GetKey(Keys::B);
-//
-//     // A key cannot be both "just down" and "held" simultaneously
-//     CHECK_FALSE((aDown && aHeld));
-//     CHECK_FALSE((bDown && bHeld));
-// }
+#include <doctest.h>
+#include <glm/vec2.hpp>
+
+#include "Core/Events/Event.hpp"
+#include "Core/Events/EventHandler.hpp"
+#include "Core/Input/InputManager.hpp"
+#include "Core/Input/InputState.hpp"
+#include "Core/Layer/Layer.hpp"
+#include "Core/Layer/LayerStack.hpp"
+#include "Core/Logger/Log.hpp"
+
+using namespace Axle;
+
+// ─── Spy layer ────────────────────────────────────────────────────────────────
+//
+// Replaces the old Subscribe/Unsubscribe pattern. Attach one to a LayerStack,
+// call ProcessEvents(stack), and inspect what arrived.
+
+class SpyLayer : public Layer {
+public:
+    using Predicate = std::function<void(Event&)>;
+
+    int eventCount = 0;
+
+    explicit SpyLayer(const std::string& name = "SpyLayer", Predicate pred = nullptr)
+        : Layer(name),
+          m_Pred(std::move(pred)) {}
+
+    void OnAttach() override {}
+    void OnDettach() override {}
+    void OnAttachRender() override {}
+    void OnDettachRender() override {}
+    void OnUpdate(f64) override {}
+    void OnRender(f64) override {}
+
+    void OnEvent(Event& event) override {
+        eventCount++;
+        if (m_Pred)
+            m_Pred(event);
+    }
+
+private:
+    Predicate m_Pred;
+};
+
+// ─── Fixtures ─────────────────────────────────────────────────────────────────
+
+struct InputFixture {
+    LayerStack stack;
+
+    InputFixture() {
+        Log::Init();
+        EventHandler::Init();
+        InputManager::Init();
+        InputManager::GetInstance().SimulateReset();
+    }
+    ~InputFixture() {
+        InputManager::ShutDown();
+        EventHandler::ShutDown();
+    }
+
+    void process() {
+        EventHandler::GetInstance().ProcessEvents(stack.rbegin(), stack.rend());
+    }
+};
+
+// ─── Helpers that mirror the original free functions ─────────────────────────
+
+static void CheckKeyEvent(Event& event) {
+    CHECK(event.GetEventCategory() == EventCategory::Input);
+    CHECK(std::get<std::array<u16, 8>>(event.GetContext().raw_data).at(0) == (u16) Keys::A);
+}
+
+static void CheckMouseButtonEvent(Event& event) {
+    CHECK(event.GetEventCategory() == EventCategory::Input);
+    CHECK(std::get<std::array<u16, 8>>(event.GetContext().raw_data).at(0) == (u16) MouseButtons::BUTTON_LEFT);
+}
+
+static void CheckMouseWheelEvent(Event& event) {
+    CHECK(event.GetEventCategory() == EventCategory::Input);
+    CHECK(std::get<std::array<f32, 4>>(event.GetContext().raw_data).at(0) == doctest::Approx(1.0));
+}
+
+// ─── Key handling ─────────────────────────────────────────────────────────────
+
+TEST_CASE("Input system key handling") {
+    InputFixture f;
+    SpyLayer* spy = new SpyLayer("KeySpy", CheckKeyEvent);
+    f.stack.PushLayer(spy);
+
+    SUBCASE("No key action") {
+        CHECK_FALSE(InputManager::GetInstance().GetKeyDown(Keys::A));
+        CHECK_FALSE(InputManager::GetInstance().GetKeyUp(Keys::A));
+        CHECK_FALSE(InputManager::GetInstance().GetKey(Keys::A));
+    }
+
+    SUBCASE("Key Down") {
+        InputManager::GetInstance().SimulateKeyState(Keys::A, true);
+
+        CHECK(InputManager::GetInstance().GetKeyDown(Keys::A));
+        CHECK_FALSE(InputManager::GetInstance().GetKey(Keys::A));
+        CHECK_FALSE(InputManager::GetInstance().GetKeyUp(Keys::A));
+
+        f.process();
+    }
+
+    SUBCASE("Key Up") {
+        InputManager::GetInstance().SimulateKeyState(Keys::A, true);
+        f.process();
+        InputManager::GetInstance().SimulateUpdate();
+        InputManager::GetInstance().SimulateKeyState(Keys::A, false);
+        f.process();
+
+        CHECK(InputManager::GetInstance().GetKeyUp(Keys::A));
+        CHECK_FALSE(InputManager::GetInstance().GetKeyDown(Keys::A));
+        CHECK_FALSE(InputManager::GetInstance().GetKey(Keys::A));
+    }
+
+    SUBCASE("Key Is Pressed") {
+        InputManager::GetInstance().SimulateKeyState(Keys::A, true);
+        f.process();
+
+        CHECK_FALSE(InputManager::GetInstance().GetKey(Keys::A));
+
+        InputManager::GetInstance().SimulateUpdate();
+        InputManager::GetInstance().SimulateKeyState(Keys::A, true);
+        f.process();
+
+        CHECK(InputManager::GetInstance().GetKey(Keys::A));
+        CHECK_FALSE(InputManager::GetInstance().GetKeyUp(Keys::A));
+        CHECK_FALSE(InputManager::GetInstance().GetKeyDown(Keys::A));
+    }
+}
+
+// ─── Mouse button handling ────────────────────────────────────────────────────
+
+TEST_CASE("Input system mouse button handling") {
+    InputFixture f;
+    SpyLayer* spy = new SpyLayer("MouseButtonSpy", CheckMouseButtonEvent);
+    f.stack.PushLayer(spy);
+
+    SUBCASE("No mouse button action") {
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonDown(MouseButtons::BUTTON_LEFT));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonUp(MouseButtons::BUTTON_LEFT));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButton(MouseButtons::BUTTON_LEFT));
+    }
+
+    SUBCASE("Mouse button Down") {
+        InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, true);
+        f.process();
+
+        CHECK(InputManager::GetInstance().GetMouseButtonDown(MouseButtons::BUTTON_LEFT));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonUp(MouseButtons::BUTTON_LEFT));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButton(MouseButtons::BUTTON_LEFT));
+    }
+
+    SUBCASE("Mouse button Up") {
+        InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, true);
+        f.process();
+        InputManager::GetInstance().SimulateUpdate();
+        InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, false);
+        f.process();
+
+        CHECK(InputManager::GetInstance().GetMouseButtonUp(MouseButtons::BUTTON_LEFT));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonDown(MouseButtons::BUTTON_LEFT));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButton(MouseButtons::BUTTON_LEFT));
+    }
+
+    SUBCASE("Mouse button Is Pressed") {
+        InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, true);
+        f.process();
+
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButton(MouseButtons::BUTTON_LEFT));
+
+        InputManager::GetInstance().SimulateUpdate();
+        InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, true);
+        f.process();
+
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonUp(MouseButtons::BUTTON_LEFT));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonDown(MouseButtons::BUTTON_LEFT));
+        CHECK(InputManager::GetInstance().GetMouseButton(MouseButtons::BUTTON_LEFT));
+    }
+}
+
+// ─── Mouse position handling ──────────────────────────────────────────────────
+
+TEST_CASE("Mouse position handling") {
+    InputFixture f;
+
+    glm::vec2 testPosition(100.0f, 200.0f);
+    InputManager::GetInstance().SimulateMousePosition(testPosition);
+
+    SUBCASE("Get Mouse Position") {
+        CHECK(InputManager::GetInstance().GetMousePosition() == testPosition);
+    }
+
+    SUBCASE("Set Mouse Position") {
+        glm::vec2 newPosition(300.0f, 400.0f);
+        InputManager::GetInstance().SimulateMousePosition(newPosition);
+        CHECK(InputManager::GetInstance().GetMousePosition() == newPosition);
+    }
+}
+
+// ─── Mouse wheel handling ─────────────────────────────────────────────────────
+
+TEST_CASE("Mouse wheel handling") {
+    InputFixture f;
+    SpyLayer* spy = new SpyLayer("WheelSpy", CheckMouseWheelEvent);
+    f.stack.PushLayer(spy);
+
+    InputManager::GetInstance().SimulateMouseWheel(1.0f);
+    InputManager::GetInstance().SimulateUpdate();
+    f.process();
+
+    CHECK(spy->eventCount >= 1);
+}
+
+// ─── Singleton lifecycle ──────────────────────────────────────────────────────
+
+TEST_CASE("InputManager singleton lifecycle") {
+    Log::Init();
+    EventHandler::Init();
+
+    InputManager::Init();
+    InputManager& first = InputManager::GetInstance();
+    InputManager::Init(); // second call should warn and be a no-op
+    InputManager& second = InputManager::GetInstance();
+    CHECK(&first == &second);
+
+    InputManager::ShutDown();
+
+    InputManager::Init();
+    CHECK_NOTHROW(InputManager::GetInstance());
+    InputManager::ShutDown();
+
+    EventHandler::ShutDown();
+}
+
+// ─── SetKey deduplication ─────────────────────────────────────────────────────
+
+TEST_CASE("InputManager SetKey deduplication") {
+    InputFixture f;
+
+    int eventCount = 0;
+    SpyLayer* spy = new SpyLayer("DedupSpy", [&](Event& e) {
+        if (e.GetEventType() == EventType::KeyPressed)
+            eventCount++;
+    });
+    f.stack.PushLayer(spy);
+
+    InputManager::GetInstance().SimulateKeyState(Keys::A, true); // real change → event
+    InputManager::GetInstance().SimulateKeyState(Keys::A, true); // duplicate → no event
+    InputManager::GetInstance().SimulateKeyState(Keys::A, true); // duplicate → no event
+    f.process();
+
+    CHECK(eventCount == 1);
+}
+
+TEST_CASE("InputManager SetKey release deduplication") {
+    InputFixture f;
+
+    int releaseCount = 0;
+    SpyLayer* spy = new SpyLayer("ReleaseDedupSpy", [&](Event& e) {
+        if (e.GetEventType() == EventType::KeyReleased)
+            releaseCount++;
+    });
+    f.stack.PushLayer(spy);
+
+    InputManager::GetInstance().SimulateKeyState(Keys::Space, true);
+    InputManager::GetInstance().SimulateUpdate();
+    InputManager::GetInstance().SimulateKeyState(Keys::Space, false); // real change
+    InputManager::GetInstance().SimulateKeyState(Keys::Space, false); // duplicate
+    f.process();
+
+    CHECK(releaseCount == 1);
+}
+
+// ─── Single-frame semantics ───────────────────────────────────────────────────
+
+TEST_CASE("InputManager GetKeyDown is single-frame") {
+    InputFixture f;
+    InputManager& input = InputManager::GetInstance();
+
+    input.SimulateKeyState(Keys::W, true);
+    CHECK(input.GetKeyDown(Keys::W));
+
+    input.SimulateUpdate();
+    input.SimulateKeyState(Keys::W, true); // deduplicated, no state change
+    CHECK_FALSE(input.GetKeyDown(Keys::W));
+    CHECK(input.GetKey(Keys::W));
+}
+
+TEST_CASE("InputManager GetKeyUp is single-frame") {
+    InputFixture f;
+    InputManager& input = InputManager::GetInstance();
+
+    input.SimulateKeyState(Keys::S, true);
+    input.SimulateUpdate();
+    input.SimulateKeyState(Keys::S, false);
+    CHECK(input.GetKeyUp(Keys::S));
+
+    input.SimulateUpdate();
+    CHECK_FALSE(input.GetKeyUp(Keys::S));
+    CHECK_FALSE(input.GetKey(Keys::S));
+    CHECK_FALSE(input.GetKeyDown(Keys::S));
+}
+
+TEST_CASE("InputManager independent key tracking") {
+    InputFixture f;
+    InputManager& input = InputManager::GetInstance();
+
+    input.SimulateKeyState(Keys::A, true);
+    input.SimulateKeyState(Keys::B, true);
+    input.SimulateUpdate();
+    input.SimulateKeyState(Keys::A, false);
+
+    CHECK(input.GetKeyUp(Keys::A));
+    CHECK_FALSE(input.GetKeyUp(Keys::B));
+    CHECK(input.GetKey(Keys::B));
+    CHECK_FALSE(input.GetKey(Keys::A));
+}
+
+TEST_CASE("InputManager GetMouseButtonDown is single-frame") {
+    InputFixture f;
+    InputManager& input = InputManager::GetInstance();
+
+    input.SimulateMouseButtonState(MouseButtons::BUTTON_RIGHT, true);
+    CHECK(input.GetMouseButtonDown(MouseButtons::BUTTON_RIGHT));
+
+    input.SimulateUpdate();
+    CHECK_FALSE(input.GetMouseButtonDown(MouseButtons::BUTTON_RIGHT));
+    CHECK(input.GetMouseButton(MouseButtons::BUTTON_RIGHT));
+}
+
+TEST_CASE("InputManager GetMouseButtonUp is single-frame") {
+    InputFixture f;
+    InputManager& input = InputManager::GetInstance();
+
+    input.SimulateMouseButtonState(MouseButtons::BUTTON_RIGHT, true);
+    input.SimulateUpdate();
+    input.SimulateMouseButtonState(MouseButtons::BUTTON_RIGHT, false);
+    CHECK(input.GetMouseButtonUp(MouseButtons::BUTTON_RIGHT));
+
+    input.SimulateUpdate();
+    CHECK_FALSE(input.GetMouseButtonUp(MouseButtons::BUTTON_RIGHT));
+}
+
+// ─── Mouse position deduplication ────────────────────────────────────────────
+
+TEST_CASE("InputManager mouse position deduplication") {
+    InputFixture f;
+
+    int moveEventCount = 0;
+    SpyLayer* spy = new SpyLayer("MoveSpy", [&](Event& e) {
+        if (e.GetEventType() == EventType::MouseMoved)
+            moveEventCount++;
+    });
+    f.stack.PushLayer(spy);
+
+    glm::vec2 pos(50.0f, 75.0f);
+    InputManager::GetInstance().SimulateMousePosition(pos); // real change
+    InputManager::GetInstance().SimulateMousePosition(pos); // duplicate
+    InputManager::GetInstance().SimulateMousePosition(pos); // duplicate
+    f.process();
+
+    CHECK(moveEventCount == 1);
+}
+
+// ─── Mouse wheel always fires ─────────────────────────────────────────────────
+
+TEST_CASE("InputManager mouse wheel always fires event") {
+    InputFixture f;
+
+    int scrollCount = 0;
+    SpyLayer* spy = new SpyLayer("ScrollSpy", [&](Event& e) {
+        if (e.GetEventType() == EventType::MouseScrolled)
+            scrollCount++;
+    });
+    f.stack.PushLayer(spy);
+
+    InputManager::GetInstance().SimulateMouseWheel(1.0f);
+    InputManager::GetInstance().SimulateMouseWheel(1.0f); // same value, still fires
+    InputManager::GetInstance().SimulateMouseWheel(-1.0f);
+    f.process();
+
+    CHECK(scrollCount == 3);
+}
+
+// ─── Update() / KeyIsPressed semantics ───────────────────────────────────────
+
+TEST_CASE("InputManager Update fires KeyIsPressed events for held keys") {
+    InputFixture f;
+
+    int isHeldCount = 0;
+    SpyLayer* spy = new SpyLayer("HeldSpy", [&](Event& e) {
+        if (e.GetEventType() == EventType::KeyIsPressed)
+            isHeldCount++;
+    });
+    f.stack.PushLayer(spy);
+
+    // Hold two keys for two full frames so they appear in both current and previous
+    InputManager::GetInstance().SimulateKeyState(Keys::A, true);
+    InputManager::GetInstance().SimulateKeyState(Keys::D, true);
+    InputManager::GetInstance().SimulateUpdate(); // frame 1
+    InputManager::GetInstance().SimulateKeyState(Keys::A, true);
+    InputManager::GetInstance().SimulateKeyState(Keys::D, true);
+    InputManager::GetInstance().SimulateUpdate(); // frame 2
+    f.process();
+
+    CHECK(isHeldCount == 2); // one KeyIsPressed per held key per Update()
+
+    isHeldCount = 0;
+    InputManager::GetInstance().SimulateUpdate();
+    f.process();
+    CHECK(isHeldCount == 2);
+}
+
+TEST_CASE("InputManager Update does not fire KeyIsPressed on frame of press") {
+    InputFixture f;
+
+    int isHeldCount = 0;
+    SpyLayer* spy = new SpyLayer("HeldSpyFirstFrame", [&](Event& e) {
+        if (e.GetEventType() == EventType::KeyIsPressed)
+            isHeldCount++;
+    });
+    f.stack.PushLayer(spy);
+
+    // Press without advancing a frame — key is only in "current", not "previous"
+    InputManager::GetInstance().SimulateKeyState(Keys::E, true);
+    InputManager::GetInstance().SimulateUpdate();
+    f.process();
+
+    CHECK(isHeldCount == 0);
+}
+
+// ─── SimulateReset ────────────────────────────────────────────────────────────
+
+TEST_CASE("InputManager SimulateReset clears all state") {
+    InputFixture f;
+    InputManager& input = InputManager::GetInstance();
+
+    input.SimulateKeyState(Keys::A, true);
+    input.SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, true);
+    input.SimulateMousePosition({100.0f, 200.0f});
+    input.SimulateUpdate();
+    input.SimulateReset();
+
+    CHECK_FALSE(input.GetKey(Keys::A));
+    CHECK_FALSE(input.GetKeyDown(Keys::A));
+    CHECK_FALSE(input.GetKeyUp(Keys::A));
+    CHECK_FALSE(input.GetMouseButton(MouseButtons::BUTTON_LEFT));
+    CHECK_FALSE(input.GetMouseButtonDown(MouseButtons::BUTTON_LEFT));
+    CHECK_FALSE(input.GetMouseButtonUp(MouseButtons::BUTTON_LEFT));
+    CHECK(input.GetMousePosition() == glm::vec2(0.0f, 0.0f));
+}
+
+// ─── Press-release-press cycle ────────────────────────────────────────────────
+
+TEST_CASE("InputManager press-release-press cycle") {
+    InputFixture f;
+    InputManager& input = InputManager::GetInstance();
+
+    // Frame 1: press
+    input.SimulateKeyState(Keys::Space, true);
+    CHECK(input.GetKeyDown(Keys::Space));
+    CHECK_FALSE(input.GetKey(Keys::Space));
+    input.SimulateUpdate();
+
+    // Frame 2: held
+    CHECK_FALSE(input.GetKeyDown(Keys::Space));
+    CHECK(input.GetKey(Keys::Space));
+    input.SimulateUpdate();
+
+    // Frame 3: release
+    input.SimulateKeyState(Keys::Space, false);
+    CHECK(input.GetKeyUp(Keys::Space));
+    CHECK_FALSE(input.GetKey(Keys::Space));
+    input.SimulateUpdate();
+
+    // Frame 4: idle
+    CHECK_FALSE(input.GetKeyUp(Keys::Space));
+    CHECK_FALSE(input.GetKey(Keys::Space));
+    CHECK_FALSE(input.GetKeyDown(Keys::Space));
+    input.SimulateUpdate();
+
+    // Frame 5: re-press
+    input.SimulateKeyState(Keys::Space, true);
+    CHECK(input.GetKeyDown(Keys::Space));
+    CHECK_FALSE(input.GetKey(Keys::Space));
+}
+
+// ─── Mouse moved event carries correct coordinates ────────────────────────────
+
+TEST_CASE("InputManager mouse moved event carries correct coordinates") {
+    InputFixture f;
+
+    glm::vec2 captured(-1.0f, -1.0f);
+    SpyLayer* spy = new SpyLayer("CoordSpy", [&](Event& e) {
+        if (e.GetEventType() != EventType::MouseMoved)
+            return;
+        auto& data = std::get<std::array<u16, 8>>(e.GetContext().raw_data);
+        captured = {static_cast<float>(data.at(0)), static_cast<float>(data.at(1))};
+    });
+    f.stack.PushLayer(spy);
+
+    InputManager::GetInstance().SimulateMousePosition({320.0f, 240.0f});
+    f.process();
+
+    CHECK(captured.x == doctest::Approx(320.0f));
+    CHECK(captured.y == doctest::Approx(240.0f));
+}
+
+// ─── Concurrency ──────────────────────────────────────────────────────────────
+
+TEST_CASE("InputManager concurrent reads do not deadlock") {
+    InputFixture f;
+    InputManager& input = InputManager::GetInstance();
+
+    input.SimulateKeyState(Keys::A, true);
+    input.SimulateUpdate();
+    input.SimulateKeyState(Keys::A, true);
+
+    constexpr int kThreads = 8;
+    constexpr int kReads = 1000;
+
+    std::atomic<int> trueCount{0};
+    std::vector<std::thread> threads;
+    threads.reserve(kThreads);
+
+    for (int t = 0; t < kThreads; ++t) {
+        threads.emplace_back([&]() {
+            for (int i = 0; i < kReads; ++i) {
+                if (input.GetKey(Keys::A))
+                    trueCount++;
+                if (input.GetKeyDown(Keys::A))
+                    trueCount++;
+                if (input.GetMousePosition().x >= 0)
+                    trueCount++;
+            }
+        });
+    }
+    for (auto& t : threads)
+        t.join();
+
+    // GetKey(A) == true and GetMousePosition().x >= 0 for every read;
+    // GetKeyDown(A) == false (key is now in previous too)
+    CHECK(trueCount == kThreads * kReads * 2);
+}
+
+TEST_CASE("InputManager concurrent writes do not corrupt state") {
+    InputFixture f;
+    InputManager& input = InputManager::GetInstance();
+
+    constexpr int kThreads = 8;
+    constexpr int kOps = 500;
+
+    std::vector<std::thread> threads;
+    threads.reserve(kThreads);
+    for (int t = 0; t < kThreads; ++t) {
+        threads.emplace_back([&, t]() {
+            for (int i = 0; i < kOps; ++i) {
+                bool pressed = (i % 2 == 0);
+                input.SimulateKeyState(Keys::A, pressed);
+                input.SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, pressed);
+            }
+        });
+    }
+    for (auto& t : threads)
+        t.join();
+
+    CHECK_NOTHROW(input.GetKey(Keys::A));
+    CHECK_NOTHROW(input.GetMouseButton(MouseButtons::BUTTON_LEFT));
+}
+
+TEST_CASE("InputManager concurrent read-write does not deadlock") {
+    InputFixture f;
+    InputManager& input = InputManager::GetInstance();
+
+    constexpr int kWriters = 4;
+    constexpr int kReaders = 4;
+    constexpr int kOps = 300;
+
+    std::vector<std::thread> threads;
+    threads.reserve(kWriters + kReaders);
+
+    for (int t = 0; t < kWriters; ++t) {
+        threads.emplace_back([&, t]() {
+            for (int i = 0; i < kOps; ++i) {
+                input.SimulateKeyState(Keys::W, i % 2 == 0);
+                input.SimulateMouseButtonState(MouseButtons::BUTTON_RIGHT, i % 2 == 0);
+                input.SimulateMousePosition({static_cast<float>(i), static_cast<float>(t)});
+            }
+        });
+    }
+    for (int t = 0; t < kReaders; ++t) {
+        threads.emplace_back([&]() {
+            for (int i = 0; i < kOps; ++i) {
+                (void) input.GetKey(Keys::W);
+                (void) input.GetKeyDown(Keys::W);
+                (void) input.GetKeyUp(Keys::W);
+                (void) input.GetMouseButton(MouseButtons::BUTTON_RIGHT);
+                (void) input.GetMousePosition();
+            }
+        });
+    }
+    for (auto& t : threads)
+        t.join();
+
+    CHECK_NOTHROW(input.GetKey(Keys::W));
+}
+
+TEST_CASE("InputManager Update is safe under concurrent writes") {
+    InputFixture f;
+    InputManager& input = InputManager::GetInstance();
+
+    input.SimulateKeyState(Keys::A, true);
+    input.SimulateKeyState(Keys::D, true);
+    input.SimulateUpdate();
+
+    constexpr int kWriters = 4;
+    constexpr int kIter = 200;
+
+    std::vector<std::thread> writers;
+    writers.reserve(kWriters);
+    for (int t = 0; t < kWriters; ++t) {
+        writers.emplace_back([&, t]() {
+            for (int i = 0; i < kIter; ++i) {
+                input.SimulateKeyState(Keys::A, i % 2 == 0);
+                input.SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, i % 3 == 0);
+            }
+        });
+    }
+    for (int i = 0; i < kIter; ++i)
+        input.SimulateUpdate();
+
+    for (auto& w : writers)
+        w.join();
+
+    CHECK_NOTHROW(input.GetKey(Keys::A));
+}
+
+TEST_CASE("InputManager rapid press-release cycle from multiple threads") {
+    InputFixture f;
+    InputManager& input = InputManager::GetInstance();
+
+    constexpr int kCycles = 500;
+
+    std::thread t1([&]() {
+        for (int i = 0; i < kCycles; ++i) {
+            input.SimulateKeyState(Keys::A, true);
+            input.SimulateKeyState(Keys::A, false);
+        }
+    });
+    std::thread t2([&]() {
+        for (int i = 0; i < kCycles; ++i) {
+            input.SimulateKeyState(Keys::B, true);
+            input.SimulateKeyState(Keys::B, false);
+        }
+    });
+    t1.join();
+    t2.join();
+
+    // A key cannot be both "just down" and "held" simultaneously
+    bool aDown = input.GetKeyDown(Keys::A);
+    bool bDown = input.GetKeyDown(Keys::B);
+    bool aHeld = input.GetKey(Keys::A);
+    bool bHeld = input.GetKey(Keys::B);
+
+    CHECK_FALSE((aDown && aHeld));
+    CHECK_FALSE((bDown && bHeld));
+}

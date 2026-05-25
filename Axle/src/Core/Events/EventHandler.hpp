@@ -69,10 +69,12 @@ namespace Axle {
 
         /**
          * Processes all the events in the queue and notifies the subscribers.
-         *
          * This method should be called every frame to ensure that all events are processed.
          *
          * It is safe to call this method multiple times per frame, but it is recommended to call it only once.
+         *
+         * @param begin The begining iterator of the layer you want to push events to
+         * @param end The end iterator of the layers
          */
         void ProcessEvents(std::vector<Layer*>::reverse_iterator begin, std::vector<Layer*>::reverse_iterator end);
 
@@ -80,7 +82,8 @@ namespace Axle {
         /**
          * The notify method is called internally and it notifies the suscribers about the new event that has arrived.
          *
-         * Only notifies suscribers that are interested in the type of the event.
+         * @param begin The begining iterator of the layer you want to push events to
+         * @param end The end iterator of the layers
          */
         void
         Notify(Event& event, std::vector<Layer*>::reverse_iterator begin, std::vector<Layer*>::reverse_iterator end);

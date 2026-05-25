@@ -14,7 +14,7 @@ namespace Axle {
          * Pushes a layer to the stack.
          * LAYERS are pushed below OVERLAYS.
          *
-         * @param layer The layer to push.
+         * @param layer The layer to push. The pointer will be managed by this class
          * */
         void PushLayer(Layer* layer);
 
@@ -30,7 +30,7 @@ namespace Axle {
          * Removes a layer from the stack.
          * The pointer is not deleted.
          *
-         * @param layer The layer to remove.
+         * @param layer The layer to remove. The pointer will be managed by this class
          * */
         void PopLayer(Layer* layer);
 
@@ -38,7 +38,7 @@ namespace Axle {
          * Removes an overlay from the stack.
          * The pointer is not deleted.
          *
-         * @param overlay The overlay to remove.
+         * @param overlay The overlay to remove. The pointer doesn't gets deleted by the LayerStack.
          * */
         void PopOverlay(Layer* overlay);
 
