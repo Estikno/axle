@@ -89,17 +89,17 @@ TEST_CASE("Input system key handling") {
     f.stack.PushLayer(spy);
 
     SUBCASE("No key action") {
-        CHECK_FALSE(InputManager::GetInstance().GetKeyDown(Keys::A));
-        CHECK_FALSE(InputManager::GetInstance().GetKeyUp(Keys::A));
-        CHECK_FALSE(InputManager::GetInstance().GetKey(Keys::A));
+        CHECK_FALSE(InputManager::GetKeyDown(Keys::A));
+        CHECK_FALSE(InputManager::GetKeyUp(Keys::A));
+        CHECK_FALSE(InputManager::GetKey(Keys::A));
     }
 
     SUBCASE("Key Down") {
         InputManager::GetInstance().SimulateKeyState(Keys::A, true);
 
-        CHECK(InputManager::GetInstance().GetKeyDown(Keys::A));
-        CHECK_FALSE(InputManager::GetInstance().GetKey(Keys::A));
-        CHECK_FALSE(InputManager::GetInstance().GetKeyUp(Keys::A));
+        CHECK(InputManager::GetKeyDown(Keys::A));
+        CHECK_FALSE(InputManager::GetKey(Keys::A));
+        CHECK_FALSE(InputManager::GetKeyUp(Keys::A));
 
         f.process();
     }
@@ -111,24 +111,24 @@ TEST_CASE("Input system key handling") {
         InputManager::GetInstance().SimulateKeyState(Keys::A, false);
         f.process();
 
-        CHECK(InputManager::GetInstance().GetKeyUp(Keys::A));
-        CHECK_FALSE(InputManager::GetInstance().GetKeyDown(Keys::A));
-        CHECK_FALSE(InputManager::GetInstance().GetKey(Keys::A));
+        CHECK(InputManager::GetKeyUp(Keys::A));
+        CHECK_FALSE(InputManager::GetKeyDown(Keys::A));
+        CHECK_FALSE(InputManager::GetKey(Keys::A));
     }
 
     SUBCASE("Key Is Pressed") {
         InputManager::GetInstance().SimulateKeyState(Keys::A, true);
         f.process();
 
-        CHECK_FALSE(InputManager::GetInstance().GetKey(Keys::A));
+        CHECK_FALSE(InputManager::GetKey(Keys::A));
 
         InputManager::GetInstance().SimulateUpdate();
         InputManager::GetInstance().SimulateKeyState(Keys::A, true);
         f.process();
 
-        CHECK(InputManager::GetInstance().GetKey(Keys::A));
-        CHECK_FALSE(InputManager::GetInstance().GetKeyUp(Keys::A));
-        CHECK_FALSE(InputManager::GetInstance().GetKeyDown(Keys::A));
+        CHECK(InputManager::GetKey(Keys::A));
+        CHECK_FALSE(InputManager::GetKeyUp(Keys::A));
+        CHECK_FALSE(InputManager::GetKeyDown(Keys::A));
     }
 }
 
@@ -140,18 +140,18 @@ TEST_CASE("Input system mouse button handling") {
     f.stack.PushLayer(spy);
 
     SUBCASE("No mouse button action") {
-        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonDown(MouseButtons::Left));
-        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonUp(MouseButtons::Left));
-        CHECK_FALSE(InputManager::GetInstance().GetMouseButton(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetMouseButtonDown(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetMouseButtonUp(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetMouseButton(MouseButtons::Left));
     }
 
     SUBCASE("Mouse button Down") {
         InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::Left, true);
         f.process();
 
-        CHECK(InputManager::GetInstance().GetMouseButtonDown(MouseButtons::Left));
-        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonUp(MouseButtons::Left));
-        CHECK_FALSE(InputManager::GetInstance().GetMouseButton(MouseButtons::Left));
+        CHECK(InputManager::GetMouseButtonDown(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetMouseButtonUp(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetMouseButton(MouseButtons::Left));
     }
 
     SUBCASE("Mouse button Up") {
@@ -161,24 +161,24 @@ TEST_CASE("Input system mouse button handling") {
         InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::Left, false);
         f.process();
 
-        CHECK(InputManager::GetInstance().GetMouseButtonUp(MouseButtons::Left));
-        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonDown(MouseButtons::Left));
-        CHECK_FALSE(InputManager::GetInstance().GetMouseButton(MouseButtons::Left));
+        CHECK(InputManager::GetMouseButtonUp(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetMouseButtonDown(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetMouseButton(MouseButtons::Left));
     }
 
     SUBCASE("Mouse button Is Pressed") {
         InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::Left, true);
         f.process();
 
-        CHECK_FALSE(InputManager::GetInstance().GetMouseButton(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetMouseButton(MouseButtons::Left));
 
         InputManager::GetInstance().SimulateUpdate();
         InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::Left, true);
         f.process();
 
-        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonUp(MouseButtons::Left));
-        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonDown(MouseButtons::Left));
-        CHECK(InputManager::GetInstance().GetMouseButton(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetMouseButtonUp(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetMouseButtonDown(MouseButtons::Left));
+        CHECK(InputManager::GetMouseButton(MouseButtons::Left));
     }
 }
 
@@ -191,13 +191,13 @@ TEST_CASE("Mouse position handling") {
     InputManager::GetInstance().SimulateMousePosition(testPosition);
 
     SUBCASE("Get Mouse Position") {
-        CHECK(InputManager::GetInstance().GetMousePosition() == testPosition);
+        CHECK(InputManager::GetMousePosition() == testPosition);
     }
 
     SUBCASE("Set Mouse Position") {
         glm::vec2 newPosition(300.0f, 400.0f);
         InputManager::GetInstance().SimulateMousePosition(newPosition);
-        CHECK(InputManager::GetInstance().GetMousePosition() == newPosition);
+        CHECK(InputManager::GetMousePosition() == newPosition);
     }
 }
 

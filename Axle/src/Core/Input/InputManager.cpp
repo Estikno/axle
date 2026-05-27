@@ -120,43 +120,43 @@ namespace Axle {
         AX_DISPATCH_EVENT(std::move(event));
     }
 
-    bool InputManager::GetKeyDown(Keys key) const {
+    bool InputManager::GetKeyDownImpl(Keys key) const {
         std::shared_lock lock(m_Mutex);
         return m_InputState.keyboard_current.keys[static_cast<u32>(key)] &&
                !m_InputState.keyboard_previous.keys[static_cast<u32>(key)];
     }
 
-    bool InputManager::GetKeyUp(Keys key) const {
+    bool InputManager::GetKeyUpImpl(Keys key) const {
         std::shared_lock lock(m_Mutex);
         return !m_InputState.keyboard_current.keys[static_cast<u32>(key)] &&
                m_InputState.keyboard_previous.keys[static_cast<u32>(key)];
     }
 
-    bool InputManager::GetKey(Keys key) const {
+    bool InputManager::GetKeyImpl(Keys key) const {
         std::shared_lock lock(m_Mutex);
         return m_InputState.keyboard_current.keys[static_cast<u32>(key)] &&
                m_InputState.keyboard_previous.keys[static_cast<u32>(key)];
     }
 
-    bool InputManager::GetMouseButtonDown(MouseButtons button) const {
+    bool InputManager::GetMouseButtonDownImpl(MouseButtons button) const {
         std::shared_lock lock(m_Mutex);
         return m_InputState.mouse_current.buttons[static_cast<u32>(button)] &&
                !m_InputState.mouse_previous.buttons[static_cast<u32>(button)];
     }
 
-    bool InputManager::GetMouseButtonUp(MouseButtons button) const {
+    bool InputManager::GetMouseButtonUpImpl(MouseButtons button) const {
         std::shared_lock lock(m_Mutex);
         return !m_InputState.mouse_current.buttons[static_cast<u32>(button)] &&
                m_InputState.mouse_previous.buttons[static_cast<u32>(button)];
     }
 
-    bool InputManager::GetMouseButton(MouseButtons button) const {
+    bool InputManager::GetMouseButtonImpl(MouseButtons button) const {
         std::shared_lock lock(m_Mutex);
         return m_InputState.mouse_current.buttons[static_cast<u32>(button)] &&
                m_InputState.mouse_previous.buttons[static_cast<u32>(button)];
     }
 
-    glm::vec2 InputManager::GetMousePosition() const {
+    glm::vec2 InputManager::GetMousePositionImpl() const {
         std::shared_lock lock(m_Mutex);
         return m_InputState.mouse_current.position;
     }

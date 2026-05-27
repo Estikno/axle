@@ -53,7 +53,9 @@ namespace Axle {
          *
          * @returns True if the key was pressed down this frame, false otherwise.
          */
-        bool GetKeyDown(Keys key) const;
+        inline static bool GetKeyDown(Keys key) {
+            return s_Instance->GetKeyDownImpl(key);
+        }
 
         /**
          * Returns true if the key was released this frame.
@@ -65,7 +67,9 @@ namespace Axle {
          *
          * @returns True if the key was released this frame, false otherwise.
          */
-        bool GetKeyUp(Keys key) const;
+        inline static bool GetKeyUp(Keys key) {
+            return s_Instance->GetKeyUpImpl(key);
+        }
 
         /**
          * Returns true if the key is currently being pressed.
@@ -76,7 +80,9 @@ namespace Axle {
          *
          * @returns True if the key is currently being pressed, false otherwise.
          */
-        bool GetKey(Keys key) const;
+        inline static bool GetKey(Keys key) {
+            return s_Instance->GetKeyImpl(key);
+        }
 
         /**
          * Same as GetKeyDown, but for mouse buttons.
@@ -85,7 +91,9 @@ namespace Axle {
          *
          * @returns True if the mouse button was pressed down this frame, false otherwise.
          */
-        bool GetMouseButtonDown(MouseButtons button) const;
+        inline static bool GetMouseButtonDown(MouseButtons button) {
+            return s_Instance->GetMouseButtonDownImpl(button);
+        }
 
         /**
          * Same as GetKeyUp, but for mouse buttons.
@@ -94,7 +102,9 @@ namespace Axle {
          *
          * @returns True if the mouse button was released this frame, false otherwise.
          */
-        bool GetMouseButtonUp(MouseButtons button) const;
+        inline static bool GetMouseButtonUp(MouseButtons button) {
+            return s_Instance->GetMouseButtonUpImpl(button);
+        }
 
         /**
          * Same as GetKey, but for mouse buttons.
@@ -103,14 +113,19 @@ namespace Axle {
          *
          * @returns True if the mouse button is currently being pressed, false otherwise.
          */
-        bool GetMouseButton(MouseButtons button) const;
+        inline static bool GetMouseButton(MouseButtons button) {
+            return s_Instance->GetMouseButtonImpl(button);
+        }
 
         /**
          * Gets the current mouse position in screen coordinates.
          *
          * @returns The current mouse position in screen coordinates.
          */
-        glm::vec2 GetMousePosition() const;
+        inline static glm::vec2 GetMousePosition() {
+            return s_Instance->GetMousePositionImpl();
+        }
+
 
         // Modify the keys state. This should only be called by the event system and should not be available to the end
         // user.
@@ -167,6 +182,15 @@ namespace Axle {
 
 
     private:
+        // Implementations of the static methods
+        bool GetKeyDownImpl(Keys key) const;
+        bool GetKeyUpImpl(Keys key) const;
+        bool GetKeyImpl(Keys key) const;
+        bool GetMouseButtonDownImpl(MouseButtons button) const;
+        bool GetMouseButtonUpImpl(MouseButtons button) const;
+        bool GetMouseButtonImpl(MouseButtons button) const;
+        glm::vec2 GetMousePositionImpl() const;
+
         /**
          * This is the unsafe version of the GetKey method
          * this shall be used only when you have already locked the mutex
