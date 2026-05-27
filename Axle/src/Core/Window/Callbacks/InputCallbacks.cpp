@@ -14,16 +14,16 @@
 
 namespace Axle {
     void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-        // Temporal delete window when escape is pressed
+        // NOTE: Temporal delete window when escape is pressed
         if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
             Event event(EventType::WindowClose, EventCategory::Window);
             AX_DISPATCH_EVENT(std::move(event));
         }
 
-        // Convert the GLFW key to our own key enum
-        Keys key_enum = ConvertGLFWKeys(key);
+        // The conversion is direct since I use the same key codes
+        Keys key_enum = static_cast<Keys>(key);
 
-        if (key_enum == Keys::Unknown) {
+        if (key == GLFW_KEY_UNKNOWN) {
             AX_CORE_WARN("Unknown key pressed: {0}", key);
             return;
         }
@@ -43,13 +43,8 @@ namespace Axle {
     }
 
     void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
-        // Convert the GLFW button to our own mouse buttons enum
-        MouseButtons button_enum = ConvertGLFWMouseButtons(button);
-
-        if (button_enum == MouseButtons::Unknown) {
-            AX_CORE_WARN("Unknown mouse button pressed: {0}", button);
-            return;
-        }
+        // The conversion is direct since I use the same mouse codes
+        MouseButtons button_enum = static_cast<MouseButtons>(button);
 
         InputManager::GetInstance().SetMouseButton(button_enum, action == GLFW_PRESS);
     }

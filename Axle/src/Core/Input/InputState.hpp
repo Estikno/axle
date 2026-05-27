@@ -9,149 +9,152 @@
 #include <glm/vec2.hpp>
 #include <sys/stat.h>
 
-// Key codes taken from microsoft virtual key codes
-// https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
+// Key codes taken from GLFW
 namespace Axle {
     enum class MouseButtons {
-        Unknown = -1,
+        Left = 0,
+        Right = 1,
+        Middle = 2,
 
-        BUTTON_LEFT,
-        BUTTON_RIGHT,
-        BUTTON_MIDDLE,
+        Button4 = 3,
+        Button5 = 4,
+        Button6 = 5,
+        Button7 = 6,
+        Button8 = 7,
 
-        MAX_BUTTONS
+        MaxButtons
     };
 
     enum class Keys {
         Unknown = -1,
 
-        Backspace = 0x08,
-        Enter = 0x0D,
-        Tab = 0x09,
-        Shift = 0x10,
-        Control = 0x11,
+        // Printable keys
+        Space = 32,
+        Apostrophe = 39, /* ' */
+        Comma = 44,      /* , */
+        Minus = 45,      /* - */
+        Period = 46,     /* . */
+        Slash = 47,      /* / */
+        Num0 = 48,
+        Num1 = 49,
+        Num2 = 50,
+        Num3 = 51,
+        Num4 = 52,
+        Num5 = 53,
+        Num6 = 54,
+        Num7 = 55,
+        Num8 = 56,
+        Num9 = 57,
+        Semicolon = 59, /* ; */
+        Equal = 61,     /* = */
+        A = 65,
+        B = 66,
+        C = 67,
+        D = 68,
+        E = 69,
+        F = 70,
+        G = 71,
+        H = 72,
+        I = 73,
+        J = 74,
+        K = 75,
+        L = 76,
+        M = 77,
+        N = 78,
+        O = 79,
+        P = 80,
+        Q = 81,
+        R = 82,
+        S = 83,
+        T = 84,
+        U = 85,
+        V = 86,
+        W = 87,
+        X = 88,
+        Y = 89,
+        Z = 90,
+        LeftBracket = 91,  /* [ */
+        Backslash = 92,    /* \ */
+        RightBracket = 93, /* ] */
+        GraveAccent = 96,  /* ` */
+        World1 = 161,      /* non-US #1 */
+        World2 = 162,      /* non-US #2 */
 
-        Pause = 0x13,
-        Capital = 0x14,
+        // Function keys
+        Escape = 256,
+        Enter = 257,
+        Tab = 258,
+        Backspace = 259,
+        Insert = 260,
+        Delete = 261,
+        Right = 262,
+        Left = 263,
+        Down = 264,
+        Up = 265,
+        PageUp = 266,
+        PageDown = 267,
+        Home = 268,
+        End = 269,
+        CapsLock = 280,
+        ScrollLock = 281,
+        NumLock = 282,
+        PrintScreen = 283,
+        Pause = 284,
+        F1 = 290,
+        F2 = 291,
+        F3 = 292,
+        F4 = 293,
+        F5 = 294,
+        F6 = 295,
+        F7 = 296,
+        F8 = 297,
+        F9 = 298,
+        F10 = 299,
+        F11 = 300,
+        F12 = 301,
+        F13 = 302,
+        F14 = 303,
+        F15 = 304,
+        F16 = 305,
+        F17 = 306,
+        F18 = 307,
+        F19 = 308,
+        F20 = 309,
+        F21 = 310,
+        F22 = 311,
+        F23 = 312,
+        F24 = 313,
+        F25 = 314,
 
-        Escape = 0x1B,
+        // Keypad
+        Numpad0 = 320,
+        Numpad1 = 321,
+        Numpad2 = 322,
+        Numpad3 = 323,
+        Numpad4 = 324,
+        Numpad5 = 325,
+        Numpad6 = 326,
+        Numpad7 = 327,
+        Numpad8 = 328,
+        Numpad9 = 329,
+        NumpadDecimal = 330,
+        NumpadDivide = 331,
+        NumpadMultiply = 332,
+        NumpadSubtract = 333,
+        NumpadAdd = 334,
+        NumpadEnter = 335,
+        NumpadEqual = 336,
 
-        Convert = 0x1C,
-        NonConvert = 0x1D,
-        Accept = 0x1E,
-        ModeChange = 0x1F,
-
-        Space = 0x20,
-        Prior = 0x21,
-        Next = 0x22,
-        End = 0x23,
-        Home = 0x24,
-        Left = 0x25,
-        Up = 0x26,
-        Right = 0x27,
-        Down = 0x28,
-        Select = 0x29,
-        Print = 0x2A,
-        Execute = 0x2B,
-        Snapshot = 0x2C,
-        Insert = 0x2D,
-        Delete = 0x2E,
-        Help = 0x2F,
-
-        A = 0x41,
-        B = 0x42,
-        C = 0x43,
-        D = 0x44,
-        E = 0x45,
-        F = 0x46,
-        G = 0x47,
-        H = 0x48,
-        I = 0x49,
-        J = 0x4A,
-        K = 0x4B,
-        L = 0x4C,
-        M = 0x4D,
-        N = 0x4E,
-        O = 0x4F,
-        P = 0x50,
-        Q = 0x51,
-        R = 0x52,
-        S = 0x53,
-        T = 0x54,
-        U = 0x55,
-        V = 0x56,
-        W = 0x57,
-        X = 0x58,
-        Y = 0x59,
-        Z = 0x5A,
-
-        LWin = 0x5B,
-        RWin = 0x5C,
-        Apps = 0x5D,
-
-        Sleep = 0x5F,
-
-        Numpad0 = 0x60,
-        Numpad1 = 0x61,
-        Numpad2 = 0x62,
-        Numpad3 = 0x63,
-        Numpad4 = 0x64,
-        Numpad5 = 0x65,
-        Numpad6 = 0x66,
-        Numpad7 = 0x67,
-        Numpad8 = 0x68,
-        Numpad9 = 0x69,
-        Multiply = 0x6A,
-        Add = 0x6B,
-        Separator = 0x6C,
-        Subtract = 0x6D,
-        Decimal = 0x6E,
-        Divide = 0x6F,
-
-        F1 = 0x70,
-        F2 = 0x71,
-        F3 = 0x72,
-        F4 = 0x73,
-        F5 = 0x74,
-        F6 = 0x75,
-        F7 = 0x76,
-        F8 = 0x77,
-        F9 = 0x78,
-        F10 = 0x79,
-        F11 = 0x7A,
-        F12 = 0x7B,
-        F13 = 0x7C,
-        F14 = 0x7D,
-        F15 = 0x7E,
-        F16 = 0x7F,
-        F17 = 0x80,
-        F18 = 0x81,
-        F19 = 0x82,
-        F20 = 0x83,
-        F21 = 0x84,
-        F22 = 0x85,
-        F23 = 0x86,
-        F24 = 0x87,
-
-        NumLock = 0x90,
-        Scroll = 0x91,
-
-        NumpadEqual = 0x92,
-
-        LShift = 0xA0,
-        RShift = 0xA1,
-        LControl = 0xA2,
-        RControl = 0xA3,
-        LMenu = 0xA4,
-        RMenu = 0xA5,
-
-        Semicolon = 0xBA,
-        Plus = 0xBB,
-        Comma = 0xBC,
-        Minus = 0xBD,
-        Period = 0xBE,
-        Slash = 0xBF,
-        Grave = 0xC0,
+        // Modifier keys
+        LShift = 340,
+        LControl = 341,
+        LAlt = 342,
+        LSuper = 343,
+        RShift = 344,
+        RControl = 345,
+        RAlt = 346,
+        RSuper = 347,
+        Menu = 348,
 
         MaxKeys
     };
@@ -162,7 +165,7 @@ namespace Axle {
 
     struct MouseState {
         glm::vec2 position;
-        std::bitset<static_cast<u32>(MouseButtons::MAX_BUTTONS)> buttons;
+        std::bitset<static_cast<u32>(MouseButtons::MaxButtons)> buttons;
     };
 
     struct InputState {
@@ -171,18 +174,4 @@ namespace Axle {
         MouseState mouse_current;
         MouseState mouse_previous;
     };
-
-    /**
-     * Simple handy function to convert GLFW keys to our own Keys enum.
-     *
-     * @returns The converted key, or Keys::Unknown if the key is not recognized.
-     * */
-    Keys ConvertGLFWKeys(i32 glfw_key);
-
-    /**
-     * Simple handy function to convert GLFW mouse buttons to our own MouseButtons enum.
-     *
-     * @retrns The converted mouse button, or MouseButtons::Unknown if the button is not recognized.
-     * */
-    MouseButtons ConvertGLFWMouseButtons(i32 glfw_button);
 } // namespace Axle

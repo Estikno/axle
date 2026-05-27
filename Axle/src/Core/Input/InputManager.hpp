@@ -40,7 +40,7 @@ namespace Axle {
          * @returns Returns a reference to the Event Handler
          */
         inline static InputManager& GetInstance() noexcept {
-            return *m_InputManager;
+            return *s_Instance;
         }
 
         /**
@@ -185,7 +185,7 @@ namespace Axle {
          */
         bool GetMouseButtonUnsafe(MouseButtons button) const;
 
-        static std::unique_ptr<InputManager> m_InputManager;
+        static std::unique_ptr<InputManager> s_Instance;
 
         InputState m_InputState{};
         mutable std::shared_mutex m_Mutex;

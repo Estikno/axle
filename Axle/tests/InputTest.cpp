@@ -73,7 +73,7 @@ static void CheckKeyEvent(Event& event) {
 
 static void CheckMouseButtonEvent(Event& event) {
     CHECK(event.GetEventCategory() == EventCategory::Input);
-    CHECK(std::get<std::array<u16, 8>>(event.GetContext().raw_data).at(0) == (u16) MouseButtons::BUTTON_LEFT);
+    CHECK(std::get<std::array<u16, 8>>(event.GetContext().raw_data).at(0) == (u16) MouseButtons::Left);
 }
 
 static void CheckMouseWheelEvent(Event& event) {
@@ -140,45 +140,45 @@ TEST_CASE("Input system mouse button handling") {
     f.stack.PushLayer(spy);
 
     SUBCASE("No mouse button action") {
-        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonDown(MouseButtons::BUTTON_LEFT));
-        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonUp(MouseButtons::BUTTON_LEFT));
-        CHECK_FALSE(InputManager::GetInstance().GetMouseButton(MouseButtons::BUTTON_LEFT));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonDown(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonUp(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButton(MouseButtons::Left));
     }
 
     SUBCASE("Mouse button Down") {
-        InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, true);
+        InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::Left, true);
         f.process();
 
-        CHECK(InputManager::GetInstance().GetMouseButtonDown(MouseButtons::BUTTON_LEFT));
-        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonUp(MouseButtons::BUTTON_LEFT));
-        CHECK_FALSE(InputManager::GetInstance().GetMouseButton(MouseButtons::BUTTON_LEFT));
+        CHECK(InputManager::GetInstance().GetMouseButtonDown(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonUp(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButton(MouseButtons::Left));
     }
 
     SUBCASE("Mouse button Up") {
-        InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, true);
+        InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::Left, true);
         f.process();
         InputManager::GetInstance().SimulateUpdate();
-        InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, false);
+        InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::Left, false);
         f.process();
 
-        CHECK(InputManager::GetInstance().GetMouseButtonUp(MouseButtons::BUTTON_LEFT));
-        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonDown(MouseButtons::BUTTON_LEFT));
-        CHECK_FALSE(InputManager::GetInstance().GetMouseButton(MouseButtons::BUTTON_LEFT));
+        CHECK(InputManager::GetInstance().GetMouseButtonUp(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonDown(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButton(MouseButtons::Left));
     }
 
     SUBCASE("Mouse button Is Pressed") {
-        InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, true);
+        InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::Left, true);
         f.process();
 
-        CHECK_FALSE(InputManager::GetInstance().GetMouseButton(MouseButtons::BUTTON_LEFT));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButton(MouseButtons::Left));
 
         InputManager::GetInstance().SimulateUpdate();
-        InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, true);
+        InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::Left, true);
         f.process();
 
-        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonUp(MouseButtons::BUTTON_LEFT));
-        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonDown(MouseButtons::BUTTON_LEFT));
-        CHECK(InputManager::GetInstance().GetMouseButton(MouseButtons::BUTTON_LEFT));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonUp(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonDown(MouseButtons::Left));
+        CHECK(InputManager::GetInstance().GetMouseButton(MouseButtons::Left));
     }
 }
 
@@ -324,25 +324,25 @@ TEST_CASE("InputManager GetMouseButtonDown is single-frame") {
     InputFixture f;
     InputManager& input = InputManager::GetInstance();
 
-    input.SimulateMouseButtonState(MouseButtons::BUTTON_RIGHT, true);
-    CHECK(input.GetMouseButtonDown(MouseButtons::BUTTON_RIGHT));
+    input.SimulateMouseButtonState(MouseButtons::Right, true);
+    CHECK(input.GetMouseButtonDown(MouseButtons::Right));
 
     input.SimulateUpdate();
-    CHECK_FALSE(input.GetMouseButtonDown(MouseButtons::BUTTON_RIGHT));
-    CHECK(input.GetMouseButton(MouseButtons::BUTTON_RIGHT));
+    CHECK_FALSE(input.GetMouseButtonDown(MouseButtons::Right));
+    CHECK(input.GetMouseButton(MouseButtons::Right));
 }
 
 TEST_CASE("InputManager GetMouseButtonUp is single-frame") {
     InputFixture f;
     InputManager& input = InputManager::GetInstance();
 
-    input.SimulateMouseButtonState(MouseButtons::BUTTON_RIGHT, true);
+    input.SimulateMouseButtonState(MouseButtons::Right, true);
     input.SimulateUpdate();
-    input.SimulateMouseButtonState(MouseButtons::BUTTON_RIGHT, false);
-    CHECK(input.GetMouseButtonUp(MouseButtons::BUTTON_RIGHT));
+    input.SimulateMouseButtonState(MouseButtons::Right, false);
+    CHECK(input.GetMouseButtonUp(MouseButtons::Right));
 
     input.SimulateUpdate();
-    CHECK_FALSE(input.GetMouseButtonUp(MouseButtons::BUTTON_RIGHT));
+    CHECK_FALSE(input.GetMouseButtonUp(MouseButtons::Right));
 }
 
 // ─── Mouse position deduplication ────────────────────────────────────────────
@@ -440,7 +440,7 @@ TEST_CASE("InputManager SimulateReset clears all state") {
     InputManager& input = InputManager::GetInstance();
 
     input.SimulateKeyState(Keys::A, true);
-    input.SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, true);
+    input.SimulateMouseButtonState(MouseButtons::Left, true);
     input.SimulateMousePosition({100.0f, 200.0f});
     input.SimulateUpdate();
     input.SimulateReset();
@@ -448,9 +448,9 @@ TEST_CASE("InputManager SimulateReset clears all state") {
     CHECK_FALSE(input.GetKey(Keys::A));
     CHECK_FALSE(input.GetKeyDown(Keys::A));
     CHECK_FALSE(input.GetKeyUp(Keys::A));
-    CHECK_FALSE(input.GetMouseButton(MouseButtons::BUTTON_LEFT));
-    CHECK_FALSE(input.GetMouseButtonDown(MouseButtons::BUTTON_LEFT));
-    CHECK_FALSE(input.GetMouseButtonUp(MouseButtons::BUTTON_LEFT));
+    CHECK_FALSE(input.GetMouseButton(MouseButtons::Left));
+    CHECK_FALSE(input.GetMouseButtonDown(MouseButtons::Left));
+    CHECK_FALSE(input.GetMouseButtonUp(MouseButtons::Left));
     CHECK(input.GetMousePosition() == glm::vec2(0.0f, 0.0f));
 }
 
@@ -561,7 +561,7 @@ TEST_CASE("InputManager concurrent writes do not corrupt state") {
             for (int i = 0; i < kOps; ++i) {
                 bool pressed = (i % 2 == 0);
                 input.SimulateKeyState(Keys::A, pressed);
-                input.SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, pressed);
+                input.SimulateMouseButtonState(MouseButtons::Left, pressed);
             }
         });
     }
@@ -569,7 +569,7 @@ TEST_CASE("InputManager concurrent writes do not corrupt state") {
         t.join();
 
     CHECK_NOTHROW(input.GetKey(Keys::A));
-    CHECK_NOTHROW(input.GetMouseButton(MouseButtons::BUTTON_LEFT));
+    CHECK_NOTHROW(input.GetMouseButton(MouseButtons::Left));
 }
 
 TEST_CASE("InputManager concurrent read-write does not deadlock") {
@@ -587,7 +587,7 @@ TEST_CASE("InputManager concurrent read-write does not deadlock") {
         threads.emplace_back([&, t]() {
             for (int i = 0; i < kOps; ++i) {
                 input.SimulateKeyState(Keys::W, i % 2 == 0);
-                input.SimulateMouseButtonState(MouseButtons::BUTTON_RIGHT, i % 2 == 0);
+                input.SimulateMouseButtonState(MouseButtons::Right, i % 2 == 0);
                 input.SimulateMousePosition({static_cast<float>(i), static_cast<float>(t)});
             }
         });
@@ -598,7 +598,7 @@ TEST_CASE("InputManager concurrent read-write does not deadlock") {
                 (void) input.GetKey(Keys::W);
                 (void) input.GetKeyDown(Keys::W);
                 (void) input.GetKeyUp(Keys::W);
-                (void) input.GetMouseButton(MouseButtons::BUTTON_RIGHT);
+                (void) input.GetMouseButton(MouseButtons::Right);
                 (void) input.GetMousePosition();
             }
         });
@@ -626,7 +626,7 @@ TEST_CASE("InputManager Update is safe under concurrent writes") {
         writers.emplace_back([&, t]() {
             for (int i = 0; i < kIter; ++i) {
                 input.SimulateKeyState(Keys::A, i % 2 == 0);
-                input.SimulateMouseButtonState(MouseButtons::BUTTON_LEFT, i % 3 == 0);
+                input.SimulateMouseButtonState(MouseButtons::Left, i % 3 == 0);
             }
         });
     }

@@ -10,21 +10,21 @@
 #include <glm/vec2.hpp>
 
 namespace Axle {
-    std::unique_ptr<InputManager> InputManager::m_InputManager;
+    std::unique_ptr<InputManager> InputManager::s_Instance;
 
     void InputManager::Init() {
-        if (m_InputManager != nullptr) {
+        if (s_Instance != nullptr) {
             AX_CORE_WARN("Init method of the Input Manager has been called a second time. IGNORING");
             return;
         }
 
-        m_InputManager = std::make_unique<InputManager>();
+        s_Instance = std::make_unique<InputManager>();
 
         AX_CORE_INFO("Input Manager initialized...");
     }
 
     void InputManager::ShutDown() {
-        m_InputManager.reset();
+        s_Instance.reset();
         AX_CORE_INFO("Input Manager deleted...");
     }
 
@@ -41,7 +41,7 @@ namespace Axle {
         }
 
         // Same for mouse buttons
-        for (u16 i = 0; i < static_cast<u16>(MouseButtons::MAX_BUTTONS); ++i) {
+        for (u16 i = 0; i < static_cast<u16>(MouseButtons::MaxButtons); ++i) {
             if (GetMouseButtonUnsafe(static_cast<MouseButtons>(i))) {
                 Event event(EventType::MouseButtonIsPressed, EventCategory::Input);
                 event.GetContext().raw_data = std::array<u16, 8>{i};
