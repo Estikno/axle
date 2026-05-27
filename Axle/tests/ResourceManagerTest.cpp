@@ -68,7 +68,7 @@ TEST_CASE("ResourceManager - Load valid file") {
 
         REQUIRE_EQ(instance.Size(handle).Unwrap(), (u64) 21);
 
-        ResourceManager::ReadGuard pRead = std::move(instance.DataConst(eHandle.Unwrap()).Unwrap());
+        ResourceManager::ReadGuard pRead = instance.DataConst(eHandle.Unwrap()).Unwrap();
         const char* p = pRead.Data();
 
         CHECK(p[0] == 'T');

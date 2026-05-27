@@ -10,10 +10,6 @@
 #include <exception>
 #include <sys/stat.h>
 
-#include "Core/Types.hpp"
-#include "Core/Error/Panic.hpp"
-#include "Core/Core.hpp"
-
 namespace Axle {
     template <typename T>
     class Expected {
@@ -157,7 +153,7 @@ namespace Axle {
          *
          * @returns A reference to the T value contained in the Expected if there is no exception
          * */
-        T& Unwrap() {
+        T& Unwrap() & {
             if (!m_HasVal)
                 std::rethrow_exception(m_Exception);
             return m_Value;
@@ -169,10 +165,22 @@ namespace Axle {
          *
          * @returns A reference to the T value contained in the Expected if there is no exception
          * */
-        const T& Unwrap() const {
+        const T& Unwrap() const& {
             if (!m_HasVal)
                 std::rethrow_exception(m_Exception);
             return m_Value;
+        }
+
+        /**
+         * Unwraps the value contained in the Expected.
+         * If the Expected contains an exception, it is rethrown.
+         *
+         * @returns A reference to the T value contained in the Expected if there is no exception
+         * */
+        T&& Unwrap() && {
+            if (!m_HasVal)
+                std::rethrow_exception(m_Exception);
+            return std::move(m_Value);
         }
 
         /**
