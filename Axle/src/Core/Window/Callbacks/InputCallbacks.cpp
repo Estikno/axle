@@ -14,12 +14,6 @@
 
 namespace Axle {
     void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-        // NOTE: Temporal delete window when escape is pressed
-        if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-            Event event(EventType::WindowClose, EventCategory::Window);
-            AX_DISPATCH_EVENT(std::move(event));
-        }
-
         // The conversion is direct since I use the same key codes
         Keys key_enum = static_cast<Keys>(key);
 
@@ -50,6 +44,6 @@ namespace Axle {
     }
 
     void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
-        InputManager::GetInstance().SetMouseWheel(static_cast<f32>(yoffset));
+        InputManager::GetInstance().SetMouseWheel(static_cast<f32>(xoffset), static_cast<f32>(yoffset));
     }
 } // namespace Axle

@@ -13,16 +13,17 @@ using namespace Axle;
 
 // ─── Spy layer ────────────────────────────────────────────────────────────────
 //
-// Replaces the old Subscribe/Unsubscribe pattern. Attach one to a LayerStack,
-// call ProcessEvents(stack), and inspect what arrived.
+// Receives events and dispatches them via EventDispatcher, mirroring the
+// real OnEvent() pattern. The predicate receives the already-downcast
+// concrete event type via the dispatcher callback.
 
-class SpyLayer : public Layer {
+class InputSpyLayer : public Layer {
 public:
-    using Predicate = std::function<void(Event&)>;
+    using RawPredicate = std::function<void(Event&)>;
 
     int eventCount = 0;
 
-    explicit SpyLayer(const std::string& name = "SpyLayer", Predicate pred = nullptr)
+    explicit InputSpyLayer(const std::string& name = "InputSpyLayer", RawPredicate pred = nullptr)
         : Layer(name),
           m_Pred(std::move(pred)) {}
 
@@ -40,10 +41,10 @@ public:
     }
 
 private:
-    Predicate m_Pred;
+    RawPredicate m_Pred;
 };
 
-// ─── Fixtures ─────────────────────────────────────────────────────────────────
+// ─── Fixture ──────────────────────────────────────────────────────────────────
 
 struct InputFixture {
     LayerStack stack;
@@ -64,42 +65,44 @@ struct InputFixture {
     }
 };
 
-// ─── Helpers that mirror the original free functions ─────────────────────────
-
-static void CheckKeyEvent(Event& event) {
-    CHECK(event.GetEventCategory() == EventCategory::Input);
-    CHECK(std::get<std::array<u16, 8>>(event.GetContext().raw_data).at(0) == (u16) Keys::A);
-}
-
-static void CheckMouseButtonEvent(Event& event) {
-    CHECK(event.GetEventCategory() == EventCategory::Input);
-    CHECK(std::get<std::array<u16, 8>>(event.GetContext().raw_data).at(0) == (u16) MouseButtons::Left);
-}
-
-static void CheckMouseWheelEvent(Event& event) {
-    CHECK(event.GetEventCategory() == EventCategory::Input);
-    CHECK(std::get<std::array<f32, 4>>(event.GetContext().raw_data).at(0) == doctest::Approx(1.0));
-}
-
 // ─── Key handling ─────────────────────────────────────────────────────────────
 
 TEST_CASE("Input system key handling") {
     InputFixture f;
-    SpyLayer* spy = new SpyLayer("KeySpy", CheckKeyEvent);
+
+    // Spy verifies that key events carry the correct key via EventDispatcher
+    InputSpyLayer* spy = new InputSpyLayer("KeySpy", [](Event& event) {
+        EventDispatcher dispatcher(event);
+        dispatcher.Dispatch<KeyPressedEvent>([](KeyPressedEvent& e) {
+            CHECK(e.GetEventCategory() == EventCategory::Input);
+            CHECK(e.GetKey() == Keys::A);
+            return true;
+        });
+        dispatcher.Dispatch<KeyReleasedEvent>([](KeyReleasedEvent& e) {
+            CHECK(e.GetEventCategory() == EventCategory::Input);
+            CHECK(e.GetKey() == Keys::A);
+            return true;
+        });
+        dispatcher.Dispatch<KeyIsPressedEvent>([](KeyIsPressedEvent& e) {
+            CHECK(e.GetEventCategory() == EventCategory::Input);
+            CHECK(e.GetKey() == Keys::A);
+            return true;
+        });
+    });
     f.stack.PushLayer(spy);
 
     SUBCASE("No key action") {
-        CHECK_FALSE(InputManager::GetKeyDown(Keys::A));
-        CHECK_FALSE(InputManager::GetKeyUp(Keys::A));
-        CHECK_FALSE(InputManager::GetKey(Keys::A));
+        CHECK_FALSE(InputManager::GetInstance().GetKeyDown(Keys::A));
+        CHECK_FALSE(InputManager::GetInstance().GetKeyUp(Keys::A));
+        CHECK_FALSE(InputManager::GetInstance().GetKey(Keys::A));
     }
 
     SUBCASE("Key Down") {
         InputManager::GetInstance().SimulateKeyState(Keys::A, true);
 
-        CHECK(InputManager::GetKeyDown(Keys::A));
-        CHECK_FALSE(InputManager::GetKey(Keys::A));
-        CHECK_FALSE(InputManager::GetKeyUp(Keys::A));
+        CHECK(InputManager::GetInstance().GetKeyDown(Keys::A));
+        CHECK_FALSE(InputManager::GetInstance().GetKey(Keys::A));
+        CHECK_FALSE(InputManager::GetInstance().GetKeyUp(Keys::A));
 
         f.process();
     }
@@ -111,24 +114,24 @@ TEST_CASE("Input system key handling") {
         InputManager::GetInstance().SimulateKeyState(Keys::A, false);
         f.process();
 
-        CHECK(InputManager::GetKeyUp(Keys::A));
-        CHECK_FALSE(InputManager::GetKeyDown(Keys::A));
-        CHECK_FALSE(InputManager::GetKey(Keys::A));
+        CHECK(InputManager::GetInstance().GetKeyUp(Keys::A));
+        CHECK_FALSE(InputManager::GetInstance().GetKeyDown(Keys::A));
+        CHECK_FALSE(InputManager::GetInstance().GetKey(Keys::A));
     }
 
     SUBCASE("Key Is Pressed") {
         InputManager::GetInstance().SimulateKeyState(Keys::A, true);
         f.process();
 
-        CHECK_FALSE(InputManager::GetKey(Keys::A));
+        CHECK_FALSE(InputManager::GetInstance().GetKey(Keys::A));
 
         InputManager::GetInstance().SimulateUpdate();
         InputManager::GetInstance().SimulateKeyState(Keys::A, true);
         f.process();
 
-        CHECK(InputManager::GetKey(Keys::A));
-        CHECK_FALSE(InputManager::GetKeyUp(Keys::A));
-        CHECK_FALSE(InputManager::GetKeyDown(Keys::A));
+        CHECK(InputManager::GetInstance().GetKey(Keys::A));
+        CHECK_FALSE(InputManager::GetInstance().GetKeyUp(Keys::A));
+        CHECK_FALSE(InputManager::GetInstance().GetKeyDown(Keys::A));
     }
 }
 
@@ -136,22 +139,40 @@ TEST_CASE("Input system key handling") {
 
 TEST_CASE("Input system mouse button handling") {
     InputFixture f;
-    SpyLayer* spy = new SpyLayer("MouseButtonSpy", CheckMouseButtonEvent);
+
+    InputSpyLayer* spy = new InputSpyLayer("MouseButtonSpy", [](Event& event) {
+        EventDispatcher dispatcher(event);
+        dispatcher.Dispatch<MouseButtonPressedEvent>([](MouseButtonPressedEvent& e) {
+            CHECK(e.GetEventCategory() == EventCategory::Input);
+            CHECK(e.GetMouseButton() == MouseButtons::Left);
+            return true;
+        });
+        dispatcher.Dispatch<MouseButtonReleasedEvent>([](MouseButtonReleasedEvent& e) {
+            CHECK(e.GetEventCategory() == EventCategory::Input);
+            CHECK(e.GetMouseButton() == MouseButtons::Left);
+            return true;
+        });
+        dispatcher.Dispatch<MouseButtonIsPressedEvent>([](MouseButtonIsPressedEvent& e) {
+            CHECK(e.GetEventCategory() == EventCategory::Input);
+            CHECK(e.GetMouseButton() == MouseButtons::Left);
+            return true;
+        });
+    });
     f.stack.PushLayer(spy);
 
     SUBCASE("No mouse button action") {
-        CHECK_FALSE(InputManager::GetMouseButtonDown(MouseButtons::Left));
-        CHECK_FALSE(InputManager::GetMouseButtonUp(MouseButtons::Left));
-        CHECK_FALSE(InputManager::GetMouseButton(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonDown(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonUp(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButton(MouseButtons::Left));
     }
 
     SUBCASE("Mouse button Down") {
         InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::Left, true);
         f.process();
 
-        CHECK(InputManager::GetMouseButtonDown(MouseButtons::Left));
-        CHECK_FALSE(InputManager::GetMouseButtonUp(MouseButtons::Left));
-        CHECK_FALSE(InputManager::GetMouseButton(MouseButtons::Left));
+        CHECK(InputManager::GetInstance().GetMouseButtonDown(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonUp(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButton(MouseButtons::Left));
     }
 
     SUBCASE("Mouse button Up") {
@@ -161,24 +182,24 @@ TEST_CASE("Input system mouse button handling") {
         InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::Left, false);
         f.process();
 
-        CHECK(InputManager::GetMouseButtonUp(MouseButtons::Left));
-        CHECK_FALSE(InputManager::GetMouseButtonDown(MouseButtons::Left));
-        CHECK_FALSE(InputManager::GetMouseButton(MouseButtons::Left));
+        CHECK(InputManager::GetInstance().GetMouseButtonUp(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonDown(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButton(MouseButtons::Left));
     }
 
     SUBCASE("Mouse button Is Pressed") {
         InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::Left, true);
         f.process();
 
-        CHECK_FALSE(InputManager::GetMouseButton(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButton(MouseButtons::Left));
 
         InputManager::GetInstance().SimulateUpdate();
         InputManager::GetInstance().SimulateMouseButtonState(MouseButtons::Left, true);
         f.process();
 
-        CHECK_FALSE(InputManager::GetMouseButtonUp(MouseButtons::Left));
-        CHECK_FALSE(InputManager::GetMouseButtonDown(MouseButtons::Left));
-        CHECK(InputManager::GetMouseButton(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonUp(MouseButtons::Left));
+        CHECK_FALSE(InputManager::GetInstance().GetMouseButtonDown(MouseButtons::Left));
+        CHECK(InputManager::GetInstance().GetMouseButton(MouseButtons::Left));
     }
 }
 
@@ -191,13 +212,13 @@ TEST_CASE("Mouse position handling") {
     InputManager::GetInstance().SimulateMousePosition(testPosition);
 
     SUBCASE("Get Mouse Position") {
-        CHECK(InputManager::GetMousePosition() == testPosition);
+        CHECK(InputManager::GetInstance().GetMousePosition() == testPosition);
     }
 
     SUBCASE("Set Mouse Position") {
         glm::vec2 newPosition(300.0f, 400.0f);
         InputManager::GetInstance().SimulateMousePosition(newPosition);
-        CHECK(InputManager::GetMousePosition() == newPosition);
+        CHECK(InputManager::GetInstance().GetMousePosition() == newPosition);
     }
 }
 
@@ -205,13 +226,23 @@ TEST_CASE("Mouse position handling") {
 
 TEST_CASE("Mouse wheel handling") {
     InputFixture f;
-    SpyLayer* spy = new SpyLayer("WheelSpy", CheckMouseWheelEvent);
+
+    f32 receivedY = 0.0f;
+    InputSpyLayer* spy = new InputSpyLayer("WheelSpy", [&](Event& event) {
+        EventDispatcher dispatcher(event);
+        dispatcher.Dispatch<MouseScrollEvent>([&](MouseScrollEvent& e) {
+            CHECK(e.GetEventCategory() == EventCategory::Input);
+            receivedY = e.GetYOffset();
+            return true;
+        });
+    });
     f.stack.PushLayer(spy);
 
-    InputManager::GetInstance().SimulateMouseWheel(1.0f);
+    InputManager::GetInstance().SimulateMouseWheel(1.0f, 1.0f);
     InputManager::GetInstance().SimulateUpdate();
     f.process();
 
+    CHECK(receivedY == doctest::Approx(1.0f));
     CHECK(spy->eventCount >= 1);
 }
 
@@ -228,7 +259,6 @@ TEST_CASE("InputManager singleton lifecycle") {
     CHECK(&first == &second);
 
     InputManager::ShutDown();
-
     InputManager::Init();
     CHECK_NOTHROW(InputManager::GetInstance());
     InputManager::ShutDown();
@@ -241,10 +271,13 @@ TEST_CASE("InputManager singleton lifecycle") {
 TEST_CASE("InputManager SetKey deduplication") {
     InputFixture f;
 
-    int eventCount = 0;
-    SpyLayer* spy = new SpyLayer("DedupSpy", [&](Event& e) {
-        if (e.GetEventType() == EventType::KeyPressed)
-            eventCount++;
+    int pressCount = 0;
+    InputSpyLayer* spy = new InputSpyLayer("DedupSpy", [&](Event& event) {
+        EventDispatcher dispatcher(event);
+        dispatcher.Dispatch<KeyPressedEvent>([&](KeyPressedEvent&) {
+            pressCount++;
+            return true;
+        });
     });
     f.stack.PushLayer(spy);
 
@@ -253,16 +286,19 @@ TEST_CASE("InputManager SetKey deduplication") {
     InputManager::GetInstance().SimulateKeyState(Keys::A, true); // duplicate → no event
     f.process();
 
-    CHECK(eventCount == 1);
+    CHECK(pressCount == 1);
 }
 
 TEST_CASE("InputManager SetKey release deduplication") {
     InputFixture f;
 
     int releaseCount = 0;
-    SpyLayer* spy = new SpyLayer("ReleaseDedupSpy", [&](Event& e) {
-        if (e.GetEventType() == EventType::KeyReleased)
+    InputSpyLayer* spy = new InputSpyLayer("ReleaseDedupSpy", [&](Event& event) {
+        EventDispatcher dispatcher(event);
+        dispatcher.Dispatch<KeyReleasedEvent>([&](KeyReleasedEvent&) {
             releaseCount++;
+            return true;
+        });
     });
     f.stack.PushLayer(spy);
 
@@ -285,7 +321,7 @@ TEST_CASE("InputManager GetKeyDown is single-frame") {
     CHECK(input.GetKeyDown(Keys::W));
 
     input.SimulateUpdate();
-    input.SimulateKeyState(Keys::W, true); // deduplicated, no state change
+    input.SimulateKeyState(Keys::W, true); // deduplicated
     CHECK_FALSE(input.GetKeyDown(Keys::W));
     CHECK(input.GetKey(Keys::W));
 }
@@ -350,10 +386,13 @@ TEST_CASE("InputManager GetMouseButtonUp is single-frame") {
 TEST_CASE("InputManager mouse position deduplication") {
     InputFixture f;
 
-    int moveEventCount = 0;
-    SpyLayer* spy = new SpyLayer("MoveSpy", [&](Event& e) {
-        if (e.GetEventType() == EventType::MouseMoved)
-            moveEventCount++;
+    int moveCount = 0;
+    InputSpyLayer* spy = new InputSpyLayer("MoveSpy", [&](Event& event) {
+        EventDispatcher dispatcher(event);
+        dispatcher.Dispatch<MouseMovedEvent>([&](MouseMovedEvent&) {
+            moveCount++;
+            return true;
+        });
     });
     f.stack.PushLayer(spy);
 
@@ -363,7 +402,30 @@ TEST_CASE("InputManager mouse position deduplication") {
     InputManager::GetInstance().SimulateMousePosition(pos); // duplicate
     f.process();
 
-    CHECK(moveEventCount == 1);
+    CHECK(moveCount == 1);
+}
+
+// ─── Mouse moved event carries correct coordinates ────────────────────────────
+
+TEST_CASE("InputManager mouse moved event carries correct coordinates") {
+    InputFixture f;
+
+    f32 capturedX = -1.0f, capturedY = -1.0f;
+    InputSpyLayer* spy = new InputSpyLayer("CoordSpy", [&](Event& event) {
+        EventDispatcher dispatcher(event);
+        dispatcher.Dispatch<MouseMovedEvent>([&](MouseMovedEvent& e) {
+            capturedX = e.GetX();
+            capturedY = e.GetY();
+            return true;
+        });
+    });
+    f.stack.PushLayer(spy);
+
+    InputManager::GetInstance().SimulateMousePosition({320.0f, 240.0f});
+    f.process();
+
+    CHECK(capturedX == doctest::Approx(320.0f));
+    CHECK(capturedY == doctest::Approx(240.0f));
 }
 
 // ─── Mouse wheel always fires ─────────────────────────────────────────────────
@@ -372,18 +434,42 @@ TEST_CASE("InputManager mouse wheel always fires event") {
     InputFixture f;
 
     int scrollCount = 0;
-    SpyLayer* spy = new SpyLayer("ScrollSpy", [&](Event& e) {
-        if (e.GetEventType() == EventType::MouseScrolled)
+    InputSpyLayer* spy = new InputSpyLayer("ScrollSpy", [&](Event& event) {
+        EventDispatcher dispatcher(event);
+        dispatcher.Dispatch<MouseScrollEvent>([&](MouseScrollEvent&) {
             scrollCount++;
+            return true;
+        });
     });
     f.stack.PushLayer(spy);
 
-    InputManager::GetInstance().SimulateMouseWheel(1.0f);
-    InputManager::GetInstance().SimulateMouseWheel(1.0f); // same value, still fires
-    InputManager::GetInstance().SimulateMouseWheel(-1.0f);
+    InputManager::GetInstance().SimulateMouseWheel(1.0f, 1.0f);
+    InputManager::GetInstance().SimulateMouseWheel(1.0f, 1.0f);
+    InputManager::GetInstance().SimulateMouseWheel(-1.0f, -1.0f);
     f.process();
 
     CHECK(scrollCount == 3);
+}
+
+// ─── Mouse scroll event carries correct offset ────────────────────────────────
+
+TEST_CASE("InputManager mouse scroll event carries correct offset") {
+    InputFixture f;
+
+    f32 capturedOffset = 0.0f;
+    InputSpyLayer* spy = new InputSpyLayer("ScrollOffsetSpy", [&](Event& event) {
+        EventDispatcher dispatcher(event);
+        dispatcher.Dispatch<MouseScrollEvent>([&](MouseScrollEvent& e) {
+            capturedOffset = e.GetYOffset();
+            return true;
+        });
+    });
+    f.stack.PushLayer(spy);
+
+    InputManager::GetInstance().SimulateMouseWheel(-2.5f, -2.5f);
+    f.process();
+
+    CHECK(capturedOffset == doctest::Approx(-2.5f));
 }
 
 // ─── Update() / KeyIsPressed semantics ───────────────────────────────────────
@@ -392,13 +478,15 @@ TEST_CASE("InputManager Update fires KeyIsPressed events for held keys") {
     InputFixture f;
 
     int isHeldCount = 0;
-    SpyLayer* spy = new SpyLayer("HeldSpy", [&](Event& e) {
-        if (e.GetEventType() == EventType::KeyIsPressed)
+    InputSpyLayer* spy = new InputSpyLayer("HeldSpy", [&](Event& event) {
+        EventDispatcher dispatcher(event);
+        dispatcher.Dispatch<KeyIsPressedEvent>([&](KeyIsPressedEvent&) {
             isHeldCount++;
+            return true;
+        });
     });
     f.stack.PushLayer(spy);
 
-    // Hold two keys for two full frames so they appear in both current and previous
     InputManager::GetInstance().SimulateKeyState(Keys::A, true);
     InputManager::GetInstance().SimulateKeyState(Keys::D, true);
     InputManager::GetInstance().SimulateUpdate(); // frame 1
@@ -407,7 +495,7 @@ TEST_CASE("InputManager Update fires KeyIsPressed events for held keys") {
     InputManager::GetInstance().SimulateUpdate(); // frame 2
     f.process();
 
-    CHECK(isHeldCount == 2); // one KeyIsPressed per held key per Update()
+    CHECK(isHeldCount == 2);
 
     isHeldCount = 0;
     InputManager::GetInstance().SimulateUpdate();
@@ -419,13 +507,15 @@ TEST_CASE("InputManager Update does not fire KeyIsPressed on frame of press") {
     InputFixture f;
 
     int isHeldCount = 0;
-    SpyLayer* spy = new SpyLayer("HeldSpyFirstFrame", [&](Event& e) {
-        if (e.GetEventType() == EventType::KeyIsPressed)
+    InputSpyLayer* spy = new InputSpyLayer("HeldSpyFirstFrame", [&](Event& event) {
+        EventDispatcher dispatcher(event);
+        dispatcher.Dispatch<KeyIsPressedEvent>([&](KeyIsPressedEvent&) {
             isHeldCount++;
+            return true;
+        });
     });
     f.stack.PushLayer(spy);
 
-    // Press without advancing a frame — key is only in "current", not "previous"
     InputManager::GetInstance().SimulateKeyState(Keys::E, true);
     InputManager::GetInstance().SimulateUpdate();
     f.process();
@@ -489,27 +579,6 @@ TEST_CASE("InputManager press-release-press cycle") {
     CHECK_FALSE(input.GetKey(Keys::Space));
 }
 
-// ─── Mouse moved event carries correct coordinates ────────────────────────────
-
-TEST_CASE("InputManager mouse moved event carries correct coordinates") {
-    InputFixture f;
-
-    glm::vec2 captured(-1.0f, -1.0f);
-    SpyLayer* spy = new SpyLayer("CoordSpy", [&](Event& e) {
-        if (e.GetEventType() != EventType::MouseMoved)
-            return;
-        auto& data = std::get<std::array<u16, 8>>(e.GetContext().raw_data);
-        captured = {static_cast<float>(data.at(0)), static_cast<float>(data.at(1))};
-    });
-    f.stack.PushLayer(spy);
-
-    InputManager::GetInstance().SimulateMousePosition({320.0f, 240.0f});
-    f.process();
-
-    CHECK(captured.x == doctest::Approx(320.0f));
-    CHECK(captured.y == doctest::Approx(240.0f));
-}
-
 // ─── Concurrency ──────────────────────────────────────────────────────────────
 
 TEST_CASE("InputManager concurrent reads do not deadlock") {
@@ -542,8 +611,6 @@ TEST_CASE("InputManager concurrent reads do not deadlock") {
     for (auto& t : threads)
         t.join();
 
-    // GetKey(A) == true and GetMousePosition().x >= 0 for every read;
-    // GetKeyDown(A) == false (key is now in previous too)
     CHECK(trueCount == kThreads * kReads * 2);
 }
 
@@ -660,7 +727,6 @@ TEST_CASE("InputManager rapid press-release cycle from multiple threads") {
     t1.join();
     t2.join();
 
-    // A key cannot be both "just down" and "held" simultaneously
     bool aDown = input.GetKeyDown(Keys::A);
     bool bDown = input.GetKeyDown(Keys::B);
     bool aHeld = input.GetKey(Keys::A);

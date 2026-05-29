@@ -1,7 +1,7 @@
 #include "axpch.hpp"
 
+#include "Core/Core.hpp"
 #include "Core/Events/Event.hpp"
-#include "Core/Events/EventHandler.hpp"
 #include "Core/Input/InputState.hpp"
 #include "Core/Logger/Log.hpp"
 #include "ImGuiLayer.hpp"
@@ -79,25 +79,23 @@ namespace Axle {
     }
 
     void ImGuiLayer::OnEvent(Event& event) {
-        if (event.GetEventCategory() == EventCategory::Input)
-            InputEvents(event);
+        EventDispatcher dispatcher(event);
+
+        dispatcher.Dispatch<KeyPressedEvent>(AX_BIND_EVENT_FN(OnKeyPressed));
     }
 
-    void ImGuiLayer::InputEvents(Event& event) {
+    bool ImGuiLayer::OnKeyPressed(KeyPressedEvent& event) {
         // TODO: In the future wire the inputs directly with the event system to IMGUI
         // ImGuiIO& io = ImGui::GetIO();
 
         // FIX: There might be a race condition between the boolean variables as this method is not called by the render
         // one
-        if (event.GetEventType() == EventType::KeyPressed) {
-            if (std::get<std::array<u16, 8>>(event.GetContext().raw_data).at(0) == static_cast<u16>(Keys::F2)) {
-                m_OpenOverlay = !m_OpenOverlay;
-                event.Handle();
-            }
-            if (std::get<std::array<u16, 8>>(event.GetContext().raw_data).at(0) == static_cast<u16>(Keys::F1)) {
-                m_Console.Open = !m_Console.Open;
-                event.Handle();
-            }
-        }
+        if (event.GetKey() == Keys::F1)
+            m_Console.Open = !m_Console.Open;
+
+        if (event.GetKey() == Keys::F2)
+            m_OpenOverlay = !m_OpenOverlay;
+
+        return false;
     }
 } // namespace Axle

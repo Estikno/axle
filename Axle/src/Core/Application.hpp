@@ -16,6 +16,9 @@ namespace Axle {
         void Run();
         void Update();
         void Render();
+        void Close();
+
+        void OnEvent(Event& event);
 
         void PushLayer(Layer* layer);
         void PushOverlay(Layer* layer);
@@ -39,7 +42,8 @@ namespace Axle {
     private:
         friend class BaseLayer;
 
-        void OnWindowClose(Event& event);
+        bool OnWindowClose(WindowCloseEvent& event);
+        bool OnKeyPressed(KeyPressedEvent& event);
 
         static Application* s_Instance;
 
@@ -53,29 +57,4 @@ namespace Axle {
 
     // To be defined in client
     Application* CreateApplication();
-
-    // This will be the deepest layer of the engine
-    class AXLE_TEST_API BaseLayer : public Layer {
-    public:
-        BaseLayer()
-            : Layer("BaseLayer") {}
-        ~BaseLayer() override = default;
-
-        void OnAttach() override {}
-        void OnUpdate(f64 FixedDeltaTime) override {}
-        void OnDettach() override {}
-
-        void OnAttachRender() override {}
-        void OnRender(f64 DeltaTime) override {}
-        void OnDettachRender() override {}
-
-        void OnEvent(Event& event) override {
-            if (event.GetEventCategory() == EventCategory::Window && event.GetEventType() == EventType::WindowClose) {
-                Application::GetInstance().OnWindowClose(event);
-                event.Handle();
-            }
-        }
-
-    private:
-    };
 } // namespace Axle

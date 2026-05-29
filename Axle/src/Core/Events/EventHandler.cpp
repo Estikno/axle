@@ -25,23 +25,19 @@ namespace Axle {
         AX_CORE_INFO("Event handler deleted...");
     }
 
-    void EventHandler::DispatchEvent(const Event& event) {
-        std::scoped_lock lock(m_EventMutex);
-
-        AX_CORE_TRACE("Added a new event of type: {}", (i32) (event.GetEventType()));
-        m_EventQueue.emplace_back(event);
-    }
-
-    void EventHandler::DispatchEvent(Event&& event) {
-        std::scoped_lock lock(m_EventMutex);
-
-        AX_CORE_TRACE("Added a new event of type: {}", (i32) (event.GetEventType()));
+    void EventHandler::SubmitEvent(std::unique_ptr<Event> event) {
+        std::scoped_lock lock(m_Mutex);
         m_EventQueue.emplace_back(std::move(event));
     }
 
     void EventHandler::Notify(Event& event,
                               std::vector<Layer*>::reverse_iterator begin,
                               std::vector<Layer*>::reverse_iterator end) {
+        // Always send to the Application first
+        Application::GetInstance().OnEvent(event);
+        if (event.IsHandled())
+            return;
+
         for (; begin != end; begin++) {
             if (event.IsHandled())
                 break;
@@ -51,16 +47,16 @@ namespace Axle {
 
     void EventHandler::ProcessEvents(std::vector<Layer*>::reverse_iterator begin,
                                      std::vector<Layer*>::reverse_iterator end) {
-        std::vector<Event> eventsToProcess;
+        std::vector<std::unique_ptr<Event>> eventsToProcess;
 
         // Swap the event queue with a local vector to minimize lock time and to also clear the queue for new events
         {
-            std::scoped_lock lock(m_EventMutex);
+            std::scoped_lock lock(m_Mutex);
             eventsToProcess.swap(m_EventQueue);
         }
 
         for (auto& event : eventsToProcess) {
-            Notify(event, begin, end);
+            Notify(*event, begin, end);
         }
     }
 } // namespace Axle

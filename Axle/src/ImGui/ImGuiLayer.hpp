@@ -21,9 +21,10 @@ namespace Axle {
         void OnDettachRender() override;
 
         void OnEvent(Event& event) override;
-        void InputEvents(Event& event);
 
     private:
+        bool OnKeyPressed(KeyPressedEvent& event);
+
         // Renderer variables
         Debug::DebugConsole m_Console;
         bool m_OpenOverlay = true;

@@ -53,19 +53,11 @@ namespace Axle {
 
         /**
          * Add an event to the event handler and it will be notified automatically.
-         * This function is not recommended to be called manually, better by the macro.
+         * This function is not recommended to be called manually, you should use the macro: AX_SUBMIT_EVENT
          *
-         * @param event An event lvalue object
+         * @param event An event wrapped in a unique_ptr
          */
-        void DispatchEvent(const Event& event);
-
-        /**
-         * Add an event to the event handler and it will be notified automatically.
-         * This function is not recommended to be called manually, better by the macro.
-         *
-         * @param event An event rvalue object
-         */
-        void DispatchEvent(Event&& event);
+        void SubmitEvent(std::unique_ptr<Event> event);
 
         /**
          * Processes all the events in the queue and notifies the subscribers.
@@ -91,13 +83,15 @@ namespace Axle {
         /// The singleton of the event handler class
         static std::unique_ptr<EventHandler> m_EventHandler;
 
-        std::vector<Event> m_EventQueue;
+        // We need to store via pointers to keep the vtable intact
+        std::vector<std::unique_ptr<Event>> m_EventQueue;
 
-        std::mutex m_EventMutex;
+        std::mutex m_Mutex;
     };
 } // namespace Axle
 
 /**
  * Macro that simplifies the addition of new events to the event handler
  */
-#define AX_DISPATCH_EVENT(...) ::Axle::EventHandler::GetInstance().DispatchEvent(__VA_ARGS__)
+#define AX_SUBMIT_EVENT(e) \
+    ::Axle::EventHandler::GetInstance().SubmitEvent(std::make_unique<std::decay_t<decltype(e)>>(e))

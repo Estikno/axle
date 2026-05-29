@@ -162,7 +162,7 @@ namespace Axle {
          *
          * @param delta The amount the mouse wheel has been scrolled.
          */
-        void SetMouseWheel(f32 delta);
+        void SetMouseWheel(f32 deltax, f32 deltay);
 
         /**
          * Updates the input state.
@@ -175,7 +175,7 @@ namespace Axle {
         void SimulateKeyState(Keys key, bool pressed);
         void SimulateMouseButtonState(MouseButtons button, bool pressed);
         void SimulateMousePosition(const glm::vec2& position);
-        void SimulateMouseWheel(f32 delta);
+        void SimulateMouseWheel(f32 deltax, f32 deltay);
         void SimulateUpdate();
         void SimulateReset();
 #endif // AXLE_TESTING

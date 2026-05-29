@@ -34,18 +34,16 @@ namespace Axle {
         // Send events if keys are pressed
         for (u16 i = 0; i < static_cast<u16>(Keys::MaxKeys); ++i) {
             if (GetKeyUnsafe(static_cast<Keys>(i))) {
-                Event event(EventType::KeyIsPressed, EventCategory::Input);
-                event.GetContext().raw_data = std::array<u16, 8>{i};
-                AX_DISPATCH_EVENT(std::move(event));
+                KeyIsPressedEvent event(static_cast<Keys>(i));
+                AX_SUBMIT_EVENT(std::move(event));
             }
         }
 
         // Same for mouse buttons
         for (u16 i = 0; i < static_cast<u16>(MouseButtons::MaxButtons); ++i) {
             if (GetMouseButtonUnsafe(static_cast<MouseButtons>(i))) {
-                Event event(EventType::MouseButtonIsPressed, EventCategory::Input);
-                event.GetContext().raw_data = std::array<u16, 8>{i};
-                AX_DISPATCH_EVENT(std::move(event));
+                MouseButtonIsPressedEvent event(static_cast<MouseButtons>(i));
+                AX_SUBMIT_EVENT(std::move(event));
             }
         }
 
@@ -63,13 +61,10 @@ namespace Axle {
         m_InputState.keyboard_current.keys[static_cast<i32>(key)] = pressed;
 
         // Fire off an event informing of the change in state
-        EventType type = pressed ? EventType::KeyPressed : EventType::KeyReleased;
-        Event event(type, EventCategory::Input);
-
-        // event->GetContext().u16_values[0] = static_cast<u16>(key);
-        event.GetContext().raw_data = std::array<u16, 8>{static_cast<u16>(key)};
-
-        AX_DISPATCH_EVENT(std::move(event));
+        if (pressed)
+            AX_SUBMIT_EVENT(KeyPressedEvent(key));
+        else
+            AX_SUBMIT_EVENT(KeyReleasedEvent(key));
     }
 
     void InputManager::SetMouseButton(MouseButtons button, bool pressed) {
@@ -82,13 +77,10 @@ namespace Axle {
         m_InputState.mouse_current.buttons[static_cast<i32>(button)] = pressed;
 
         // Fire off an event informing of the change in state
-        EventType type = pressed ? EventType::MouseButtonPressed : EventType::MouseButtonReleased;
-        Event event(type, EventCategory::Input);
-
-        // event->GetContext().u16_values[0] = static_cast<u16>(button);
-        event.GetContext().raw_data = std::array<u16, 8>{static_cast<u16>(button)};
-
-        AX_DISPATCH_EVENT(std::move(event));
+        if (pressed)
+            AX_SUBMIT_EVENT(MouseButtonPressedEvent(button));
+        else
+            AX_SUBMIT_EVENT(MouseButtonReleasedEvent(button));
     }
 
     void InputManager::SetMousePosition(const glm::vec2& position) {
@@ -102,22 +94,14 @@ namespace Axle {
         m_InputState.mouse_current.position = position;
 
         // Fire off an event informing of the change in state
-        Event event(EventType::MouseMoved, EventCategory::Input);
-
-        // event->GetContext().u16_values[0] = static_cast<u16>(position.x);
-        // event->GetContext().u16_values[1] = static_cast<u16>(position.y);
-        event.GetContext().raw_data = std::array<u16, 8>{static_cast<u16>(position.x), static_cast<u16>(position.y)};
-
-        AX_DISPATCH_EVENT(std::move(event));
+        MouseMovedEvent event(position.x, position.y);
+        AX_SUBMIT_EVENT(std::move(event));
     }
 
-    void InputManager::SetMouseWheel(f32 delta) {
+    void InputManager::SetMouseWheel(f32 deltax, f32 deltay) {
         // Fire off an event informing of the change in state
-        Event event(EventType::MouseScrolled, EventCategory::Input);
-        // event->GetContext().f32_values[0] = delta;
-        event.GetContext().raw_data = std::array<f32, 4>{static_cast<f32>(delta)};
-
-        AX_DISPATCH_EVENT(std::move(event));
+        MouseScrollEvent event(deltax, deltay);
+        AX_SUBMIT_EVENT(std::move(event));
     }
 
     bool InputManager::GetKeyDownImpl(Keys key) const {
@@ -181,8 +165,8 @@ namespace Axle {
     void InputManager::SimulateMousePosition(const glm::vec2& position) {
         SetMousePosition(position);
     }
-    void InputManager::SimulateMouseWheel(f32 delta) {
-        SetMouseWheel(delta);
+    void InputManager::SimulateMouseWheel(f32 deltax, f32 deltay) {
+        SetMouseWheel(deltax, deltay);
     }
     void InputManager::SimulateUpdate() {
         Update();

@@ -5,8 +5,10 @@
 #include "Logger/Log.hpp"
 #include "Input/InputManager.hpp"
 #include "Error/Panic.hpp"
+#include "Core/Core.hpp"
 #include "Core/Events/EventHandler.hpp"
 #include "Core/Events/Event.hpp"
+#include "Core/Input/InputState.hpp"
 #include "Core/Layer/Layer.hpp"
 #include "Window/Window.hpp"
 
@@ -29,7 +31,6 @@ namespace Axle {
 
         // Layers setup
         m_LayerStack = new LayerStack();
-        PushLayer(new BaseLayer());
         PushOverlay(new ImGuiLayer());
     }
 
@@ -85,8 +86,6 @@ namespace Axle {
             if (elapsed > 0.25)
                 elapsed = 0.25;
             previous = current;
-
-            // TODO: We could interpolate rendering of physics objects
 
             // Use this varible to make sure that update loops at a fixed rate
             lag += elapsed;
@@ -149,7 +148,27 @@ namespace Axle {
         m_Window.reset();
     }
 
-    void Application::OnWindowClose(Event& event) {
+    void Application::Close() {
         m_Running = false;
+    }
+
+    bool Application::OnWindowClose(WindowCloseEvent& event) {
+        m_Running = false;
+        return true;
+    }
+
+    void Application::OnEvent(Event& event) {
+        EventDispatcher dispatcher(event);
+
+        dispatcher.Dispatch<WindowCloseEvent>(AX_BIND_EVENT_FN(OnWindowClose));
+        dispatcher.Dispatch<KeyPressedEvent>(AX_BIND_EVENT_FN(OnKeyPressed));
+    }
+
+    bool Application::OnKeyPressed(KeyPressedEvent& event) {
+        if (event.GetKey() != Keys::Escape)
+            return false;
+
+        Close();
+        return true;
     }
 } // namespace Axle
