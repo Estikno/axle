@@ -20,9 +20,13 @@ namespace Axle {
         KeyPressed,
         KeyIsPressed,
         KeyReleased,
+        KeyTapped,
+        KeySequence,
         MouseButtonPressed,
         MouseButtonIsPressed,
         MouseButtonReleased,
+        MouseButtonTapped,
+        MouseButtonSequence,
         MouseMoved,
         MouseScrolled,
         // Other
@@ -170,6 +174,38 @@ namespace Axle {
         DEFINE_EVENT_TYPE(KeyReleased);
     };
 
+    class KeyTappedEvent : public KeyEvent {
+    public:
+        KeyTappedEvent(Keys key, u8 count)
+            : KeyEvent(key),
+              m_Count(count) {}
+
+        u8 GetCount() const noexcept {
+            return m_Count;
+        }
+
+        DEFINE_EVENT_TYPE(KeyTapped);
+
+    private:
+        u8 m_Count;
+    };
+
+    class KeySequenceEvent : public Event {
+    public:
+        KeySequenceEvent(u32 id)
+            : m_ID(id) {}
+
+        u32 GetID() const noexcept {
+            return m_ID;
+        }
+
+        DEFINE_EVENT_TYPE(KeySequence);
+        DEFINE_EVENT_CATEGORY(Input);
+
+    private:
+        u32 m_ID;
+    };
+
     class MouseButtonEvent : public Event {
     public:
         MouseButtons GetMouseButton() const noexcept {
@@ -208,6 +244,38 @@ namespace Axle {
             : MouseButtonEvent(button) {}
 
         DEFINE_EVENT_TYPE(MouseButtonReleased);
+    };
+
+    class MouseButtonTappedEvent : public MouseButtonEvent {
+    public:
+        MouseButtonTappedEvent(MouseButtons button, u8 count)
+            : MouseButtonEvent(button),
+              m_Count(count) {}
+
+        u8 GetCount() const noexcept {
+            return m_Count;
+        }
+
+        DEFINE_EVENT_TYPE(MouseButtonTapped);
+
+    private:
+        u8 m_Count;
+    };
+
+    class MouseButtonSequenceEvent : public Event {
+    public:
+        MouseButtonSequenceEvent(u32 id)
+            : m_ID(id) {}
+
+        u32 GetID() const noexcept {
+            return m_ID;
+        }
+
+        DEFINE_EVENT_TYPE(MouseButtonSequence);
+        DEFINE_EVENT_CATEGORY(Input);
+
+    private:
+        u32 m_ID;
     };
 
     class MouseMovedEvent : public Event {

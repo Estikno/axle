@@ -5,9 +5,7 @@
 #include "../Types.hpp"
 #include "Core/Core.hpp"
 
-#include <GLFW/glfw3.h>
 #include <glm/vec2.hpp>
-#include <sys/stat.h>
 
 // Key codes taken from GLFW
 namespace Axle {
@@ -159,19 +157,44 @@ namespace Axle {
         MaxKeys
     };
 
+    // Basic info for detecting multiple taps for a specific key/button
+    struct TapInfo {
+        // NOTE: Consider changing this to a double to mitigate presicion issues over a long period
+        f32 last = 0.0f; // Last press down event, in seconds
+        u8 count = 0;    // Stores the ammount of taps currently recorded
+    };
+
+    template <typename T>
+    struct Sequence {
+        std::vector<T> m_Buttons; // sequence of buttons to watch for
+        f32 m_dtMax;              // max time for entire sequence
+        u32 m_iButton;            // next button to watch for in seq.
+        f32 m_tStart;             // start time of sequence, in seconds
+    };
+
     struct KeyBoardState {
-        std::bitset<static_cast<u32>(Keys::MaxKeys)> keys;
+        // 0 == not pressed, 1 == pressed
+        std::bitset<static_cast<u32>(Keys::MaxKeys)> m_Keys;
     };
 
     struct MouseState {
         glm::vec2 position;
-        std::bitset<static_cast<u32>(MouseButtons::MaxButtons)> buttons;
+        // 0 == not pressed, 1 == pressed
+        std::bitset<static_cast<u32>(MouseButtons::MaxButtons)> m_Buttons;
     };
 
     struct InputState {
-        KeyBoardState keyboard_current;
-        KeyBoardState keyboard_previous;
-        MouseState mouse_current;
-        MouseState mouse_previous;
+        KeyBoardState m_KeyboardCurrent;
+        KeyBoardState m_KeyboardPrevious;
+        MouseState m_MouseCurrent;
+        MouseState m_MousePrevious;
+
+        // Max allowed time between multiple tap presses
+        f32 m_DtMax = 0.5f;
+        std::array<TapInfo, static_cast<u32>(Keys::MaxKeys)> m_KeyTaps{};
+        std::array<TapInfo, static_cast<u32>(MouseButtons::MaxButtons)> m_MouseTaps{};
+
+        std::vector<Sequence<Keys>> m_KeySequences;
+        std::vector<Sequence<MouseButtons>> m_MouseSequences;
     };
 } // namespace Axle

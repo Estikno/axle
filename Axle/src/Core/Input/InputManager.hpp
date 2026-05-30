@@ -126,6 +126,80 @@ namespace Axle {
             return s_Instance->GetMousePositionImpl();
         }
 
+        /**
+         * Checks if the given key has been tappend n times repeatedly
+         *
+         * @param key The key to check
+         * @param times How many times has to have been pressed
+         *
+         * @returns true if the key has been pressed the amout of times or more
+         * */
+        inline static bool IsKeyTappedNTimes(Keys key, u8 times) {
+            return s_Instance->IsKeyTappedNTimesImpl(key, times);
+        }
+
+        /**
+         * Checks if the given key has been double clicked
+         * This method is a specialization of the general IsKeyTappedNTimes function.
+         *
+         * @param key The key to check
+         *
+         * @returns true if the key has been double clicked
+         * */
+        inline static bool IsKeyDoubleClicked(Keys key) {
+            return s_Instance->IsKeyDoubleClickedImpl(key);
+        }
+
+        /**
+         * Checks if the given mouse button has been tappend n times repeatedly
+         *
+         * @param button The mouse button to check
+         * @param times How many times has to have been pressed
+         *
+         * @returns true if the mouse button has been pressed the amout of times or more
+         * */
+        inline static bool IsMouseButtonTappedNTimes(MouseButtons button, u8 times) {
+            return s_Instance->IsMouseButtonTappedNTimesImpl(button, times);
+        }
+
+        /**
+         * Checks if the given mouse button has been double clicked
+         * This method is a specialization of the general IsMouseButtonTappedNTimes function.
+         *
+         * @param button The mouse button to check
+         *
+         * @returns true if the mouse button has been double clicked
+         * */
+        inline static bool IsMouseButtonDoubleClicked(MouseButtons button) {
+            return s_Instance->IsMouseButtonDoubleClickedImpl(button);
+        }
+
+        /**
+         * Defines a sequence of keys and returns an id to the newly created sequence
+         * Sequences can only be checked via events.
+         *
+         * @param sec The sequence of keys you want to keep track of
+         * @param dtMax The maximum time for the entire sequence
+         *
+         * @returns An id that identifies the newly created key sequence
+         * */
+        inline static u32 DefineKeySequence(const std::vector<Keys>& sec, f32 dtMax) {
+            return s_Instance->DefineKeySequenceImpl(sec, dtMax);
+        }
+
+        /**
+         * Defines a sequence of mouse buttons and returns an id to the newly created sequence
+         * Sequences can only be checked via events.
+         *
+         * @param sec The sequence of mouse button presses you want to keep track of
+         * @param dtMax The maximum time for the entire sequence
+         *
+         * @returns An id that identifies the newly created mouse button sequence
+         * */
+        inline static u32 DefineMouseButtonSequence(const std::vector<MouseButtons>& sec, f32 dtMax) {
+            return s_Instance->DefineMouseButtonSequenceImpl(sec, dtMax);
+        }
+
 
         // Modify the keys state. This should only be called by the event system and should not be available to the end
         // user.
@@ -180,7 +254,6 @@ namespace Axle {
         void SimulateReset();
 #endif // AXLE_TESTING
 
-
     private:
         // Implementations of the static methods
         bool GetKeyDownImpl(Keys key) const;
@@ -190,24 +263,18 @@ namespace Axle {
         bool GetMouseButtonUpImpl(MouseButtons button) const;
         bool GetMouseButtonImpl(MouseButtons button) const;
         glm::vec2 GetMousePositionImpl() const;
+        bool IsKeyTappedNTimesImpl(Keys key, u8 times) const;
+        bool IsKeyDoubleClickedImpl(Keys key) const;
+        bool IsMouseButtonTappedNTimesImpl(MouseButtons button, u8 times) const;
+        bool IsMouseButtonDoubleClickedImpl(MouseButtons button) const;
+        u32 DefineKeySequenceImpl(const std::vector<Keys>& sec, f32 dtMax);
+        u32 DefineMouseButtonSequenceImpl(const std::vector<MouseButtons>& sec, f32 dtMax);
 
-        /**
-         * This is the unsafe version of the GetKey method
-         * this shall be used only when you have already locked the mutex
-         * and want to make multiple calls at once
-         *
-         * @returns True if the key is currently being pressed, false otherwise.
-         */
+        // Unsafe Implementations
         bool GetKeyUnsafe(Keys key) const;
-
-        /**
-         * This is the unsafe version of the GetMouseButton method
-         * this shall be used only when you have already locked the mutex
-         * and want to make multiple calls at once
-         *
-         * @returns True if the mouse button is currently being pressed, false otherwise.
-         */
         bool GetMouseButtonUnsafe(MouseButtons button) const;
+        bool GetKeyDownUnsafe(Keys key) const;
+        bool GetMouseButtonDownUnsafe(MouseButtons button) const;
 
         static std::unique_ptr<InputManager> s_Instance;
 
