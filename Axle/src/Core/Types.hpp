@@ -45,9 +45,6 @@ namespace Axle {
     using ComponentMask = std::bitset<MAX_COMPONENTS>;
     constexpr EntityID INVALID_ENTITY = std::numeric_limits<EntityID>::max();
 
-    // Job System
-    using Job = std::function<void()>;
-
     // Resource Manager
     using FileHandle = u64;
     constexpr FileHandle INVALID_FILE_HANDLE = std::numeric_limits<FileHandle>::max();

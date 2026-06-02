@@ -1,30 +1,86 @@
 #pragma once
 
-#include "axpch.hpp"
 #include "Other/CustomTypes/Expected.hpp"
-#include "JobBuffer.hpp"
-#include "Core/Logger/Log.hpp"
-#include "Core/Types.hpp"
+#include <coroutine>
 
-// JobSystem inspired by Rismoch: https://www.rismosch.com/article?id=building-a-job-system
+#include "axpch.hpp"
+#include "RingBuffer.hpp"
 
 namespace Axle {
     inline static constexpr u32 BufferCapacity = 64;
-
-    struct WorkerThread {
-        std::shared_ptr<JobBuffer<BufferCapacity>> m_LocalBuffer;
-        std::vector<std::shared_ptr<JobBuffer<BufferCapacity>>> m_StealBuffers;
-        u32 m_Index;
-    };
+    using ThreadAffinity = u8;
+    enum class JobPriority { Low = 0, Medium, High };
+    template <typename T>
+    using JobBufferPtr = std::unique_ptr<JobBuffer<T, BufferCapacity>>;
 
     // Forward declarations
-    template <typename T>
-    class SettableJobFuture;
-    template <typename T>
-    class JobFuture;
+    struct Job;
+    struct JobCoroutine;
+    struct JobPromise;
+    struct JobFunction;
 
-    /// Per thread variable that contains a pointer to the current WorkerThread struct of the thread
-    inline thread_local WorkerThread* t_WorkerThread = nullptr;
+    struct Job {
+        JobPriority m_Priority{JobPriority::Medium};
+        ThreadAffinity m_ThreadIndex{0};
+        bool m_IsFunction{true};
+
+        Job() = default;
+        Job(JobPriority priority, u32 threadIndex)
+            : m_Priority(priority),
+              m_ThreadIndex(threadIndex) {}
+
+        virtual void Resume() = 0;
+        virtual void Destroy() = 0;
+    };
+
+    struct JobFunction : public Job {
+        std::function<void()> m_Function;
+
+        void Resume() override {
+            m_Function();
+        }
+
+        void Destroy() override {}
+    };
+
+    struct JobCoroutine {
+        std::coroutine_handle<JobPromise> m_Handle;
+
+        explicit JobCoroutine(std::coroutine_handle<JobPromise> h)
+            : m_Handle(h) {}
+        JobCoroutine(JobCoroutine&& other) noexcept
+            : m_Handle(other.m_Handle) {
+            other.m_Handle = {};
+        }
+        JobCoroutine(const JobCoroutine&) = delete;
+        ~JobCoroutine() {
+            if (m_Handle)
+                m_Handle.destroy();
+        }
+
+        void resume() {
+            if (m_Handle && !m_Handle.done())
+                m_Handle.resume();
+        }
+    };
+
+    struct JobPromise : public Job {
+        JobCoroutine get_return_object() {
+            return JobCoroutine(std::coroutine_handle<JobPromise>::from_promise(*this));
+        }
+
+        std::suspend_always initial_suspend() noexcept {
+            return {};
+        }
+        std::suspend_always final_suspend() noexcept {
+            return {};
+        }
+
+        void return_void() {}
+        void unhandled_exception() {
+            std::terminate();
+        }
+    };
 
     class JobSystem {
     public:
@@ -45,329 +101,120 @@ namespace Axle {
          *
          * Caution, this system depends on others, so they have to be initialized before this one.
          * */
-        static void Init(u32 threadCount);
+        static void Init(ThreadAffinity threadCount) {
+            if (s_JobSystem != nullptr) {
+                AX_CORE_WARN("Init method of the JobSystem has been called a second time. IGNORING");
+                return;
+            }
+
+            ThreadAffinity totalThreads = std::thread::hardware_concurrency();
+            // FIX: This error message is temporal, in such cases simply prevent the initialization or something
+            AX_ENSURE(totalThreads > 0, "There are not sufficient threads to initialize the job system");
+
+            s_JobSystem = std::make_unique<JobSystem>();
+            JobSystem& js = *s_JobSystem;
+
+            js.m_NumThreads = std::min(totalThreads, threadCount);
+            js.m_Running.store(true, std::memory_order_seq_cst);
+
+            // Create local buffers
+            js.m_JobCorLocalBuffers.resize(js.m_NumThreads);
+            js.m_JobFunLocalBuffers.resize(js.m_NumThreads);
+
+            js.m_CVs.resize(js.m_NumThreads);
+            js.m_CVsMutex.resize(js.m_NumThreads);
+
+            // Spawn worker threads (skip 0, that's the main thread)
+            for (ThreadAffinity i = 1; i < js.m_NumThreads; ++i) {
+                js.m_Threads.emplace_back([i, &js]() {
+                    js.SetupWorkerThread(i);
+                    js.WorkerLoop();
+                });
+            }
+
+            AX_INFO("Created {0} new worker threads (excluding the main one)", js.m_NumThreads - 1);
+
+            // Main thread is also a worker
+            js.SetupWorkerThread(0);
+
+            AX_CORE_INFO("JobSystem initalized...");
+        }
 
         /**
          * Same as init but for destroying and cleaning everything.
          * This function is NOT thread safe so it must be called from only one thread and only once to be safe.
          * */
-        static void Shutdown();
+        static void Shutdown() {
+            if (s_JobSystem == nullptr) {
+                AX_CORE_WARN("JobSystem Shutdown method was called more than once. IGNORING");
+                return;
+            }
 
-        /**
-         * Simply gets the singleton instance. Call after initialization.
-         * */
-        inline static JobSystem& GetInstance() noexcept {
-            return *s_JobSystem;
+            s_JobSystem->m_Running.store(false, std::memory_order_seq_cst);
+            for (auto& cv : s_JobSystem->m_CVs) {
+                cv->notify_all();
+            }
+
+            // s_JobSystem->EmptyBuffer(); // drain main thread's buffer
+
+            for (std::thread& thread : s_JobSystem->m_Threads) {
+                if (thread.joinable())
+                    thread.join();
+            }
+
+            s_JobSystem.reset();
+            AX_CORE_INFO("JobSystem deleted...");
         }
-
-        /**
-         * Excecutes a pending job on the caller thread
-         *
-         * The job may be from the woker's own buffer or solen from others.
-         *
-         * @returns True if a job was done, false otherwhise
-         * */
-        bool RunPendingJob();
-
-        /**
-         * Submits a job to the buffer of the calling thread.
-         * This job may be done by the same thread or others.
-         *
-         * @param Job The job to be done
-         * */
-        void Submit(Job job);
-
-        /**
-         * Same as the void Submit method but here retrns a JobFuture, allowing you to wait until
-         * the job is done.
-         *
-         * @param Job The job to be done
-         * */
-        template <typename T>
-        JobFuture<T> Submit(std::function<T()> job);
-
-        /**
-         * Gets how many jobs are available in the whole JobSystem
-         *
-         * @returns A u32 with how many jobs there currently are
-         * */
-        u32 GetAvailableJobs() const noexcept {
-            return m_AvailableJobs.load(std::memory_order_relaxed);
-        }
-
-#ifdef AXLE_TESTING
-        std::vector<std::shared_ptr<JobBuffer<BufferCapacity>>>& GetBuffers() {
-            return m_Buffers;
-        }
-
-        const std::vector<std::thread>& GetThreads() const noexcept {
-            return m_Threads;
-        }
-
-        u32 GetNumThreads() const noexcept {
-            return m_NumThreads;
-        }
-#endif // AXLE_TESTING
 
     private:
-        // Singleton
-        static std::unique_ptr<JobSystem> s_JobSystem;
+        void SetupWorkerThread(ThreadAffinity threadId) {
+            m_Index = threadId;
+        }
 
-        /**
-         * Automate setting up worker threads.
-         *
-         * @param index Which worker index to setup
-         * */
-        void SetupWorkerThread(u32 index);
+        void WorkerLoop() {
+            while (m_Running.load(std::memory_order_acquire)) {
+                // Run jobs
 
-        /**
-         * The worker thread calling this method proceds to only doing jobs from their own buffer
-         * until this one is empty.
-         *
-         * Usefull when shutting down the system and want to finish all remaining tasks.
-         * */
-        void EmptyBuffer();
+                std::unique_lock lock(*m_CVsMutex[m_Index]);
+                m_CVs[m_Index]->wait(lock);
+            }
 
-        /**
-         * Defines the loop which every worker follows. That is, checking for available jobs
-         * and doing them when possible.
-         *
-         * @param index Which worker index to setup
-         * */
-        void WorkerLoop(u32 index);
+            // Finish everything that remains
+        }
 
-        /**
-         * Helper function that pops a job from the worker's thead own buffer.
-         *
-         * Also checks that the calling thread is in fact a working one and if that's not the case
-         * returns immediately logging the error.
-         *
-         * @returns An Expected type with the job if it succeeded.
-         * */
-        Expected<Job> PopJob();
+        void RunPendingJob() {
+            // First check local buffers
+            Expected<JobFunction> jobFun = m_JobFunLocalBuffers[m_Index]->Pop();
+            if (jobFun.IsValid()) {
+                jobFun.Unwrap().m_Function();
+                return;
+            }
 
-        /**
-         * Helper funtion that steals a job from other worker threads buffer.
-         *
-         * Also checks that the calling thread is in fact a working one and if that's not the case
-         * returns immediately logging the error.
-         *
-         * @returns An Expected type with the job if it succeeded.
-         * */
-        Expected<Job> StealJob();
+            Expected<JobCoroutine> jobCor = m_JobCorLocalBuffers[m_Index]->Pop();
+            if (jobCor.IsValid()) {
+                jobCor.Unwrap().resume();
+                return;
+            }
 
-        /// Stores the number of working threads (exlcuding the Render one)
-        u32 m_NumThreads;
-        /// All additional threads spwaned
+            // Check global priority buffers
+        }
+
+
+        inline static std::unique_ptr<JobSystem> s_JobSystem;
+
+        std::atomic_bool m_Running{false};
+        ThreadAffinity m_NumThreads;
+
+        std::array<JobBuffer<JobCoroutine, BufferCapacity>, 3> m_JobCorBuffers{};
+        std::vector<JobBufferPtr<JobCoroutine>> m_JobCorLocalBuffers{};
+
+        std::array<JobBuffer<JobFunction, BufferCapacity>, 3> m_JobFunBuffers{};
+        std::vector<JobBufferPtr<JobFunction>> m_JobFunLocalBuffers{};
+
         std::vector<std::thread> m_Threads;
-        /// All job buffers
-        std::vector<std::shared_ptr<JobBuffer<BufferCapacity>>> m_Buffers;
-        /// Handy variable to help shutting down the system
-        std::atomic<bool> m_Running{false};
-        /// Keeps track of how many jobs are available to be picked up
-        std::atomic<i32> m_AvailableJobs{0};
-        /// Allows worker threads to sleep while there is not work to do
-        std::condition_variable m_CV;
-        std::mutex m_CVMutex;
+        std::vector<std::unique_ptr<std::condition_variable>> m_CVs;
+        std::vector<std::unique_ptr<std::mutex>> m_CVsMutex;
+
+        inline static thread_local ThreadAffinity m_Index;
     };
-
-    template <typename T>
-    JobFuture<T> JobSystem::Submit(std::function<T()> job) {
-        if (!t_WorkerThread) {
-            AX_CORE_ERROR("Submit called from non-worker thread");
-
-            // Still need to return something valid
-            auto [settable, future] = SettableJobFuture<T>::Make();
-            settable.Set(job()); // invoke immediately
-            return std::move(future);
-        }
-
-        auto [settable, future] = SettableJobFuture<T>::Make();
-
-        // Wrap in shared_ptr so the lambda is copyable
-        auto sharedState =
-            std::make_shared<std::pair<SettableJobFuture<T>, std::function<T()>>>(std::move(settable), std::move(job));
-
-        Job wrappedJob = [sharedState]() mutable { sharedState->first.Set(sharedState->second()); };
-
-        while (!t_WorkerThread->m_LocalBuffer->TryPush(wrappedJob))
-            RunPendingJob();
-
-        {
-            std::scoped_lock lock(m_CVMutex); // hold mutex while notifying
-            m_AvailableJobs.fetch_add(1, std::memory_order_release);
-        }
-        m_CV.notify_one();
-        return std::move(future);
-    }
-
-    /**
-     * A simple wrapper around some data used in the job future logic
-     * */
-    // TODO: A possible optimization is to ditch the mutex and meke the isReady variable atomic, and only check the data
-    // when isReady was checked to be true
-    template <typename T>
-    struct JobFutureInner {
-        bool isReady{false};
-        std::optional<T> data;
-        std::mutex mutex;
-    };
-
-    // Shared between the two halves
-    template <typename T>
-    using JobFutureInnerPtr = std::shared_ptr<JobFutureInner<T>>;
-
-    /**
-     * This is what the user waiting for the job to be done has.
-     * It's a simple class that allows you to wait until the job is done.
-     * */
-    template <typename T>
-    class JobFuture {
-    public:
-        JobFuture(JobFuture&&) = default;
-        JobFuture& operator=(JobFuture&&) = default;
-        JobFuture(const JobFuture&) = delete;
-        JobFuture& operator=(const JobFuture&) = delete;
-
-        explicit JobFuture(JobFutureInnerPtr<T> inner)
-            : m_Inner(std::move(inner)) {}
-
-        /**
-         * Simply whaits for the job to be done and returns the data once the job has finished.
-         *
-         * If the calling thread is a worker one it will continue working in the meantime, so no busy waiting.
-         * However, it will basically busy wait if the calling thread is not a working one.
-         *
-         * @returns The value that the job returns
-         * */
-        T Wait() {
-            while (true) {
-                {
-                    std::scoped_lock lock(m_Inner->mutex);
-                    if (m_Inner->isReady) {
-                        T value = std::move(*m_Inner->data);
-                        m_Inner->data.reset();
-                        return value;
-                    }
-                } // Release the lock
-
-                // Keep the system productive while waiting
-                if (t_WorkerThread)
-                    JobSystem::GetInstance().RunPendingJob();
-                else
-                    std::this_thread::yield();
-            }
-        }
-
-    private:
-        // Shared state
-        JobFutureInnerPtr<T> m_Inner;
-    };
-
-    /**
-     * This is what the thread doing the job gets. It allows notifying the user that the job has been done and set the
-     * returning data.
-     * */
-    template <typename T>
-    class SettableJobFuture {
-    public:
-        SettableJobFuture(SettableJobFuture&&) = default;
-        SettableJobFuture& operator=(SettableJobFuture&&) = default;
-        SettableJobFuture(const SettableJobFuture&) = delete;
-        SettableJobFuture& operator=(const SettableJobFuture&) = delete;
-
-        /**
-         * Simple function that facilitates creating the two needee classes.
-         *
-         * @returns A pair conatining in the first position the SettableJobFuture (thread side) and in the second
-         * position the JobFuture (user side)
-         * */
-        static std::pair<SettableJobFuture<T>, JobFuture<T>> Make() {
-            auto inner = std::make_shared<JobFutureInner<T>>();
-            return {SettableJobFuture<T>(inner), JobFuture<T>(inner)};
-        }
-
-        /**
-         * Marks the job as completed and moves the result into the data slot.
-         *
-         * @param result The data to be returned
-         * */
-        void Set(T result) {
-            std::scoped_lock lock(m_Inner->mutex);
-            m_Inner->data = std::move(result);
-            m_Inner->isReady = true;
-        }
-
-    private:
-        explicit SettableJobFuture(JobFutureInnerPtr<T> inner)
-            : m_Inner(std::move(inner)) {}
-        JobFutureInnerPtr<T> m_Inner;
-    };
-
-    // void specialization
-    // ------------------
-    template <>
-    struct JobFutureInner<void> {
-        bool isReady{false};
-        std::mutex mutex;
-        // no data field needed
-    };
-
-    template <>
-    class JobFuture<void> {
-    public:
-        JobFuture(JobFuture&&) = default;
-        JobFuture& operator=(JobFuture&&) = default;
-        JobFuture(const JobFuture&) = delete;
-        JobFuture& operator=(const JobFuture&) = delete;
-
-        explicit JobFuture(JobFutureInnerPtr<void> inner)
-            : m_Inner(std::move(inner)) {}
-
-        void Wait() {
-            while (true) {
-                {
-                    std::scoped_lock lock(m_Inner->mutex);
-                    if (m_Inner->isReady)
-                        return;
-                }
-                // Keep the system productive while waiting
-                if (t_WorkerThread)
-                    JobSystem::GetInstance().RunPendingJob();
-                else
-                    std::this_thread::yield();
-            }
-        }
-
-    private:
-        JobFutureInnerPtr<void> m_Inner;
-    };
-
-    template <>
-    class SettableJobFuture<void> {
-    public:
-        SettableJobFuture(SettableJobFuture&&) = default;
-        SettableJobFuture& operator=(SettableJobFuture&&) = default;
-        SettableJobFuture(const SettableJobFuture&) = delete;
-        SettableJobFuture& operator=(const SettableJobFuture&) = delete;
-
-        static std::pair<SettableJobFuture<void>, JobFuture<void>> Make() {
-            auto inner = std::make_shared<JobFutureInner<void>>();
-            return {SettableJobFuture<void>(inner), JobFuture<void>(inner)};
-        }
-
-        void Set() {
-            std::scoped_lock lock(m_Inner->mutex);
-            m_Inner->isReady = true;
-        }
-
-    private:
-        explicit SettableJobFuture(JobFutureInnerPtr<void> inner)
-            : m_Inner(std::move(inner)) {}
-        JobFutureInnerPtr<void> m_Inner;
-    };
-
-    template <>
-    JobFuture<void> JobSystem::Submit(std::function<void()> job);
-    // ------------------
 } // namespace Axle

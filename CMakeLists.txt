@@ -37,6 +37,23 @@ if(MSVC)
     add_compile_options(/utf-8)
 endif()
 
+# ── Architecture guard ─────────────────────────────────────────────────────────
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)")
+        set(AX_ARCH "arm64")
+    else()
+        set(AX_ARCH "x64")
+    endif()
+elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
+    set(AX_ARCH "x86")
+else()
+    set(AX_ARCH "unknown")
+endif()
+
+if(NOT AX_ARCH STREQUAL "x64")
+    message(FATAL_ERROR "Axle only supports x64. Detected architecture: ${AX_ARCH}")
+endif()
+
 # ── Sanitizers ─────────────────────────────────────────────────────────────────
 option(ENABLE_ASAN "Enable Address Sanitizer" OFF)
 
