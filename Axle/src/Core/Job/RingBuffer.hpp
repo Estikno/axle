@@ -53,6 +53,10 @@ namespace Axle {
          * */
         Expected<T> Pop();
 
+        bool Empty() const {
+            return m_Head.load(std::memory_order_acquire) == m_Tail.load(std::memory_order_acquire);
+        }
+
     private:
         /**
          * Assumes that the semaphore has been acquired and proceeds to push if it can.

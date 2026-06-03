@@ -189,9 +189,18 @@ namespace Axle {
             if (job.m_ThreadIndex != InvalidThreadIndex) {
                 AX_ASSERT(job.m_ThreadIndex <= m_NumThreads, "Can't assign a job to a non existing thread");
                 m_JobFunLocalBuffers[job.m_ThreadIndex]->Push(job);
+
+                // Notify the needed thread
+                std::scoped_lock lock(m_CVsMutex[job.m_ThreadIndex]);
+                m_CVs[job.m_ThreadIndex]->notify_all();
             }
             // Thread is irrelevant
             else {
+                // TODO: Notify threads
+                // keep an atomic counter of idle threads, or a bitmask of idle thread indices. When a thread enters
+                // wait it marks itself idle, when it wakes and starts working it marks itself busy. Then when pushing
+                // to a global queue you can check the bitmask to find an idle thread directly in O(1) without the
+                // circular scan.
                 m_JobFunBuffers[static_cast<u8>(job.m_Priority)].enqueue(job);
             }
         }
@@ -213,7 +222,16 @@ namespace Axle {
             if (threadId != InvalidThreadIndex) {
                 AX_ASSERT(threadId <= m_NumThreads, "Can't assign a job to a non existing thread");
                 m_JobCorLocalBuffers[threadId]->Push(job);
+
+                // Notify the needed tread
+                std::scoped_lock lock(m_CVsMutex[threadId]);
+                m_CVs[threadId]->notify_all();
             } else {
+                // TODO: Notify threads
+                // keep an atomic counter of idle threads, or a bitmask of idle thread indices. When a thread enters
+                // wait it marks itself idle, when it wakes and starts working it marks itself busy. Then when pushing
+                // to a global queue you can check the bitmask to find an idle thread directly in O(1) without the
+                // circular scan.
                 m_JobCorBuffers[static_cast<u8>(priority)].enqueue(job);
             }
         }
@@ -224,14 +242,29 @@ namespace Axle {
         }
 
         void WorkerLoop() {
-            while (m_Running.load(std::memory_order_acquire)) {
-                // Run jobs
+            // We lock here because:
+            // https://stackoverflow.com/questions/38147825/shared-atomic-variable-is-not-properly-published-if-it-is-not-modified-under-mut
+            std::unique_lock lock(*m_CVsMutex[m_Index]);
 
-                std::unique_lock lock(*m_CVsMutex[m_Index]);
-                m_CVs[m_Index]->wait(lock);
+            while (m_Running.load(std::memory_order_acquire)) {
+                // Update bit mask
+                m_CVs[m_Index]->wait(lock, [this] {
+                    return !m_Running.load(std::memory_order_acquire) // Wake up to shutdown job system
+                                                                      // Check local buffers
+                           || !m_JobCorLocalBuffers[m_Index]->Empty() || !m_JobFunLocalBuffers[m_Index]->Empty() ||
+                           // Check priority buffers
+                           m_JobCorBuffers[2].size_approx() > 0 || m_JobCorBuffers[1].size_approx() > 0 ||
+                           m_JobCorBuffers[0].size_approx() > 0 || m_JobFunBuffers[2].size_approx() > 0 ||
+                           m_JobFunBuffers[1].size_approx() > 0 || m_JobFunBuffers[0].size_approx() > 0;
+                });
+                // Update bit mask
+
+                lock.unlock();
+                // Run job
+                lock.lock();
             }
 
-            // Finish everything that remains
+            // Finish everything that remains so the thread can join
         }
 
         void RunPendingJob() {
