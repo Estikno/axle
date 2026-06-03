@@ -6,7 +6,7 @@
 #include "Core/Types.hpp"
 
 namespace Axle::Debug {
-    void ShowSimpleOverlay(bool* p_open, f64 DeltaTime, u32 AvailableJobs) {
+    void ShowSimpleOverlay(bool* p_open, f64 DeltaTime) {
         static int location = 0;
         ImGuiIO& io = ImGui::GetIO();
         ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
@@ -44,7 +44,6 @@ namespace Axle::Debug {
             else
                 ImGui::Text("Mouse Position: <invalid>");
             ImGui::Text("FPS: %.1f", 1.0 / DeltaTime);
-            ImGui::Text("Jobs: %d", AvailableJobs);
             ImGui::Text("Keys down:");
             struct funcs {
                 static bool IsLegacyNativeDupe(ImGuiKey) {

@@ -14,6 +14,7 @@ set(INC_IMGUI   "${VENDOR}/imgui")
 set(INC_DOCTEST "${VENDOR}/doctest/doctest")
 set(INC_MIO     "${VENDOR}/mio/include")
 set(INC_ENTT    "${VENDOR}/entt/single_include")
+set(INC_CONCURRENTQUEUE    "${VENDOR}/concurrentqueue")
 
 # Make these available to Sandbox and Tests via a cached variable
 set(AXLE_VENDOR_INCLUDES
@@ -21,7 +22,6 @@ set(AXLE_VENDOR_INCLUDES
     "${INC_GLAD}"
     "${INC_SPDLOG}"
     "${INC_GLM}"
-    "${INC_ENTT}"
     CACHE INTERNAL "Vendor include dirs needed by Axle consumers")
 
 set(AXLE_DOCTEST_INCLUDE "${INC_DOCTEST}" CACHE INTERNAL "")
@@ -127,6 +127,7 @@ target_include_directories(Axle
         "${INC_ENTT}"
         "${INC_FLATBUFFERS}"
         "${CMAKE_BINARY_DIR}/generated"
+        "${INC_CONCURRENTQUEUE}"
 )
 
 target_compile_definitions(Axle

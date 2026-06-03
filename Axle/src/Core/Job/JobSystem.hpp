@@ -1,17 +1,24 @@
 #pragma once
 
-#include "Other/CustomTypes/Expected.hpp"
 #include <coroutine>
 
 #include "axpch.hpp"
+
+#include <concurrentqueue.hpp>
+
 #include "RingBuffer.hpp"
+#include "Other/CustomTypes/Expected.hpp"
+#include "Core/Error/Panic.hpp"
+#include "Core/Logger/Log.hpp"
 
 namespace Axle {
     inline static constexpr u32 BufferCapacity = 64;
     using ThreadAffinity = u8;
     enum class JobPriority { Low = 0, Medium, High };
     template <typename T>
-    using JobBufferPtr = std::unique_ptr<JobBuffer<T, BufferCapacity>>;
+    using JobBufferPtr = std::unique_ptr<RingBuffer<T, BufferCapacity>>;
+
+    constexpr ThreadAffinity InvalidThreadIndex = std::numeric_limits<ThreadAffinity>::max();
 
     // Forward declarations
     struct Job;
@@ -21,8 +28,8 @@ namespace Axle {
 
     struct Job {
         JobPriority m_Priority{JobPriority::Medium};
-        ThreadAffinity m_ThreadIndex{0};
-        bool m_IsFunction{true};
+        ThreadAffinity m_ThreadIndex{InvalidThreadIndex};
+        // bool m_IsFunction{true};
 
         Job() = default;
         Job(JobPriority priority, u32 threadIndex)
@@ -46,17 +53,20 @@ namespace Axle {
     struct JobCoroutine {
         std::coroutine_handle<JobPromise> m_Handle;
 
+        JobCoroutine() = default;
         explicit JobCoroutine(std::coroutine_handle<JobPromise> h)
             : m_Handle(h) {}
+
         JobCoroutine(JobCoroutine&& other) noexcept
             : m_Handle(other.m_Handle) {
             other.m_Handle = {};
         }
-        JobCoroutine(const JobCoroutine&) = delete;
-        ~JobCoroutine() {
-            if (m_Handle)
-                m_Handle.destroy();
-        }
+        JobCoroutine(const JobCoroutine&) = default;
+        // JobCoroutine(const JobCoroutine&) = delete;
+        // ~JobCoroutine() {
+        //     if (m_Handle)
+        //         m_Handle.destroy();
+        // }
 
         void resume() {
             if (m_Handle && !m_Handle.done())
@@ -166,6 +176,48 @@ namespace Axle {
             AX_CORE_INFO("JobSystem deleted...");
         }
 
+        /**
+         * Simply gets the singleton instance. Call after initialization.
+         * */
+        inline static JobSystem& GetInstance() noexcept {
+            return *s_JobSystem;
+        }
+
+        // FIX: Optimize parameters to not make unnecessary copies
+        void Schedule(JobFunction job) {
+            // The thread matters
+            if (job.m_ThreadIndex != InvalidThreadIndex) {
+                AX_ASSERT(job.m_ThreadIndex <= m_NumThreads, "Can't assign a job to a non existing thread");
+                m_JobFunLocalBuffers[job.m_ThreadIndex]->Push(job);
+            }
+            // Thread is irrelevant
+            else {
+                m_JobFunBuffers[static_cast<u8>(job.m_Priority)].enqueue(job);
+            }
+        }
+
+        void Schedule(JobCoroutine job) {
+            Schedule(job, InvalidThreadIndex, JobPriority::Medium);
+        }
+        void Schedule(JobCoroutine job, JobPriority priority) {
+            Schedule(job, InvalidThreadIndex, priority);
+        }
+        void Schedule(JobCoroutine job, ThreadAffinity threadId) {
+            Schedule(job, threadId, JobPriority::Medium);
+        }
+        void Schedule(JobCoroutine job, ThreadAffinity threadId, JobPriority priority) {
+            job.m_Handle.promise().m_Priority = priority;
+            job.m_Handle.promise().m_ThreadIndex = threadId;
+
+            // The thread matters
+            if (threadId != InvalidThreadIndex) {
+                AX_ASSERT(threadId <= m_NumThreads, "Can't assign a job to a non existing thread");
+                m_JobCorLocalBuffers[threadId]->Push(job);
+            } else {
+                m_JobCorBuffers[static_cast<u8>(priority)].enqueue(job);
+            }
+        }
+
     private:
         void SetupWorkerThread(ThreadAffinity threadId) {
             m_Index = threadId;
@@ -196,19 +248,33 @@ namespace Axle {
                 return;
             }
 
-            // Check global priority buffers
-        }
+            // Check global priority buffers in order of priority
+            JobCoroutine cor{};
+            JobFunction fun{};
+            for (int i = 2; i >= 0; ++i) {
+                // Found a coroutine job
+                if (m_JobCorBuffers[i].try_dequeue(cor)) {
+                    cor.resume();
+                    return;
+                }
 
+                // Found simple function job
+                if (m_JobFunBuffers[i].try_dequeue(fun)) {
+                    fun.m_Function();
+                    return;
+                }
+            }
+        }
 
         inline static std::unique_ptr<JobSystem> s_JobSystem;
 
         std::atomic_bool m_Running{false};
         ThreadAffinity m_NumThreads;
 
-        std::array<JobBuffer<JobCoroutine, BufferCapacity>, 3> m_JobCorBuffers{};
+        std::array<moodycamel::ConcurrentQueue<JobCoroutine>, 3> m_JobCorBuffers;
         std::vector<JobBufferPtr<JobCoroutine>> m_JobCorLocalBuffers{};
 
-        std::array<JobBuffer<JobFunction, BufferCapacity>, 3> m_JobFunBuffers{};
+        std::array<moodycamel::ConcurrentQueue<JobFunction>, 3> m_JobFunBuffers;
         std::vector<JobBufferPtr<JobFunction>> m_JobFunLocalBuffers{};
 
         std::vector<std::thread> m_Threads;
