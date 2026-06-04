@@ -24,6 +24,7 @@
 #include <ranges>
 #include <variant>
 #include <tuple>
+#include <bit>
 
 // Error handling
 #include <stdexcept>

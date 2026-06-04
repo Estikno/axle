@@ -43,6 +43,10 @@ namespace Axle {
     struct JobFunction : public Job {
         std::function<void()> m_Function;
 
+        JobFunction() = default;
+        JobFunction(std::function<void()> func)
+            : m_Function(func) {}
+
         void Resume() override {
             m_Function();
         }
@@ -51,6 +55,8 @@ namespace Axle {
     };
 
     struct JobCoroutine {
+        using promise_type = JobPromise;
+
         std::coroutine_handle<JobPromise> m_Handle;
 
         JobCoroutine() = default;
@@ -58,8 +64,15 @@ namespace Axle {
             : m_Handle(h) {}
 
         JobCoroutine(JobCoroutine&& other) noexcept
-            : m_Handle(other.m_Handle) {
-            other.m_Handle = {};
+            : m_Handle(std::exchange(other.m_Handle, {})) {}
+        JobCoroutine& operator=(JobCoroutine&& other) noexcept {
+            if (this != &other) {
+                // Destroy our current handle if we own one
+                if (m_Handle)
+                    m_Handle.destroy();
+                m_Handle = std::exchange(other.m_Handle, {});
+            }
+            return *this;
         }
         JobCoroutine(const JobCoroutine&) = default;
         // JobCoroutine(const JobCoroutine&) = delete;
@@ -90,6 +103,9 @@ namespace Axle {
         void unhandled_exception() {
             std::terminate();
         }
+
+        virtual void Resume() override {}
+        virtual void Destroy() override {}
     };
 
     class JobSystem {
@@ -128,11 +144,19 @@ namespace Axle {
             js.m_Running.store(true, std::memory_order_seq_cst);
 
             // Create local buffers
-            js.m_JobCorLocalBuffers.resize(js.m_NumThreads);
-            js.m_JobFunLocalBuffers.resize(js.m_NumThreads);
+            js.m_JobCorLocalBuffers.reserve(js.m_NumThreads);
+            js.m_JobFunLocalBuffers.reserve(js.m_NumThreads);
+            for (ThreadAffinity i = 0; i < js.m_NumThreads; ++i) {
+                js.m_JobCorLocalBuffers.emplace_back(std::make_unique<RingBuffer<JobCoroutine, BufferCapacity>>());
+                js.m_JobFunLocalBuffers.emplace_back(std::make_unique<RingBuffer<JobFunction, BufferCapacity>>());
+            }
 
-            js.m_CVs.resize(js.m_NumThreads);
-            js.m_CVsMutex.resize(js.m_NumThreads);
+            js.m_CVs.reserve(js.m_NumThreads);
+            js.m_CVsMutex.reserve(js.m_NumThreads);
+            for (ThreadAffinity i = 0; i < js.m_NumThreads; ++i) {
+                js.m_CVsMutex.emplace_back(std::make_unique<std::mutex>());
+                js.m_CVs.emplace_back(std::make_unique<std::condition_variable>());
+            }
 
             // Spawn worker threads (skip 0, that's the main thread)
             for (ThreadAffinity i = 1; i < js.m_NumThreads; ++i) {
@@ -161,8 +185,9 @@ namespace Axle {
             }
 
             s_JobSystem->m_Running.store(false, std::memory_order_seq_cst);
-            for (auto& cv : s_JobSystem->m_CVs) {
-                cv->notify_all();
+            for (ThreadAffinity i = 0; i < s_JobSystem->m_NumThreads; ++i) {
+                std::unique_lock lock(*(s_JobSystem->m_CVsMutex[i]));
+                s_JobSystem->m_CVs[i]->notify_all();
             }
 
             // s_JobSystem->EmptyBuffer(); // drain main thread's buffer
@@ -191,17 +216,23 @@ namespace Axle {
                 m_JobFunLocalBuffers[job.m_ThreadIndex]->Push(job);
 
                 // Notify the needed thread
-                std::scoped_lock lock(m_CVsMutex[job.m_ThreadIndex]);
+                std::scoped_lock lock(*m_CVsMutex[job.m_ThreadIndex]);
                 m_CVs[job.m_ThreadIndex]->notify_all();
             }
             // Thread is irrelevant
             else {
-                // TODO: Notify threads
-                // keep an atomic counter of idle threads, or a bitmask of idle thread indices. When a thread enters
-                // wait it marks itself idle, when it wakes and starts working it marks itself busy. Then when pushing
-                // to a global queue you can check the bitmask to find an idle thread directly in O(1) without the
-                // circular scan.
                 m_JobFunBuffers[static_cast<u8>(job.m_Priority)].enqueue(job);
+
+                // Find idle thread via bitmask
+                u64 idle = m_IdleThreads.load(std::memory_order_acquire);
+                if (idle == 0)
+                    return; // all busy, they'll pick it up when done
+
+                int index = std::countr_zero(idle);
+                {
+                    std::scoped_lock lock(*m_CVsMutex[index]);
+                    m_CVs[index]->notify_all();
+                }
             }
         }
 
@@ -224,17 +255,40 @@ namespace Axle {
                 m_JobCorLocalBuffers[threadId]->Push(job);
 
                 // Notify the needed tread
-                std::scoped_lock lock(m_CVsMutex[threadId]);
+                std::scoped_lock lock(*m_CVsMutex[threadId]);
                 m_CVs[threadId]->notify_all();
             } else {
-                // TODO: Notify threads
-                // keep an atomic counter of idle threads, or a bitmask of idle thread indices. When a thread enters
-                // wait it marks itself idle, when it wakes and starts working it marks itself busy. Then when pushing
-                // to a global queue you can check the bitmask to find an idle thread directly in O(1) without the
-                // circular scan.
                 m_JobCorBuffers[static_cast<u8>(priority)].enqueue(job);
+
+                // Find idle thread via bitmask
+                u64 idle = m_IdleThreads.load(std::memory_order_acquire);
+                if (idle == 0)
+                    return; // all busy, they'll pick it up when done
+
+                int index = std::countr_zero(idle);
+                {
+                    std::scoped_lock lock(*m_CVsMutex[index]);
+                    m_CVs[index]->notify_all();
+                }
             }
         }
+
+#ifdef AXLE_TESTING
+        ThreadAffinity GetNumThreadsDEBUG() const {
+            return m_NumThreads;
+        }
+        const std::vector<std::thread>& GetThreadsDEBUG() const {
+            return m_Threads;
+        }
+        ThreadAffinity GetThreadIndexDEBUG() const {
+            return m_Index;
+        }
+        u64 GetLocalBufferNumDEBUG() const {
+            return m_JobCorLocalBuffers.size();
+        }
+
+#endif // AXLE_TESTING
+
 
     private:
         void SetupWorkerThread(ThreadAffinity threadId) {
@@ -248,6 +302,7 @@ namespace Axle {
 
             while (m_Running.load(std::memory_order_acquire)) {
                 // Update bit mask
+                m_IdleThreads.fetch_or(1ULL << m_Index, std::memory_order_release);
                 m_CVs[m_Index]->wait(lock, [this] {
                     return !m_Running.load(std::memory_order_acquire) // Wake up to shutdown job system
                                                                       // Check local buffers
@@ -258,9 +313,14 @@ namespace Axle {
                            m_JobFunBuffers[1].size_approx() > 0 || m_JobFunBuffers[0].size_approx() > 0;
                 });
                 // Update bit mask
+                m_IdleThreads.fetch_and(~(1ULL << m_Index), std::memory_order_release);
+
+                if (!m_Running.load(std::memory_order_acquire))
+                    break;
 
                 lock.unlock();
                 // Run job
+                RunPendingJob();
                 lock.lock();
             }
 
@@ -284,7 +344,7 @@ namespace Axle {
             // Check global priority buffers in order of priority
             JobCoroutine cor{};
             JobFunction fun{};
-            for (int i = 2; i >= 0; ++i) {
+            for (int i = 2; i >= 0; --i) {
                 // Found a coroutine job
                 if (m_JobCorBuffers[i].try_dequeue(cor)) {
                     cor.resume();
@@ -299,7 +359,7 @@ namespace Axle {
             }
         }
 
-        inline static std::unique_ptr<JobSystem> s_JobSystem;
+        inline static std::unique_ptr<JobSystem> s_JobSystem = nullptr;
 
         std::atomic_bool m_Running{false};
         ThreadAffinity m_NumThreads;
@@ -314,6 +374,13 @@ namespace Axle {
         std::vector<std::unique_ptr<std::condition_variable>> m_CVs;
         std::vector<std::unique_ptr<std::mutex>> m_CVsMutex;
 
-        inline static thread_local ThreadAffinity m_Index;
+        inline static thread_local ThreadAffinity m_Index = InvalidThreadIndex;
+
+        // 0 on an index: thread busy, 1: thread idle
+        std::atomic<u64> m_IdleThreads{0};
+
+        // Debug asserts
+        static_assert(std::atomic<u64>::is_always_lock_free, "u64 is not always atomic");
+        static_assert(std::atomic_bool::is_always_lock_free, "bool is not always atomic");
     };
 } // namespace Axle
