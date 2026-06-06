@@ -53,8 +53,7 @@ JobCoroutine<int> SimpleCoroutineInt2() {
 }
 
 JobCoroutine<void> SimpleCoroutineVoid(std::atomic<bool>* excecuted, std::atomic<int>* val) {
-    JobCoroutine<int> cor = SimpleCoroutineInt2();
-    int a = co_await cor;
+    int a = co_await SimpleCoroutineInt2();
     val->store(a);
     excecuted->store(true);
     co_return;

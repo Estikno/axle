@@ -151,6 +151,11 @@ namespace Axle {
             return JobAwaiter<T, U>(cor);
         }
 
+        template <typename U>
+        JobAwaiter<T, U> await_transform(JobCoroutine<U>&& cor) {
+            return JobAwaiter<T, U>(cor);
+        }
+
         virtual void Resume() override {
             if (m_Handle && !m_Handle.done())
                 m_Handle.resume();
@@ -530,10 +535,18 @@ namespace Axle {
 
     template <typename T, typename U>
     struct JobAwaiter {
+        JobCoroutine<U> m_Coro; // we own the coroutine struct
         JobPromise<U>* m_JobToWait;
 
+        // Lvalue version - cor is kept alive by the caller
         JobAwaiter<T, U>(JobCoroutine<U>& cor)
-            : m_JobToWait(&cor.m_Handle.promise()) {}
+            : m_Coro{},
+              m_JobToWait(&cor.m_Handle.promise()) {}
+
+        // Rvalue version - takes ownership so the temporary stays alive
+        JobAwaiter<T, U>(JobCoroutine<U>&& cor)
+            : m_Coro(cor),
+              m_JobToWait(&cor.m_Handle.promise()) {}
 
         bool await_ready() noexcept {
             return false;
