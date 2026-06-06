@@ -153,7 +153,7 @@ namespace Axle {
 
         template <typename U>
         JobAwaiter<T, U> await_transform(JobCoroutine<U>&& cor) {
-            return JobAwaiter<T, U>(cor);
+            return JobAwaiter<T, U>(std::move(cor));
         }
 
         virtual void Resume() override {
@@ -535,8 +535,8 @@ namespace Axle {
 
     template <typename T, typename U>
     struct JobAwaiter {
-        JobCoroutine<U> m_Coro; // we own the coroutine struct
-        JobPromise<U>* m_JobToWait;
+        JobCoroutine<U> m_Coro;     // owned copy (rvalue case)
+        JobPromise<U>* m_JobToWait; // non-owning (lvalue case)
 
         // Lvalue version - cor is kept alive by the caller
         JobAwaiter<T, U>(JobCoroutine<U>& cor)
@@ -545,25 +545,38 @@ namespace Axle {
 
         // Rvalue version - takes ownership so the temporary stays alive
         JobAwaiter<T, U>(JobCoroutine<U>&& cor)
-            : m_Coro(cor),
-              m_JobToWait(&cor.m_Handle.promise()) {}
+            : m_Coro(std::move(cor)),
+              m_JobToWait(nullptr) // will use m_Coro directly
+        {}
+
+        // Delete move/copy to prevent pointer invalidation
+        JobAwaiter(const JobAwaiter&) = delete;
+        JobAwaiter& operator=(const JobAwaiter&) = delete;
+        JobAwaiter(JobAwaiter&&) = delete;
+        JobAwaiter& operator=(JobAwaiter&&) = delete;
+
+        JobPromise<U>* GetPromise() {
+            // If we own the coro, reach through it; otherwise use the raw pointer
+            if (m_Coro.m_Handle)
+                return &m_Coro.m_Handle.promise();
+            return m_JobToWait;
+        }
 
         bool await_ready() noexcept {
             return false;
         }
 
         bool await_suspend(std::coroutine_handle<JobPromise<T>> h) noexcept {
+            Job* parent = &h.promise();
             // Schedule the job
-            static_cast<Job*>(&h.promise())->m_Children.fetch_add(1, std::memory_order_release);
-            JobSystem::GetInstance().Schedule(m_JobToWait, static_cast<Job*>(&h.promise()));
-
-            // return static_cast<Job*>(&h.promise())->m_Children.load(std::memory_order_acquire) != 0;
+            parent->m_Children.fetch_add(1, std::memory_order_release);
+            JobSystem::GetInstance().Schedule(GetPromise(), parent);
             return true;
         }
 
         U await_resume() noexcept {
             if constexpr (!std::is_void_v<U>) {
-                return m_JobToWait->Get();
+                return GetPromise()->Get();
                 // cor's destructor will handle Destroy()
             }
         }
