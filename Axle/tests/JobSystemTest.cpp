@@ -38,9 +38,14 @@ TEST_CASE("JobSystem - Created correctly") {
     ShutdownJS();
 }
 
-JobCoroutine SimpleCoroutine(std::atomic<bool>* executed) {
+JobCoroutine<void> SimpleCoroutine(std::atomic<bool>* executed) {
     *executed = true;
     co_return;
+}
+
+JobCoroutine<int> SimpleCoroutineInt(std::atomic<bool>* executed) {
+    *executed = true;
+    co_return 10;
 }
 
 // ─────────────────────────────────────────────
@@ -53,7 +58,7 @@ TEST_CASE("JobSystem - fire and forget job executes") {
 
 
     std::atomic<bool> executed{false};
-    JobFunction job([&executed]() { executed = true; });
+    JobFunction* job = new JobFunction([&executed]() { executed = true; });
 
     CHECK_NOTHROW(js.Schedule(job));
 
@@ -73,7 +78,7 @@ TEST_CASE("JobSystem - fire and forget coroutine executes") {
     JobSystem& js = JobSystem::GetInstance();
 
     std::atomic<bool> executed{false};
-    JobCoroutine job = SimpleCoroutine(&executed);
+    JobCoroutine<void> job = SimpleCoroutine(&executed);
 
     CHECK_NOTHROW(js.Schedule(job));
 
@@ -85,6 +90,29 @@ TEST_CASE("JobSystem - fire and forget coroutine executes") {
     }
 
     CHECK(executed);
+    ShutdownJS();
+}
+
+TEST_CASE("JobSystem - fire and forget coroutine that returns excecutes") {
+    InitJS();
+    JobSystem& js = JobSystem::GetInstance();
+
+    std::atomic<bool> executed{false};
+    JobCoroutine<int> job = SimpleCoroutineInt(&executed);
+
+    CHECK_NOTHROW(js.Schedule(job));
+
+    auto start = std::chrono::steady_clock::now();
+    while (!executed) {
+        std::this_thread::yield();
+        auto elapsed = std::chrono::steady_clock::now() - start;
+        REQUIRE(elapsed < std::chrono::seconds(5)); // fail if takes too long
+    }
+
+    CHECK(executed);
+    REQUIRE(job.Get().IsValid());
+    CHECK_EQ(job.Get().Unwrap(), 10);
+
     ShutdownJS();
 }
 
