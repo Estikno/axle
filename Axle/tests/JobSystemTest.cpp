@@ -44,9 +44,22 @@ JobCoroutine<void> SimpleCoroutine(std::atomic<bool>* executed) {
 }
 
 JobCoroutine<int> SimpleCoroutineInt(std::atomic<bool>* executed) {
-    *executed = true;
+    executed->store(true);
     co_return 10;
 }
+
+JobCoroutine<int> SimpleCoroutineInt2() {
+    co_return 10;
+}
+
+JobCoroutine<void> SimpleCoroutineVoid(std::atomic<bool>* excecuted, std::atomic<int>* val) {
+    JobCoroutine<int> cor = SimpleCoroutineInt2();
+    int a = co_await cor;
+    val->store(a);
+    excecuted->store(true);
+    co_return;
+}
+
 
 // ─────────────────────────────────────────────
 // Basic submission
@@ -55,7 +68,6 @@ JobCoroutine<int> SimpleCoroutineInt(std::atomic<bool>* executed) {
 TEST_CASE("JobSystem - fire and forget job executes") {
     InitJS();
     JobSystem& js = JobSystem::GetInstance();
-
 
     std::atomic<bool> executed{false};
     JobFunction* job = new JobFunction([&executed]() { executed = true; });
@@ -93,7 +105,7 @@ TEST_CASE("JobSystem - fire and forget coroutine executes") {
     ShutdownJS();
 }
 
-TEST_CASE("JobSystem - fire and forget coroutine that returns excecutes") {
+TEST_CASE("JobSystem - coroutine that returns cannot be excecuted from a non-coroutine") {
     InitJS();
     JobSystem& js = JobSystem::GetInstance();
 
@@ -110,8 +122,30 @@ TEST_CASE("JobSystem - fire and forget coroutine that returns excecutes") {
     }
 
     CHECK(executed);
-    REQUIRE(job.Get().IsValid());
-    CHECK_EQ(job.Get().Unwrap(), 10);
+    CHECK(!job.Get().IsValid());
+
+    ShutdownJS();
+}
+
+TEST_CASE("JobSystem - coroutine that returns excecutes correctly") {
+    InitJS();
+    JobSystem& js = JobSystem::GetInstance();
+
+    std::atomic<bool> executed{false};
+    std::atomic<int> val{0};
+    JobCoroutine<void> job = SimpleCoroutineVoid(&executed, &val);
+
+    CHECK_NOTHROW(js.Schedule(job));
+
+    auto start = std::chrono::steady_clock::now();
+    while (!executed) {
+        std::this_thread::yield();
+        auto elapsed = std::chrono::steady_clock::now() - start;
+        REQUIRE(elapsed < std::chrono::seconds(5)); // fail if takes too long
+    }
+
+    CHECK(executed);
+    CHECK_EQ(val.load(), 10);
 
     ShutdownJS();
 }
