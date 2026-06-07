@@ -33,6 +33,8 @@ namespace Axle {
     struct FinalAwaiter;
     template <typename T, typename U>
     struct JobAwaiter;
+    template <typename T>
+    struct ThreadAwaiter;
 
     struct Job {
         JobPriority m_Priority{JobPriority::Medium};
@@ -154,6 +156,10 @@ namespace Axle {
         template <typename U>
         JobAwaiter<T, U> await_transform(JobCoroutine<U>&& cor) {
             return JobAwaiter<T, U>(std::move(cor));
+        }
+
+        ThreadAwaiter<T> await_transform(ThreadAffinity thread) {
+            return ThreadAwaiter<T>(thread);
         }
 
         virtual void Resume() override {
@@ -395,6 +401,9 @@ namespace Axle {
         template <typename T, typename U>
         friend struct JobAwaiter;
 
+        template <typename T>
+        friend struct ThreadAwaiter;
+
         void Schedule(Job* job, Job* parent) {
             job->m_Parent = parent;
 
@@ -531,6 +540,28 @@ namespace Axle {
             }
             return false; // no parent, self-destruct
         }
+    };
+
+    template <typename T>
+    struct ThreadAwaiter {
+        ThreadAffinity m_Thread;
+
+        ThreadAwaiter<T>(ThreadAffinity thread)
+            : m_Thread(thread) {}
+
+        bool await_ready() noexcept {
+            // Don't suspend if we are already on the wanted thread
+            return JobSystem::GetInstance().m_Index == m_Thread;
+        }
+
+        void await_suspend(std::coroutine_handle<JobPromise<T>> h) noexcept {
+            Job* job = &h.promise();
+            job->m_ThreadIndex = m_Thread;
+
+            JobSystem::GetInstance().Schedule(job, job->m_Parent);
+        }
+
+        void await_resume() noexcept {}
     };
 
     template <typename T, typename U>

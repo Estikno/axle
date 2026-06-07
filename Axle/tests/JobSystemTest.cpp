@@ -59,6 +59,11 @@ JobCoroutine<void> SimpleCoroutineVoid(std::atomic<bool>* excecuted, std::atomic
     co_return;
 }
 
+JobCoroutine<void> SimpleCoroutineChangeThread(std::atomic<bool>* correct, ThreadAffinity thread) {
+    co_await thread;
+    correct->store(JobSystem::GetInstance().GetThreadIndexDEBUG() == thread);
+    co_return;
+}
 
 // ─────────────────────────────────────────────
 // Basic submission
@@ -145,6 +150,27 @@ TEST_CASE("JobSystem - coroutine that returns excecutes correctly") {
 
     CHECK(executed);
     CHECK_EQ(val.load(), 10);
+
+    ShutdownJS();
+}
+
+TEST_CASE("JobSystem - coroutine that changes thread excecutes correctly") {
+    InitJS();
+    JobSystem& js = JobSystem::GetInstance();
+
+    std::atomic<bool> correct{false};
+    JobCoroutine<void> job = SimpleCoroutineChangeThread(&correct, 2);
+
+    CHECK_NOTHROW(js.Schedule(job, 1));
+
+    auto start = std::chrono::steady_clock::now();
+    while (!correct) {
+        std::this_thread::yield();
+        auto elapsed = std::chrono::steady_clock::now() - start;
+        REQUIRE(elapsed < std::chrono::seconds(5)); // fail if takes too long
+    }
+
+    CHECK(correct);
 
     ShutdownJS();
 }
