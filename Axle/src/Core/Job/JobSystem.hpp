@@ -33,6 +33,8 @@ namespace Axle {
     struct FinalAwaiter;
     template <typename T, typename U>
     struct JobAwaiter;
+    template <typename T, typename... Us>
+    struct JobAwaiterMultiple;
     template <typename T>
     struct ThreadAwaiter;
 
@@ -125,6 +127,16 @@ namespace Axle {
         }
     };
 
+    template <typename... Us>
+    struct WhenAllTag {
+        std::tuple<JobCoroutine<Us>...> coros;
+    };
+
+    template <typename... Us>
+    WhenAllTag<Us...> WhenAll(JobCoroutine<Us>&&... coros) {
+        return {std::tuple<JobCoroutine<Us>...>(std::move(coros)...)};
+    }
+
     // This is the base class of all coroutine promises. We need it to distinguish between return type
     // of void or any value. Coroutines must have different interfaces for these two cases, but we
     // need a unified interfaces to handle all cases.
@@ -156,6 +168,12 @@ namespace Axle {
         template <typename U>
         JobAwaiter<T, U> await_transform(JobCoroutine<U>&& cor) {
             return JobAwaiter<T, U>(std::move(cor));
+        }
+
+        template <typename... Us>
+        JobAwaiterMultiple<T, Us...> await_transform(WhenAllTag<Us...>&& tag) {
+            return std::apply([](auto&&... coros) { return JobAwaiterMultiple<T, Us...>(std::move(coros)...); },
+                              std::move(tag.coros));
         }
 
         ThreadAwaiter<T> await_transform(ThreadAffinity thread) {
@@ -401,6 +419,9 @@ namespace Axle {
         template <typename T, typename U>
         friend struct JobAwaiter;
 
+        template <typename T, typename... Us>
+        friend struct JobAwaiterMultiple;
+
         template <typename T>
         friend struct ThreadAwaiter;
 
@@ -610,6 +631,51 @@ namespace Axle {
                 return GetPromise()->Get();
                 // cor's destructor will handle Destroy()
             }
+        }
+    };
+
+    template <typename T, typename... Us>
+    struct JobAwaiterMultiple {
+        std::tuple<JobCoroutine<Us>...> m_Coros;
+
+        JobAwaiterMultiple(JobCoroutine<Us>&&... coros)
+            : m_Coros(std::move(coros)...) {}
+
+        // Delete move/copy for same reason as JobAwaiter
+        JobAwaiterMultiple(const JobAwaiterMultiple&) = delete;
+        JobAwaiterMultiple& operator=(const JobAwaiterMultiple&) = delete;
+        JobAwaiterMultiple(JobAwaiterMultiple&&) = delete;
+        JobAwaiterMultiple& operator=(JobAwaiterMultiple&&) = delete;
+
+        bool await_ready() noexcept {
+            return false;
+        }
+
+        bool await_suspend(std::coroutine_handle<JobPromise<T>> h) noexcept {
+            Job* parent = &h.promise();
+
+            // Increment children
+            parent->m_Children.fetch_add(sizeof...(Us), std::memory_order_release);
+
+            // Schedule all children
+            std::apply(
+                [&](auto&... coros) { (JobSystem::GetInstance().Schedule(&coros.m_Handle.promise(), parent), ...); },
+                m_Coros);
+
+            return true;
+        }
+
+        auto await_resume() noexcept {
+            return std::apply([&](auto&... coros) { return std::make_tuple(GetValue(coros)...); }, m_Coros);
+        }
+
+        // Helper to get value or void_t placeholder
+        template <typename U>
+        auto GetValue(JobCoroutine<U>& coro) {
+            if constexpr (std::is_void_v<U>)
+                return std::monostate{};
+            else
+                return coro.m_Handle.promise().Get();
         }
     };
 } // namespace Axle

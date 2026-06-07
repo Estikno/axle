@@ -65,6 +65,22 @@ JobCoroutine<void> SimpleCoroutineChangeThread(std::atomic<bool>* correct, Threa
     co_return;
 }
 
+JobCoroutine<int> SimpleCoroutineWaitForMany2(std::atomic<int>* n) {
+    n->fetch_add(1);
+    co_return 12;
+}
+
+JobCoroutine<void> SimpleCoroutineWaitForMany1(std::atomic<int>* n) {
+    n->fetch_add(1);
+    co_return;
+}
+
+JobCoroutine<void> SimpleCoroutineWaitForMany(std::atomic<int>* n, std::atomic<int>* ret1) {
+    auto [a, b] = co_await WhenAll(SimpleCoroutineWaitForMany1(n), SimpleCoroutineWaitForMany2(n));
+    ret1->store(b);
+    co_return;
+}
+
 // ─────────────────────────────────────────────
 // Basic submission
 // ─────────────────────────────────────────────
@@ -171,6 +187,29 @@ TEST_CASE("JobSystem - coroutine that changes thread excecutes correctly") {
     }
 
     CHECK(correct);
+
+    ShutdownJS();
+}
+
+TEST_CASE("JobSystem - coroutine that waits multiple jobs simulatenously excecutes correctly") {
+    InitJS();
+    JobSystem& js = JobSystem::GetInstance();
+
+    std::atomic<int> n{0};
+    std::atomic<int> ret1{0};
+    JobCoroutine<void> job = SimpleCoroutineWaitForMany(&n, &ret1);
+
+    CHECK_NOTHROW(js.Schedule(job));
+
+    auto start = std::chrono::steady_clock::now();
+    while (ret1.load() == 0) {
+        std::this_thread::yield();
+        auto elapsed = std::chrono::steady_clock::now() - start;
+        REQUIRE(elapsed < std::chrono::seconds(5)); // fail if takes too long
+    }
+
+    CHECK_EQ(n.load(), 2);
+    CHECK_EQ(ret1.load(), 12);
 
     ShutdownJS();
 }
