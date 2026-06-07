@@ -12,6 +12,7 @@
 #include "Core/Logger/Log.hpp"
 
 namespace Axle {
+    // Useful defines
     inline static constexpr u32 BufferCapacity = 64;
     using ThreadAffinity = u8;
     enum class JobPriority { Low = 0, Medium, High };
@@ -38,12 +39,18 @@ namespace Axle {
     template <typename T>
     struct ThreadAwaiter;
 
+    /**
+     * This is the base Job sruct. Alls jobs derive from this.
+     * */
     struct Job {
         JobPriority m_Priority{JobPriority::Medium};
         ThreadAffinity m_ThreadIndex{InvalidThreadIndex};
         bool m_IsFunction{true};
-        Job* m_Parent{nullptr};         // Who is waiting for me
-        std::atomic<u32> m_Children{0}; // How many children I'm waiting for
+
+        // Who is waiting for me (only on coroutines)
+        Job* m_Parent{nullptr};
+        // How many children I'm waiting for (only on coroutines)
+        std::atomic<u32> m_Children{0};
 
         Job() = default;
         Job(JobPriority priority, ThreadAffinity threadIndex, bool isFunction)
@@ -56,6 +63,9 @@ namespace Axle {
         virtual void Destroy() = 0;
     };
 
+    /**
+     * Represents a simple function job.
+     * */
     struct JobFunction : public Job {
         std::function<void()> m_Function;
 
@@ -73,12 +83,13 @@ namespace Axle {
         void Destroy() override {}
     };
 
+    /**
+     * Creates a job coroutine
+     * */
     template <typename T>
-    struct JobCoroutine {
+    class JobCoroutine {
+    public:
         using promise_type = JobPromise<T>;
-
-        std::coroutine_handle<JobPromise<T>> m_Handle{};
-        bool m_Scheduled{false};
 
         JobCoroutine() = default;
         explicit JobCoroutine(std::coroutine_handle<JobPromise<T>> h)
@@ -117,6 +128,18 @@ namespace Axle {
             // If scheduled without parent, FinalAwaiter self-destructed, don't touch it
         }
 
+        void Schedule() {
+            m_Scheduled = true;
+        }
+
+        void ReleaseHandle() {
+            m_Handle = {};
+        }
+
+        std::coroutine_handle<JobPromise<T>> GetHandle() {
+            return m_Handle;
+        }
+
         Expected<T> Get() noexcept
             requires(!std::is_void_v<T>)
         {
@@ -125,6 +148,10 @@ namespace Axle {
             return Expected<T>::FromException(
                 "Trying to get a value out of a non-existing coroutine or a non-finished one");
         }
+
+    private:
+        std::coroutine_handle<JobPromise<T>> m_Handle{};
+        bool m_Scheduled{false};
     };
 
     template <typename... Us>
@@ -137,13 +164,12 @@ namespace Axle {
         return {std::tuple<JobCoroutine<Us>...>(std::move(coros)...)};
     }
 
-    // This is the base class of all coroutine promises. We need it to distinguish between return type
-    // of void or any value. Coroutines must have different interfaces for these two cases, but we
-    // need a unified interfaces to handle all cases.
+    /**
+     * Base class for all coroutine promises. It's needed to distinguish between void and any other return type.
+     * */
     template <typename T>
-    struct JobPromiseBase : public Job {
-        std::coroutine_handle<> m_Handle;
-
+    class JobPromiseBase : public Job {
+    public:
         JobPromiseBase(std::coroutine_handle<> handle)
             : m_Handle(handle),
               Job(JobPriority::Medium, InvalidThreadIndex, false) {}
@@ -187,10 +213,14 @@ namespace Axle {
         virtual void Destroy() override {
             m_Handle.destroy();
         }
+
+    private:
+        std::coroutine_handle<> m_Handle;
     };
 
     template <typename T>
-    struct JobPromise : public JobPromiseBase<T> {
+    class JobPromise : public JobPromiseBase<T> {
+    public:
         JobPromise() noexcept
             : JobPromiseBase<T>(std::coroutine_handle<JobPromise<T>>::from_promise(*this)) {}
 
@@ -206,11 +236,14 @@ namespace Axle {
             return m_Value;
         }
 
+    private:
         T m_Value{};
     };
 
+    // Void specialization of the JobPromise
     template <>
-    struct JobPromise<void> : public JobPromiseBase<void> {
+    class JobPromise<void> : public JobPromiseBase<void> {
+    public:
         JobPromise() noexcept
             : Axle::JobPromiseBase<void>(std::coroutine_handle<JobPromise<void>>::from_promise(*this)) {}
 
@@ -235,8 +268,10 @@ namespace Axle {
          *
          * This function is NOT thread safe so it must be called from only one thread and only once to be safe.
          *
-         * @param threadCount How many working threads you need. The render thread is excluded from this count. However,
-         * the main one is included. So if you want 2 additional dedicated working threads you would pass a 3.
+         * @param threadCount How many working threads you need? The thread from which you call this (normaly the main
+         * one) is included. So if you want 2 additional thread you would input 3. Imporant: It may not instantiate the
+         * number of threads you provide, so after this method check how many are there actually via the GetNumThreads
+         * method
          *
          * Caution, this system depends on others, so they have to be initialized before this one.
          * */
@@ -262,6 +297,7 @@ namespace Axle {
                 js.m_JobLocalBuffers.emplace_back(std::make_unique<RingBuffer<Job*, BufferCapacity>>());
             }
 
+            // Allocate all mutexes and condition variables
             js.m_CVs.reserve(js.m_NumThreads);
             js.m_CVsMutex.reserve(js.m_NumThreads);
             for (ThreadAffinity i = 0; i < js.m_NumThreads; ++i) {
@@ -319,86 +355,62 @@ namespace Axle {
             return *s_JobSystem;
         }
 
-        // FIX: Optimize parameters to not make unnecessary copies
-        void Schedule(JobFunction* job) {
-            // The thread matters
-            if (job->m_ThreadIndex != InvalidThreadIndex) {
-                AX_ASSERT(job->m_ThreadIndex <= m_NumThreads, "Can't assign a job to a non existing thread");
-                m_JobLocalBuffers[job->m_ThreadIndex]->Push(job);
-
-                // Notify the needed thread
-                std::scoped_lock lock(*m_CVsMutex[job->m_ThreadIndex]);
-                m_CVs[job->m_ThreadIndex]->notify_all();
-            }
-            // Thread is irrelevant
-            else {
-                m_JobBuffers[static_cast<u8>(job->m_Priority)].enqueue(job);
-
-                // Find idle thread via bitmask
-                u64 idle = m_IdleThreads.load(std::memory_order_acquire);
-                if (idle == 0)
-                    return; // all busy, they'll pick it up when done
-
-                int index = std::countr_zero(idle);
-                {
-                    std::scoped_lock lock(*m_CVsMutex[index]);
-                    m_CVs[index]->notify_all();
-                }
-            }
+        /**
+         * Schedules a simple function as a job
+         *
+         * @param job The function/lamda/... to schedule
+         * @param priority The priority the job will have (medium by default)
+         * @param threadId The thread you want this job to be executed on. If assigned then priotity is ignored.
+         * */
+        void Schedule(std::function<void()> job,
+                      JobPriority priority = JobPriority::Medium,
+                      ThreadAffinity threadId = InvalidThreadIndex) {
+            Schedule(new JobFunction(job, priority, threadId), nullptr);
         }
 
+        /**
+         * Schedules the given job corotuine.
+         *
+         * Important: Jobs scheduled with the same priority in a specify order are not necessarly going to mantain that
+         * order when executed. If order/synchronization is important then you can add coroutines as dependencies of a
+         * job by waiting on them with the co_await operator.
+         *
+         * @param job A reference to the job coroutine
+         * @param threadId The thread you want to job to run on. If set then priority is ignored (it doesn't matter by
+         * default)
+         * @param priority The priority of the given job (medium by default)
+         * */
         template <typename T>
-        void Schedule(JobCoroutine<T>& job) {
-            Schedule(job, InvalidThreadIndex, JobPriority::Medium);
+        void Schedule(JobCoroutine<T>& job,
+                      ThreadAffinity threadId = InvalidThreadIndex,
+                      JobPriority priority = JobPriority::Medium) {
+            // The underlying job promise
+            JobPromise<T>* jobProm = &job.GetHandle().promise();
+
+            // Assign given values to the promise
+            jobProm->m_Priority = priority;
+            jobProm->m_ThreadIndex = threadId;
+
+            // Notify the coroutine object that the job has been scheduled
+            job.Schedule();
+            // No parent will be set (top-level schedule), null the handle
+            // so the destructor can't touch the freed frame after FinalAwaiter runs
+            job.ReleaseHandle();
+
+            // Top level jobs can't have a parent
+            Schedule(jobProm, nullptr);
         }
-        template <typename T>
-        void Schedule(JobCoroutine<T>& job, JobPriority priority) {
-            Schedule(job, InvalidThreadIndex, priority);
-        }
-        template <typename T>
-        void Schedule(JobCoroutine<T>& job, ThreadAffinity threadId) {
-            Schedule(job, threadId, JobPriority::Medium);
-        }
-        template <typename T>
-        void Schedule(JobCoroutine<T>& job, ThreadAffinity threadId, JobPriority priority) {
-            job.m_Handle.promise().m_Priority = priority;
-            job.m_Handle.promise().m_ThreadIndex = threadId;
-            job.m_Scheduled = true;
 
-            // The thread matters
-            if (threadId != InvalidThreadIndex) {
-                AX_ASSERT(threadId <= m_NumThreads, "Can't assign a job to a non existing thread");
-                m_JobLocalBuffers[threadId]->Push(&job.m_Handle.promise());
-                // If no parent will be set (top-level schedule), null the handle
-                // so the destructor can't touch the freed frame after FinalAwaiter runs
-                job.m_Handle = {};
-
-                // Notify the needed tread
-                std::scoped_lock lock(*m_CVsMutex[threadId]);
-                m_CVs[threadId]->notify_all();
-            } else {
-                m_JobBuffers[static_cast<u8>(priority)].enqueue(&job.m_Handle.promise());
-                // If no parent will be set (top-level schedule), null the handle
-                // so the destructor can't touch the freed frame after FinalAwaiter runs
-                job.m_Handle = {};
-
-                // Find idle thread via bitmask
-                u64 idle = m_IdleThreads.load(std::memory_order_acquire);
-                if (idle == 0)
-                    return; // all busy, they'll pick it up when done
-
-                int index = std::countr_zero(idle);
-                {
-                    std::scoped_lock lock(*m_CVsMutex[index]);
-                    m_CVs[index]->notify_all();
-                }
-            }
+        /**
+         * Retrieves how many worker thread are there.
+         *
+         * @returns The number of worker threads instantiated
+         * */
+        ThreadAffinity GetNumThreads() const {
+            return m_NumThreads;
         }
 
 #ifdef AXLE_TESTING
-        ThreadAffinity GetNumThreadsDEBUG() const {
-            return m_NumThreads;
-        }
         const std::vector<std::thread>& GetThreadsDEBUG() const {
             return m_Threads;
         }
@@ -425,15 +437,27 @@ namespace Axle {
         template <typename T>
         friend struct ThreadAwaiter;
 
+        /**
+         * Internal schedule method called by all the public ones
+         * It's assumed that all job parameters are already set inside the job struct
+         *
+         * @param job The job to schedule (either a function or a coroutine)
+         * @param parent Which job the scheduled one as a dependency. Functions cannot have a parent
+         * */
         void Schedule(Job* job, Job* parent) {
+            AX_ENSURE(parent == nullptr || !parent->m_IsFunction, "Functions are not allowed to be parents.");
+
+            // Set parent
             job->m_Parent = parent;
 
             // The thread matters
             if (job->m_ThreadIndex != InvalidThreadIndex) {
-                AX_ASSERT(job->m_ThreadIndex <= m_NumThreads, "Can't assign a job to a non existing thread");
-                m_JobLocalBuffers[job->m_ThreadIndex]->Push(job);
+                AX_ENSURE(job->m_ThreadIndex <= m_NumThreads, "Can't assign a job to a non existing thread");
+                AX_ENSURE(m_JobLocalBuffers[job->m_ThreadIndex]->Push(job),
+                          "The local RingBuffer of thread {0} is full",
+                          job->m_ThreadIndex);
 
-                // Notify the needed thread
+                // Notify the wanted thread
                 std::scoped_lock lock(*m_CVsMutex[job->m_ThreadIndex]);
                 m_CVs[job->m_ThreadIndex]->notify_all();
             }
@@ -454,17 +478,25 @@ namespace Axle {
             }
         }
 
+        /**
+         * Called within a thread to setup the worker's thread related config.
+         *
+         * @param threadId Which id will the thread have?
+         * */
         void SetupWorkerThread(ThreadAffinity threadId) {
             m_Index = threadId;
         }
 
+        /**
+         * Function that contains the loop that every worker thread has to run continuously.
+         * */
         void WorkerLoop() {
             // We lock here because:
             // https://stackoverflow.com/questions/38147825/shared-atomic-variable-is-not-properly-published-if-it-is-not-modified-under-mut
             std::unique_lock lock(*m_CVsMutex[m_Index]);
 
             while (m_Running.load(std::memory_order_acquire)) {
-                // Update bit mask
+                // Update idle bit mask
                 m_IdleThreads.fetch_or(1ULL << m_Index, std::memory_order_release);
                 m_CVs[m_Index]->wait(lock, [this] {
                     return !m_Running.load(std::memory_order_acquire) // Wake up to shutdown job system
@@ -474,7 +506,7 @@ namespace Axle {
                            m_JobBuffers[2].size_approx() > 0 || m_JobBuffers[1].size_approx() > 0 ||
                            m_JobBuffers[0].size_approx() > 0;
                 });
-                // Update bit mask
+                // Update idle bit mask
                 m_IdleThreads.fetch_and(~(1ULL << m_Index), std::memory_order_release);
 
                 if (!m_Running.load(std::memory_order_acquire))
@@ -489,6 +521,9 @@ namespace Axle {
             // Finish everything that remains so the thread can join
         }
 
+        /**
+         * Attemps to execute a job if possible.
+         * */
         void RunPendingJob() {
             // First check local buffers
             Expected<Job*> jobLocalExp = m_JobLocalBuffers[m_Index]->Pop();
@@ -509,43 +544,52 @@ namespace Axle {
             }
         }
 
+        /**
+         * Executes the given job on the current thread.
+         *
+         * @param job The job to execute
+         * */
         void RunJob(Job* job) {
-            if (job->m_IsFunction) {
-                static_cast<JobFunction*>(job)->m_Function();
-                // Delete the function job since it can't possibly be rescheduled
+            bool isFunction = job->m_IsFunction;
+            // virtual call
+            job->Resume();
+
+            // Delete the function job since it can't possibly be rescheduled
+            if (isFunction) {
                 delete job;
-            } else {
-                job->Resume(); // virtual call
             }
         }
 
+        /// The JobSystem singleton
         inline static std::unique_ptr<JobSystem> s_JobSystem = nullptr;
 
+        /// Indicates if the system is currently running or not
         std::atomic_bool m_Running{false};
         ThreadAffinity m_NumThreads;
 
+        // Buffers
         std::array<moodycamel::ConcurrentQueue<Job*>, 3> m_JobBuffers;
         std::vector<JobBufferPtr<Job*>> m_JobLocalBuffers{};
 
         std::vector<std::thread> m_Threads;
+
+        // Synchronization types
         std::vector<std::unique_ptr<std::condition_variable>> m_CVs;
         std::vector<std::unique_ptr<std::mutex>> m_CVsMutex;
 
+        /// Indicates which index does the current thread have
         inline static thread_local ThreadAffinity m_Index = InvalidThreadIndex;
 
-        // 0 on an index: thread busy, 1: thread idle
+        // Idle thread bitmask: 0 on an index if thread currently busy, 1 if thread idle
         std::atomic<u64> m_IdleThreads{0};
-
-        // Debug asserts
-        static_assert(std::atomic<u64>::is_always_lock_free, "u64 is not always atomic");
-        static_assert(std::atomic_bool::is_always_lock_free, "bool is not always atomic");
     };
 
-    // The awaiter tests whether there is a parent (i.e. a coro) - if yes then the parent should destroy this coro.
-    // The parent might need the return value, which is stored in the promise of this coro.
-    //
-    // If there is no parent, because this coro was scheduled at the start from the main function,
-    // then the coro destroys itself.
+    /**
+     * Checks if the coroutine has a parent and if that's the case notify it of the completed job. Because the parent
+     * might need the return value don't destroy the coroutine yet.
+     *
+     * If there is no parent then the coro destroys itself.
+     * */
     template <typename T>
     struct FinalAwaiter : public std::suspend_always {
         bool await_suspend(std::coroutine_handle<JobPromise<T>> handle) noexcept {
@@ -563,6 +607,9 @@ namespace Axle {
         }
     };
 
+    /**
+     * Allows a coroutine to decide on which thread to continue executing by being rescheduled again
+     * */
     template <typename T>
     struct ThreadAwaiter {
         ThreadAffinity m_Thread;
@@ -585,6 +632,9 @@ namespace Axle {
         void await_resume() noexcept {}
     };
 
+    /**
+     * Allows a coroutine to be able to wait on another coroutine
+     * */
     template <typename T, typename U>
     struct JobAwaiter {
         JobCoroutine<U> m_Coro;     // owned copy (rvalue case)
@@ -593,7 +643,7 @@ namespace Axle {
         // Lvalue version - cor is kept alive by the caller
         JobAwaiter<T, U>(JobCoroutine<U>& cor)
             : m_Coro{},
-              m_JobToWait(&cor.m_Handle.promise()) {}
+              m_JobToWait(&cor.GetHandle().promise()) {}
 
         // Rvalue version - takes ownership so the temporary stays alive
         JobAwaiter<T, U>(JobCoroutine<U>&& cor)
@@ -607,23 +657,26 @@ namespace Axle {
         JobAwaiter(JobAwaiter&&) = delete;
         JobAwaiter& operator=(JobAwaiter&&) = delete;
 
+        /**
+         * Little helper function used to get the promise
+         * */
         JobPromise<U>* GetPromise() {
             // If we own the coro, reach through it; otherwise use the raw pointer
-            if (m_Coro.m_Handle)
-                return &m_Coro.m_Handle.promise();
+            if (m_Coro.GetHandle())
+                return &m_Coro.GetHandle().promise();
             return m_JobToWait;
         }
 
+        // Always suspend
         bool await_ready() noexcept {
             return false;
         }
 
-        bool await_suspend(std::coroutine_handle<JobPromise<T>> h) noexcept {
+        void await_suspend(std::coroutine_handle<JobPromise<T>> h) noexcept {
             Job* parent = &h.promise();
             // Schedule the job
             parent->m_Children.fetch_add(1, std::memory_order_release);
             JobSystem::GetInstance().Schedule(GetPromise(), parent);
-            return true;
         }
 
         U await_resume() noexcept {
@@ -634,10 +687,14 @@ namespace Axle {
         }
     };
 
+    /**
+     * Allows a coroutine to wait on multiple coroutines
+     * */
     template <typename T, typename... Us>
     struct JobAwaiterMultiple {
         std::tuple<JobCoroutine<Us>...> m_Coros;
 
+        // Only accept rvalues for better convenience
         JobAwaiterMultiple(JobCoroutine<Us>&&... coros)
             : m_Coros(std::move(coros)...) {}
 
@@ -647,11 +704,12 @@ namespace Axle {
         JobAwaiterMultiple(JobAwaiterMultiple&&) = delete;
         JobAwaiterMultiple& operator=(JobAwaiterMultiple&&) = delete;
 
+        // Alaways suspend
         bool await_ready() noexcept {
             return false;
         }
 
-        bool await_suspend(std::coroutine_handle<JobPromise<T>> h) noexcept {
+        void await_suspend(std::coroutine_handle<JobPromise<T>> h) noexcept {
             Job* parent = &h.promise();
 
             // Increment children
@@ -659,10 +717,8 @@ namespace Axle {
 
             // Schedule all children
             std::apply(
-                [&](auto&... coros) { (JobSystem::GetInstance().Schedule(&coros.m_Handle.promise(), parent), ...); },
+                [&](auto&... coros) { (JobSystem::GetInstance().Schedule(&coros.GetHandle().promise(), parent), ...); },
                 m_Coros);
-
-            return true;
         }
 
         auto await_resume() noexcept {
@@ -675,7 +731,7 @@ namespace Axle {
             if constexpr (std::is_void_v<U>)
                 return std::monostate{};
             else
-                return coro.m_Handle.promise().Get();
+                return coro.GetHandle().promise().Get();
         }
     };
 } // namespace Axle

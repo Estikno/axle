@@ -30,7 +30,7 @@ TEST_CASE("JobSystem - Created correctly") {
     // Check dimensions
     REQUIRE(js.GetLocalBufferNumDEBUG() == 3);
     CHECK(JobSystem::GetInstance().GetThreadsDEBUG().size() == 2);
-    CHECK(JobSystem::GetInstance().GetNumThreadsDEBUG() == 3);
+    CHECK(JobSystem::GetInstance().GetNumThreads() == 3);
 
     // If t_WorkerThread of the main thread is correct we assume everything else is also in order
     CHECK(js.GetThreadIndexDEBUG() == 0);
@@ -90,9 +90,8 @@ TEST_CASE("JobSystem - fire and forget job executes") {
     JobSystem& js = JobSystem::GetInstance();
 
     std::atomic<bool> executed{false};
-    JobFunction* job = new JobFunction([&executed]() { executed = true; });
 
-    CHECK_NOTHROW(js.Schedule(job));
+    CHECK_NOTHROW(js.Schedule([&executed]() { executed = true; }));
 
     auto start = std::chrono::steady_clock::now();
     while (!executed) {
