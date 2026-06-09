@@ -141,7 +141,7 @@ namespace Axle {
 
         Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
 
-        // We sync changes to disk and the close the file
+        // We sync changes to disk and then close the file
         SyncUnsafe(handle);
 
         if (std::holds_alternative<mio::mmap_source>(resource.mmap))
