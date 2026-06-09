@@ -10,6 +10,7 @@
 #include "Other/CustomTypes/Expected.hpp"
 #include "Core/Error/Panic.hpp"
 #include "Core/Logger/Log.hpp"
+#include "Core/Types.hpp"
 
 namespace Axle {
     // Useful defines
@@ -266,14 +267,13 @@ namespace Axle {
         /**
          * Simple method for initialising the system. Shall not be called more than once.
          *
-         * This function is NOT thread safe so it must be called from only one thread and only once to be safe.
-         *
-         * @param threadCount How many working threads you need? The thread from which you call this (normaly the main
-         * one) is included. So if you want 2 additional thread you would input 3. Imporant: It may not instantiate the
-         * number of threads you provide, so after this method check how many are there actually via the GetNumThreads
-         * method
+         * @param threadCount How many working threads you need? The threads you specify will be fully managed by the
+         * system. You can later convert already running threads to worker ones but those won't automatically be managed
+         * by the system.
          *
          * Caution, this system depends on others, so they have to be initialized before this one.
+         *
+         * This function is NOT thread safe so it must be called from only one thread and only once to be safe.
          * */
         static void Init(ThreadAffinity threadCount) {
             if (s_JobSystem != nullptr) {
@@ -288,7 +288,7 @@ namespace Axle {
             s_JobSystem = std::make_unique<JobSystem>();
             JobSystem& js = *s_JobSystem;
 
-            js.m_NumThreads = std::min(totalThreads, threadCount);
+            js.m_NumThreads.store(std::min(totalThreads, threadCount));
             js.m_Running.store(true, std::memory_order_seq_cst);
 
             // Create local buffers
@@ -298,26 +298,22 @@ namespace Axle {
             }
 
             // Allocate all mutexes and condition variables
-            js.m_CVs.reserve(js.m_NumThreads);
-            js.m_CVsMutex.reserve(js.m_NumThreads);
+            js.m_CVs.reserve(js.m_NumThreads.load());
+            js.m_CVsMutex.reserve(js.m_NumThreads.load());
             for (ThreadAffinity i = 0; i < js.m_NumThreads; ++i) {
                 js.m_CVsMutex.emplace_back(std::make_unique<std::mutex>());
                 js.m_CVs.emplace_back(std::make_unique<std::condition_variable>());
             }
 
-            // Spawn worker threads (skip 0, that's the main thread)
-            for (ThreadAffinity i = 1; i < js.m_NumThreads; ++i) {
+            // Spawn worker threads
+            for (ThreadAffinity i = 0; i < js.m_NumThreads.load(); ++i) {
                 js.m_Threads.emplace_back([i, &js]() {
                     js.SetupWorkerThread(i);
                     js.WorkerLoop();
                 });
             }
 
-            AX_INFO("Created {0} new worker threads (excluding the main one)", js.m_NumThreads - 1);
-
-            // Main thread is also a worker
-            js.SetupWorkerThread(0);
-
+            AX_INFO("Created {0} new worker threads", js.m_NumThreads.load());
             AX_CORE_INFO("JobSystem initalized...");
         }
 
@@ -332,13 +328,12 @@ namespace Axle {
             }
 
             s_JobSystem->m_Running.store(false, std::memory_order_seq_cst);
-            for (ThreadAffinity i = 0; i < s_JobSystem->m_NumThreads; ++i) {
+            for (ThreadAffinity i = 0; i < s_JobSystem->m_NumThreads.load(); ++i) {
                 std::unique_lock lock(*(s_JobSystem->m_CVsMutex[i]));
                 s_JobSystem->m_CVs[i]->notify_all();
             }
 
-            // s_JobSystem->EmptyBuffer(); // drain main thread's buffer
-
+            // Just joing the threads the job system owns (it may not be as many as the m_NumThreads variable says)
             for (std::thread& thread : s_JobSystem->m_Threads) {
                 if (thread.joinable())
                     thread.join();
@@ -350,9 +345,35 @@ namespace Axle {
 
         /**
          * Simply gets the singleton instance. Call after initialization.
+         *
+         * Thread Safe
          * */
         inline static JobSystem& GetInstance() noexcept {
             return *s_JobSystem;
+        }
+
+        /**
+         * Converts the calling thread into a worker one. If the calling thread is already a worker panics.
+         *
+         * The converted thread will have to manually call the corresponding methods to work as because the system
+         * itslef doesn't own the thread it can't manage it.
+         *
+         * Thread Safe
+         * */
+        void ConvertToWorkerThread() {
+            AX_ENSURE(m_Index == InvalidThreadIndex, "Trying to convert an already worker thread");
+
+            // Create local buffer
+            m_JobLocalBuffers.emplace_back(std::make_unique<RingBuffer<Job*, BufferCapacity>>());
+
+            // Allocate mutex and condition
+            m_CVsMutex.emplace_back(std::make_unique<std::mutex>());
+            m_CVs.emplace_back(std::make_unique<std::condition_variable>());
+
+            // Update thread count
+            ThreadAffinity newIndex = m_NumThreads.fetch_add(1, std::memory_order_acq_rel);
+
+            SetupWorkerThread(newIndex);
         }
 
         /**
@@ -361,6 +382,8 @@ namespace Axle {
          * @param job The function/lamda/... to schedule
          * @param priority The priority the job will have (medium by default)
          * @param threadId The thread you want this job to be executed on. If assigned then priotity is ignored.
+         *
+         * Thread Safe
          * */
         void Schedule(std::function<void()> job,
                       JobPriority priority = JobPriority::Medium,
@@ -379,6 +402,8 @@ namespace Axle {
          * @param threadId The thread you want to job to run on. If set then priority is ignored (it doesn't matter by
          * default)
          * @param priority The priority of the given job (medium by default)
+         *
+         * Thread Safe
          * */
         template <typename T>
         void Schedule(JobCoroutine<T>& job,
@@ -402,12 +427,41 @@ namespace Axle {
         }
 
         /**
+         * Assumes the calling thread has already been converted to a worker, if not it will panic.
+         * The caller thread will work until the condition passed becomes false. Stopping may take some time as it may
+         * happen that the thread is currently executing a big job when the condition was set to false.
+         *
+         * @param run While it's true the thread will proceed to work
+         *
+         * Thread Safe
+         * */
+        void RunWorkerUntil(std::atomic<bool>& run) {
+            AX_ENSURE(m_Index != InvalidThreadIndex, "The calling thread is not a worker");
+            // TODO: Complete the method
+        }
+
+
+        /**
+         * Assumes the calling thread has already been converted to a worker, if not it will panic.
+         * The caller thread will work for the given time. It's not guaranted to return exactly after the specified
+         * amount of time becase it may happen that the thread is currently executing a big job when the condition was
+         * set to false.
+         *
+         * @param time The amount of time the thread will work for, in milliseconds
+         *
+         * Thread Safe
+         * */
+        void RunWorkerFor(std::chrono::milliseconds time) {}
+
+        /**
          * Retrieves how many worker thread are there.
          *
          * @returns The number of worker threads instantiated
+         *
+         * Thread Safe
          * */
         ThreadAffinity GetNumThreads() const {
-            return m_NumThreads;
+            return m_NumThreads.load(std::memory_order_acquire);
         }
 
 #ifdef AXLE_TESTING
@@ -519,6 +573,7 @@ namespace Axle {
             }
 
             // Finish everything that remains so the thread can join
+            EmptyBuffer();
         }
 
         /**
@@ -536,7 +591,6 @@ namespace Axle {
             // Check global priority buffers in order of priority
             Job* job;
             for (int i = 2; i >= 0; --i) {
-                // Found a coroutine job
                 if (m_JobBuffers[i].try_dequeue(job)) {
                     RunJob(job);
                     return;
@@ -560,12 +614,37 @@ namespace Axle {
             }
         }
 
+        /**
+         * The calling worker thread will empty all it's local buffer and global ones.
+         * */
+        void EmptyBuffer() {
+            // Empty local buffer
+            while (!m_JobLocalBuffers[m_Index]->Empty()) {
+                Expected<Job*> jobLocalExp = m_JobLocalBuffers[m_Index]->Pop();
+                if (jobLocalExp.IsValid()) {
+                    Job* job = jobLocalExp.Unwrap();
+                    RunJob(job);
+                }
+            }
+
+            // Empty global queues
+            Job* job;
+            for (int i = 2; i >= 0; --i) {
+                // Loop until all jobs of the queue are completed
+                while (m_JobBuffers[i].size_approx() != 0) {
+                    if (m_JobBuffers[i].try_dequeue(job)) {
+                        RunJob(job);
+                    }
+                }
+            }
+        }
+
         /// The JobSystem singleton
         inline static std::unique_ptr<JobSystem> s_JobSystem = nullptr;
 
         /// Indicates if the system is currently running or not
         std::atomic_bool m_Running{false};
-        ThreadAffinity m_NumThreads;
+        std::atomic<ThreadAffinity> m_NumThreads;
 
         // Buffers
         std::array<moodycamel::ConcurrentQueue<Job*>, 3> m_JobBuffers;
