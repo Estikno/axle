@@ -292,7 +292,7 @@ namespace Axle {
             JobSystem& js = *s_JobSystem;
 
             js.m_NumThreads.store(std::min(totalThreads, threadCount));
-            js.m_LargestAvailableIndex = js.m_NumThreads.load();
+            js.m_LargestAvailableIndex.store(js.m_NumThreads.load());
             js.m_Running.store(true, std::memory_order_seq_cst);
 
             // Create local buffers
@@ -330,7 +330,7 @@ namespace Axle {
 
             // Signal all threads to execute everything that remains and exit
             s_JobSystem->m_Running.store(false, std::memory_order_seq_cst);
-            for (ThreadAffinity i = 0; i < s_JobSystem->m_LargestAvailableIndex; ++i) {
+            for (ThreadAffinity i = 0; i < s_JobSystem->m_LargestAvailableIndex.load(); ++i) {
                 std::unique_lock lock(*(s_JobSystem->m_CVsMutex[i]));
                 s_JobSystem->m_CVs[i]->notify_all();
             }
@@ -384,7 +384,7 @@ namespace Axle {
 
                 // Get new thread ID
                 if (m_AvailableIndexes.empty()) {
-                    newIndex = m_LargestAvailableIndex++;
+                    newIndex = m_LargestAvailableIndex.fetch_add(1, std::memory_order_acq_rel);
                     // This check is technically not necessary because we alread have the one above
                     AX_ENSURE(newIndex < MaxThreads, "Can't spawn more than {0} worker threads", MaxThreads);
 
@@ -619,7 +619,7 @@ namespace Axle {
             return m_Index;
         }
         u64 GetLocalBufferNumDEBUG() const {
-            return m_LargestAvailableIndex;
+            return m_LargestAvailableIndex.load(std::memory_order_acquire);
         }
 
 #endif // AXLE_TESTING
@@ -653,7 +653,8 @@ namespace Axle {
 
             // The thread matters
             if (job->m_ThreadIndex != InvalidThreadIndex) {
-                AX_ENSURE(job->m_ThreadIndex < m_JobLocalBuffers.size(), "Can't assign a job to a non existing thread");
+                AX_ENSURE(job->m_ThreadIndex < m_LargestAvailableIndex.load(std::memory_order_acquire),
+                          "Can't assign a job to a non existing thread");
                 AX_ENSURE(m_JobLocalBuffers[job->m_ThreadIndex]->Push(job),
                           "The local RingBuffer of thread {0} is full",
                           job->m_ThreadIndex);
@@ -805,7 +806,7 @@ namespace Axle {
         // Allows adding new mutexes and CVs so that new worker threads can be registeted
         std::mutex m_ExternalWorkerMutex;
         /// A counter that stores the largest available index
-        ThreadAffinity m_LargestAvailableIndex = 0;
+        std::atomic<ThreadAffinity> m_LargestAvailableIndex{0};
         /// Contains the deleted indexes that are available once again to be used
         std::priority_queue<ThreadAffinity, std::vector<ThreadAffinity>, std::greater<ThreadAffinity>>
             m_AvailableIndexes;
