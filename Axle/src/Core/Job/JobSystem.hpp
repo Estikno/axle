@@ -27,11 +27,11 @@ namespace Axle {
     // Forward declarations
     struct Job;
     template <typename T>
-    struct JobCoroutine;
+    class JobCoroutine;
     template <typename T>
-    struct JobPromise;
+    class JobPromise;
     template <typename T>
-    struct JobPromiseBase;
+    class JobPromiseBase;
     struct JobFunction;
     template <typename T>
     struct FinalAwaiter;
