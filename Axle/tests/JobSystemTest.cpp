@@ -4,6 +4,7 @@
 #include "Core/Logger/Log.hpp"
 #include <atomic>
 #include <chrono>
+#include <stop_token>
 #include <thread>
 
 using namespace Axle;
@@ -14,8 +15,7 @@ using namespace Axle;
 
 static void InitJS() {
     Log::Init();
-    JobSystem::Init(3 // use 2 dedicated threads
-    );
+    JobSystem::Init(2);
 }
 
 static void ShutdownJS() {
@@ -28,12 +28,9 @@ TEST_CASE("JobSystem - Created correctly") {
     JobSystem& js = JobSystem::GetInstance();
 
     // Check dimensions
-    REQUIRE(js.GetLocalBufferNumDEBUG() == 3);
+    REQUIRE(js.GetLocalBufferNumDEBUG() == 2);
     CHECK(JobSystem::GetInstance().GetThreadsDEBUG().size() == 2);
-    CHECK(JobSystem::GetInstance().GetNumThreads() == 3);
-
-    // If t_WorkerThread of the main thread is correct we assume everything else is also in order
-    CHECK(js.GetThreadIndexDEBUG() == 0);
+    CHECK(JobSystem::GetInstance().GetNumThreads() == 2);
 
     ShutdownJS();
 }
@@ -174,7 +171,7 @@ TEST_CASE("JobSystem - coroutine that changes thread excecutes correctly") {
     JobSystem& js = JobSystem::GetInstance();
 
     std::atomic<bool> correct{false};
-    JobCoroutine<void> job = SimpleCoroutineChangeThread(&correct, 2);
+    JobCoroutine<void> job = SimpleCoroutineChangeThread(&correct, 0);
 
     CHECK_NOTHROW(js.Schedule(job, 1));
 
@@ -273,7 +270,7 @@ TEST_CASE("JobSystem - function job runs on correct thread") {
             done.store(true);
         },
         JobPriority::Medium,
-        2);
+        1);
 
     auto start = std::chrono::steady_clock::now();
     while (!done.load()) {
@@ -281,7 +278,7 @@ TEST_CASE("JobSystem - function job runs on correct thread") {
         REQUIRE(std::chrono::steady_clock::now() - start < std::chrono::seconds(5));
     }
 
-    CHECK_EQ(ranOnThread.load(), 2);
+    CHECK_EQ(ranOnThread.load(), 1);
 
     ShutdownJS();
 }
@@ -465,4 +462,197 @@ TEST_CASE("JobSystem - multiple independent coroutines run concurrently") {
     CHECK_EQ(counter.load(), N);
 
     ShutdownJS();
+}
+
+
+TEST_CASE("JobSystem - convert main thread to worker and run jobs") {
+    InitJS();
+    JobSystem& js = JobSystem::GetInstance();
+
+    js.ConvertToWorkerThread();
+    ThreadAffinity myIndex = js.GetThreadIndexDEBUG();
+    CHECK(myIndex != InvalidThreadIndex);
+    CHECK(myIndex == 2); // initial thread count was 2, so new index should be 2
+
+    std::atomic<bool> jobDone{false};
+    js.Schedule([&]() { jobDone.store(true); }, JobPriority::Medium, myIndex);
+
+    std::stop_source source;
+    // Run until job completes, then stop ourselves
+    js.Schedule([&]() { source.request_stop(); });
+
+    js.RunWorkerUntil(source.get_token());
+
+    CHECK(jobDone.load());
+
+    js.DeregisterWorkerThread();
+    CHECK(js.GetThreadIndexDEBUG() == InvalidThreadIndex);
+
+    ShutdownJS();
+}
+
+TEST_CASE("JobSystem - RunWorkerFor returns after timeout with no jobs") {
+    InitJS();
+    JobSystem& js = JobSystem::GetInstance();
+
+    js.ConvertToWorkerThread();
+
+    auto start = std::chrono::steady_clock::now();
+    js.RunWorkerFor(std::chrono::milliseconds(50));
+    auto elapsed = std::chrono::steady_clock::now() - start;
+
+    // Should return reasonably close to 50ms, not hang
+    CHECK(elapsed >= std::chrono::milliseconds(40));
+    CHECK(elapsed < std::chrono::seconds(2));
+
+    js.DeregisterWorkerThread();
+    ShutdownJS();
+}
+
+TEST_CASE("JobSystem - RunWorkerFor processes jobs scheduled to its index") {
+    InitJS();
+    JobSystem& js = JobSystem::GetInstance();
+
+    js.ConvertToWorkerThread();
+    ThreadAffinity myIndex = js.GetThreadIndexDEBUG();
+
+    std::atomic<int> counter{0};
+    for (int i = 0; i < 5; ++i)
+        js.Schedule([&counter]() { counter.fetch_add(1); }, JobPriority::Medium, myIndex);
+
+    js.RunWorkerFor(std::chrono::milliseconds(100));
+
+    CHECK_EQ(counter.load(), 5);
+
+    js.DeregisterWorkerThread();
+    ShutdownJS();
+}
+
+TEST_CASE("JobSystem - deregistered index gets reused") {
+    InitJS();
+    JobSystem& js = JobSystem::GetInstance();
+
+    js.ConvertToWorkerThread();
+    ThreadAffinity firstIndex = js.GetThreadIndexDEBUG();
+    js.DeregisterWorkerThread();
+
+    js.ConvertToWorkerThread();
+    ThreadAffinity secondIndex = js.GetThreadIndexDEBUG();
+
+    CHECK_EQ(firstIndex, secondIndex); // index should be reused
+
+    js.DeregisterWorkerThread();
+    ShutdownJS();
+}
+
+TEST_CASE("JobSystem - converted thread participates in global job processing") {
+    InitJS();
+    JobSystem& js = JobSystem::GetInstance();
+
+    js.ConvertToWorkerThread();
+
+    constexpr int JobCount = 50;
+    std::atomic<int> counter{0};
+
+    for (int i = 0; i < JobCount; ++i)
+        js.Schedule([&counter]() { counter.fetch_add(1); }); // global queue, no affinity
+
+    std::stop_source source;
+
+    // Stop ourselves once all jobs are done
+    std::thread stopper([&]() {
+        while (counter.load() < JobCount)
+            std::this_thread::yield();
+        source.request_stop();
+        // Wake the worker so it re-checks the condition
+    });
+
+    js.RunWorkerUntil(source.get_token());
+    stopper.join();
+
+    CHECK_EQ(counter.load(), JobCount);
+
+    js.DeregisterWorkerThread();
+    ShutdownJS();
+}
+
+TEST_CASE("JobSystem - shutdown waits for external worker to deregister") {
+    InitJS();
+    JobSystem& js = JobSystem::GetInstance();
+
+    ThreadAffinity mainIndex = js.ConvertToWorkerThread();
+
+    std::stop_source source;
+    std::atomic<bool> deregistered{false};
+
+    // std::thread externalWorker([&]() {
+    //     // already converted on this "thread" conceptually -
+    //     // NOTE: in practice ConvertToWorkerThread must be called
+    //     // from the thread that will use it (m_Index is thread_local)
+    // });
+
+    // Since m_Index is thread_local, do the conversion + work on a real separate thread:
+    std::thread realExternal([&]() {
+        ThreadAffinity otherIndex = js.ConvertToWorkerThread();
+
+        CHECK_NE(mainIndex, otherIndex);
+
+        js.RunWorkerUntil(source.get_token()); // will exit when m_Running becomes false during Shutdown
+        js.DeregisterWorkerThread();
+        deregistered.store(true);
+    });
+
+    // Give it time to register and start waiting
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+
+    // Deregister the main thread's converted worker too
+    js.DeregisterWorkerThread();
+
+    // Shutdown should block until realExternal calls DeregisterWorkerThread
+    ShutdownJS();
+
+    CHECK(deregistered.load());
+
+    realExternal.join();
+    // externalWorker.join();
+}
+
+TEST_CASE("JobSystem - shutdown waits for external worker to deregister (now with RunWorkerFor)") {
+    InitJS();
+    JobSystem& js = JobSystem::GetInstance();
+
+    ThreadAffinity mainIndex = js.ConvertToWorkerThread();
+
+    std::atomic<bool> deregistered{false};
+
+    // std::thread externalWorker([&]() {
+    //     // already converted on this "thread" conceptually -
+    //     // NOTE: in practice ConvertToWorkerThread must be called
+    //     // from the thread that will use it (m_Index is thread_local)
+    // });
+
+    // Since m_Index is thread_local, do the conversion + work on a real separate thread:
+    std::thread realExternal([&]() {
+        ThreadAffinity otherIndex = js.ConvertToWorkerThread();
+
+        CHECK_NE(mainIndex, otherIndex);
+
+        js.RunWorkerFor(std::chrono::seconds(50)); // will exit when m_Running becomes false during Shutdown
+        js.DeregisterWorkerThread();
+        deregistered.store(true);
+    });
+
+    // Give it time to register and start waiting
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+
+    // Deregister the main thread's converted worker too
+    js.DeregisterWorkerThread();
+
+    // Shutdown should block until realExternal calls DeregisterWorkerThread
+    ShutdownJS();
+
+    CHECK(deregistered.load());
+
+    realExternal.join();
+    // externalWorker.join();
 }

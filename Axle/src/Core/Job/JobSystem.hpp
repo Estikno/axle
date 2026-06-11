@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stop_token>
 #include <coroutine>
 
 #include "axpch.hpp"
@@ -21,6 +22,7 @@ namespace Axle {
     using JobBufferPtr = std::unique_ptr<RingBuffer<T, BufferCapacity>>;
 
     constexpr ThreadAffinity InvalidThreadIndex = std::numeric_limits<ThreadAffinity>::max();
+    constexpr ThreadAffinity MaxThreads = 64;
 
     // Forward declarations
     struct Job;
@@ -284,6 +286,7 @@ namespace Axle {
             ThreadAffinity totalThreads = std::thread::hardware_concurrency();
             // FIX: This error message is temporal, in such cases simply prevent the initialization or something
             AX_ENSURE(totalThreads > 0, "There are not sufficient threads to initialize the job system");
+            AX_ENSURE(threadCount <= MaxThreads, "Can't spawn more than {0} worker threads", MaxThreads);
 
             s_JobSystem = std::make_unique<JobSystem>();
             JobSystem& js = *s_JobSystem;
@@ -293,17 +296,14 @@ namespace Axle {
             js.m_Running.store(true, std::memory_order_seq_cst);
 
             // Create local buffers
-            js.m_JobLocalBuffers.reserve(js.m_NumThreads);
             for (ThreadAffinity i = 0; i < js.m_NumThreads; ++i) {
-                js.m_JobLocalBuffers.emplace_back(std::make_unique<RingBuffer<Job*, BufferCapacity>>());
+                js.m_JobLocalBuffers[i] = std::make_unique<RingBuffer<Job*, BufferCapacity>>();
             }
 
             // Allocate all mutexes and condition variables
-            js.m_CVs.reserve(js.m_NumThreads.load());
-            js.m_CVsMutex.reserve(js.m_NumThreads.load());
             for (ThreadAffinity i = 0; i < js.m_NumThreads.load(); ++i) {
-                js.m_CVsMutex.emplace_back(std::make_unique<std::mutex>());
-                js.m_CVs.emplace_back(std::make_unique<std::condition_variable>());
+                js.m_CVsMutex[i] = std::make_unique<std::mutex>();
+                js.m_CVs[i] = std::make_unique<std::condition_variable>();
             }
 
             // Spawn worker threads
@@ -329,9 +329,8 @@ namespace Axle {
             }
 
             // Signal all threads to execute everything that remains and exit
-            ThreadAffinity totalThreads = s_JobSystem->m_NumThreads.load();
             s_JobSystem->m_Running.store(false, std::memory_order_seq_cst);
-            for (ThreadAffinity i = 0; i < totalThreads; ++i) {
+            for (ThreadAffinity i = 0; i < s_JobSystem->m_LargestAvailableIndex; ++i) {
                 std::unique_lock lock(*(s_JobSystem->m_CVsMutex[i]));
                 s_JobSystem->m_CVs[i]->notify_all();
             }
@@ -368,9 +367,11 @@ namespace Axle {
          * The converted thread will have to manually call the corresponding methods to work as because the system
          * itslef doesn't own the thread it can't manage it.
          *
+         * @returns The thread ID of the newnly created worker
+         *
          * Thread Safe
          * */
-        void ConvertToWorkerThread() {
+        ThreadAffinity ConvertToWorkerThread() {
             AX_ENSURE(m_Index == InvalidThreadIndex, "Trying to convert an already worker thread");
 
             ThreadAffinity newIndex;
@@ -378,18 +379,21 @@ namespace Axle {
                 std::scoped_lock lock(m_ExternalWorkerMutex);
 
                 // Update thread count
-                m_NumThreads.fetch_add(1, std::memory_order_release);
+                ThreadAffinity threads = m_NumThreads.fetch_add(1, std::memory_order_acq_rel);
+                AX_ENSURE(threads <= MaxThreads, "Can't spawn more than {0} worker threads", MaxThreads);
 
                 // Get new thread ID
                 if (m_AvailableIndexes.empty()) {
                     newIndex = m_LargestAvailableIndex++;
+                    // This check is technically not necessary because we alread have the one above
+                    AX_ENSURE(newIndex < MaxThreads, "Can't spawn more than {0} worker threads", MaxThreads);
 
                     // Create local buffer
-                    m_JobLocalBuffers.emplace_back(std::make_unique<RingBuffer<Job*, BufferCapacity>>());
+                    m_JobLocalBuffers[newIndex] = std::make_unique<RingBuffer<Job*, BufferCapacity>>();
 
                     // Allocate mutex and condition
-                    m_CVsMutex.emplace_back(std::make_unique<std::mutex>());
-                    m_CVs.emplace_back(std::make_unique<std::condition_variable>());
+                    m_CVsMutex[newIndex] = std::make_unique<std::mutex>();
+                    m_CVs[newIndex] = std::make_unique<std::condition_variable>();
                 } else {
                     newIndex = m_AvailableIndexes.top();
                     m_AvailableIndexes.pop();
@@ -400,6 +404,7 @@ namespace Axle {
             }
 
             SetupWorkerThread(newIndex);
+            return newIndex;
         }
 
         /**
@@ -413,7 +418,7 @@ namespace Axle {
             AX_ENSURE(m_Index != InvalidThreadIndex, "The calling thread is not a worker");
 
             // Finish everything that remains
-            EmptyBuffer();
+            EmptyLocalBuffer();
 
             // Mark the thread index as busy so no job is assigned to it
             m_IdleThreads.fetch_and(~(1ULL << m_Index), std::memory_order_release);
@@ -421,14 +426,14 @@ namespace Axle {
             {
                 std::scoped_lock lock(m_ExternalWorkerMutex);
 
-                m_NumThreads.fetch_sub(1, std::memory_order_release);
-                // If shutdown is currently being called then notify that this thread has been deregistered succesfully
-                m_NumThreads.notify_all();
-
                 // This thread index is now free
                 m_AvailableIndexes.push(m_Index);
                 m_Index = InvalidThreadIndex;
             }
+
+            m_NumThreads.fetch_sub(1, std::memory_order_release);
+            // If shutdown is currently being called then notify that this thread has been deregistered succesfully
+            m_NumThreads.notify_all();
         }
 
         /**
@@ -483,27 +488,35 @@ namespace Axle {
 
         /**
          * Assumes the calling thread has already been converted to a worker, if not it will panic.
-         * The caller thread will work until the condition passed becomes false. Stopping may take some time as it may
+         * The caller thread will work until the the stop_source requests a stop. Stopping may take some time as it may
          * happen that the thread is currently executing a big job when the condition was set to false.
          *
-         * @param run While it's true the thread will proceed to work
+         * This method doesn't deregister the worker thread automatically, this means that you can call it as many times
+         * as you want but it also means that you will have to call DeregisterWorkerThread manually before shutting down
+         * the system.
+         *
+         * @param stopToken The stop_token the thread will check in order to stop excecution
          *
          * Thread Safe
          * */
-        void RunWorkerUntil(std::atomic<bool>& run) {
+        void RunWorkerUntil(std::stop_token stopToken) {
             AX_ENSURE(m_Index != InvalidThreadIndex, "The calling thread is not a worker");
 
             // We lock here because:
             // https://stackoverflow.com/questions/38147825/shared-atomic-variable-is-not-properly-published-if-it-is-not-modified-under-mut
             std::unique_lock lock(*m_CVsMutex[m_Index]);
 
-            while (m_Running.load(std::memory_order_acquire) && run.load(std::memory_order_acquire)) {
+            // The caller of the callback has to wake up the current worker thread, so we need to capture its index
+            ThreadAffinity index = m_Index;
+            std::stop_callback callback(stopToken, [this, index] { m_CVs[index]->notify_all(); });
+
+            while (m_Running.load(std::memory_order_acquire) && !stopToken.stop_requested()) {
                 // Update idle bit mask
                 m_IdleThreads.fetch_or(1ULL << m_Index, std::memory_order_release);
                 m_CVs[m_Index]->wait(lock, [&] {
                     return !m_Running.load(std::memory_order_acquire) ||
-                           !run.load(std::memory_order_acquire) // Wake up to shutdown job system
-                                                                // Check local buffers
+                           stopToken.stop_requested() // Wake up to shutdown job system
+                                                      // Check local buffers
                            || !m_JobLocalBuffers[m_Index]->Empty() ||
                            // Check priority buffers
                            m_JobBuffers[2].size_approx() > 0 || m_JobBuffers[1].size_approx() > 0 ||
@@ -512,7 +525,7 @@ namespace Axle {
                 // Update idle bit mask
                 m_IdleThreads.fetch_and(~(1ULL << m_Index), std::memory_order_release);
 
-                if (!m_Running.load(std::memory_order_acquire) || !run.load(std::memory_order_acquire))
+                if (!m_Running.load(std::memory_order_acquire) || stopToken.stop_requested())
                     break;
 
                 lock.unlock();
@@ -523,7 +536,7 @@ namespace Axle {
 
             // Finish everything that remains if the system is shutting down
             if (!m_Running.load(std::memory_order_acquire))
-                EmptyBuffer();
+                EmptyLocalBuffer();
 
             // Mark the thread index as busy so no job is assigned to it
             m_IdleThreads.fetch_and(~(1ULL << m_Index), std::memory_order_release);
@@ -535,6 +548,10 @@ namespace Axle {
          * The caller thread will work for the given time. It's not guaranted to return exactly after the specified
          * amount of time becase it may happen that the thread is currently executing a big job when the condition was
          * set to false.
+         *
+         * This method doesn't deregister the worker thread automatically, this means that you can call it as many times
+         * as you want but it also means that you will have to call DeregisterWorkerThread manually before shutting down
+         * the system.
          *
          * @param time The amount of time the thread will work for, in milliseconds
          *
@@ -553,10 +570,10 @@ namespace Axle {
             while (m_Running.load(std::memory_order_acquire) && spent < time) {
                 // Update idle bit mask
                 m_IdleThreads.fetch_or(1ULL << m_Index, std::memory_order_release);
-                m_CVs[m_Index]->wait(lock, [&] {
-                    return !m_Running.load(std::memory_order_acquire) || !(spent < time) // Wake up to shutdown job
-                                                                                         // system Check local buffers
-                           || !m_JobLocalBuffers[m_Index]->Empty() ||
+                m_CVs[m_Index]->wait_for(lock, time - spent, [&] {
+                    return !m_Running.load(std::memory_order_acquire) ||
+                           // system Check local buffers
+                           !m_JobLocalBuffers[m_Index]->Empty() ||
                            // Check priority buffers
                            m_JobBuffers[2].size_approx() > 0 || m_JobBuffers[1].size_approx() > 0 ||
                            m_JobBuffers[0].size_approx() > 0;
@@ -577,7 +594,7 @@ namespace Axle {
 
             // Finish everything that remains if the system is shutting down
             if (!m_Running.load(std::memory_order_acquire))
-                EmptyBuffer();
+                EmptyLocalBuffer();
 
             // Mark the thread index as busy so no job is assigned to it
             m_IdleThreads.fetch_and(~(1ULL << m_Index), std::memory_order_release);
@@ -586,7 +603,7 @@ namespace Axle {
         /**
          * Retrieves how many worker thread are there.
          *
-         * @returns The number of worker threads instantiated
+         * @returns The number of worker threads currently working.
          *
          * Thread Safe
          * */
@@ -602,7 +619,7 @@ namespace Axle {
             return m_Index;
         }
         u64 GetLocalBufferNumDEBUG() const {
-            return m_JobLocalBuffers.size();
+            return m_LargestAvailableIndex;
         }
 
 #endif // AXLE_TESTING
@@ -636,7 +653,7 @@ namespace Axle {
 
             // The thread matters
             if (job->m_ThreadIndex != InvalidThreadIndex) {
-                AX_ENSURE(job->m_ThreadIndex <= m_NumThreads, "Can't assign a job to a non existing thread");
+                AX_ENSURE(job->m_ThreadIndex < m_JobLocalBuffers.size(), "Can't assign a job to a non existing thread");
                 AX_ENSURE(m_JobLocalBuffers[job->m_ThreadIndex]->Push(job),
                           "The local RingBuffer of thread {0} is full",
                           job->m_ThreadIndex);
@@ -703,7 +720,7 @@ namespace Axle {
             }
 
             // Finish everything that remains so the thread can join
-            EmptyBuffer();
+            EmptyAllBuffers();
             m_NumThreads.fetch_sub(1, std::memory_order_release);
         }
 
@@ -746,17 +763,11 @@ namespace Axle {
         }
 
         /**
-         * The calling worker thread will empty all it's local buffer and global ones.
+         * The calling worker thread will empty all the jobs from its local buffer and global ones
          * */
-        void EmptyBuffer() {
+        void EmptyAllBuffers() {
             // Empty local buffer
-            while (!m_JobLocalBuffers[m_Index]->Empty()) {
-                Expected<Job*> jobLocalExp = m_JobLocalBuffers[m_Index]->Pop();
-                if (jobLocalExp.IsValid()) {
-                    Job* job = jobLocalExp.Unwrap();
-                    RunJob(job);
-                }
-            }
+            EmptyLocalBuffer();
 
             // Empty global queues
             Job* job;
@@ -766,6 +777,20 @@ namespace Axle {
                     if (m_JobBuffers[i].try_dequeue(job)) {
                         RunJob(job);
                     }
+                }
+            }
+        }
+
+        /**
+         * The calling worker thread will empty all the jobs from its local buffer
+         * */
+        void EmptyLocalBuffer() {
+            // Empty local buffer
+            while (!m_JobLocalBuffers[m_Index]->Empty()) {
+                Expected<Job*> jobLocalExp = m_JobLocalBuffers[m_Index]->Pop();
+                if (jobLocalExp.IsValid()) {
+                    Job* job = jobLocalExp.Unwrap();
+                    RunJob(job);
                 }
             }
         }
@@ -787,13 +812,13 @@ namespace Axle {
 
         // Buffers
         std::array<moodycamel::ConcurrentQueue<Job*>, 3> m_JobBuffers;
-        std::vector<JobBufferPtr<Job*>> m_JobLocalBuffers{};
+        std::array<JobBufferPtr<Job*>, MaxThreads> m_JobLocalBuffers{};
 
         std::vector<std::thread> m_Threads;
 
         // Synchronization types
-        std::vector<std::unique_ptr<std::condition_variable>> m_CVs;
-        std::vector<std::unique_ptr<std::mutex>> m_CVsMutex;
+        std::array<std::unique_ptr<std::condition_variable>, MaxThreads> m_CVs;
+        std::array<std::unique_ptr<std::mutex>, MaxThreads> m_CVsMutex;
 
         /// Indicates which index does the current thread have
         inline static thread_local ThreadAffinity m_Index = InvalidThreadIndex;
