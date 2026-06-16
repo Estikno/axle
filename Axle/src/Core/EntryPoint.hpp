@@ -7,7 +7,7 @@
 #include "Logger/Log.hpp"
 #include "Core/Input/InputManager.hpp"
 #include "Core/Resource/ResourceManager.hpp"
-#include "Core/Job/JobSystem.hpp"
+#include <CoroWeaver.hpp>
 
 #ifdef AX_PLATFORM_WINDOWS
 
@@ -25,14 +25,14 @@ int main(int argc, char** argv) {
     Axle::EventHandler::Init();
     Axle::InputManager::Init();
     Axle::ResourceManager::Init();
-    Axle::JobSystem::Init(3);
+    cw::JobSystem::Init(2);
 
     // Main application loop
     Axle::Application* app = Axle::CreateApplication();
     app->Run();
     delete app;
 
-    Axle::JobSystem::Shutdown();
+    cw::JobSystem::Shutdown();
     Axle::ResourceManager::ShutDown();
     Axle::InputManager::ShutDown();
     Axle::EventHandler::ShutDown();
@@ -59,14 +59,14 @@ int main(int argc, char** argv) {
     Axle::EventHandler::Init();
     Axle::InputManager::Init();
     Axle::ResourceManager::Init();
-    Axle::JobSystem::Init(3);
+    cw::JobSystem::Init(2);
 
     // Main application loop
     Axle::Application* app = Axle::CreateApplication();
     app->Run();
     delete app;
 
-    Axle::JobSystem::Shutdown();
+    cw::JobSystem::Shutdown();
     Axle::ResourceManager::ShutDown();
     Axle::InputManager::ShutDown();
     Axle::EventHandler::ShutDown();

@@ -159,7 +159,7 @@ namespace Axle {
 
     // Basic info for detecting multiple taps for a specific key/button
     struct TapInfo {
-        // NOTE: Consider changing this to a double to mitigate presicion issues over a long period
+        // NOTE: Consider changing this to a double to mitigate precision issues over a long period
         f32 last = 0.0f; // Last press down event, in seconds
         u8 count = 0;    // Stores the ammount of taps currently recorded
     };

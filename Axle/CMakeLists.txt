@@ -15,6 +15,7 @@ set(INC_DOCTEST "${VENDOR}/doctest/doctest")
 set(INC_MIO     "${VENDOR}/mio/include")
 set(INC_ENTT    "${VENDOR}/entt/single_include")
 set(INC_CONCURRENTQUEUE    "${VENDOR}/concurrentqueue")
+set(INC_COROWEAVER         "${VENDOR}/CoroWeaver")
 
 # Make these available to Sandbox and Tests via a cached variable
 set(AXLE_VENDOR_INCLUDES
@@ -128,6 +129,7 @@ target_include_directories(Axle
         "${INC_FLATBUFFERS}"
         "${CMAKE_BINARY_DIR}/generated"
         "${INC_CONCURRENTQUEUE}"
+        "${INC_COROWEAVER}"
 )
 
 target_compile_definitions(Axle
