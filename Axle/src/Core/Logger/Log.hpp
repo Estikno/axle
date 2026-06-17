@@ -3,9 +3,16 @@
 #include "axpch.hpp"
 
 #include "../Core.hpp"
+#include "../Types.hpp"
 #include "spdlog/spdlog.h"
 
 namespace Axle {
+    /// Defines how verbose should the logger be. Each higher level includes all the previous ones
+    enum class LogVerbosity { Critical = 0, Error, Warn, Info, All };
+
+    /// Contains a list to all avaiblable channels.
+    enum class LogChannels { Core = 0, Events, Input, Resources, Window };
+
     class AXLE_API Log {
     public:
         Log() {};
@@ -52,6 +59,13 @@ namespace Axle {
         static std::shared_ptr<spdlog::logger> s_CoreLogger;
         /// Client logger singleton
         static std::shared_ptr<spdlog::logger> s_ClientLogger;
+
+        /// Controls how verbose is the logger
+        LogVerbosity m_Verbosity = LogVerbosity::All;
+
+        /// Marks channels are enabled
+        /// TODO: Make it so that there might be more than 64 channels
+        std::atomic<u64> m_EnabledChannels = std::numeric_limits<u64>::max();
     };
 } // namespace Axle
 
