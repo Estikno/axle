@@ -4,6 +4,9 @@
 
 #include "../Core.hpp"
 #include "../Types.hpp"
+#include "spdlog/common.h"
+#include "spdlog/logger.h"
+#include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
 
 namespace Axle {
@@ -11,7 +14,14 @@ namespace Axle {
     enum class LogVerbosity { Critical = 0, Error, Warn, Info, All };
 
     /// Contains a list to all avaiblable channels.
-    enum class LogChannels { Core = 0, Events, Input, Resources, Window };
+    enum class LogChannel { Core = 0, Events, Input, Resources, Window, MaxChannels };
+
+    /// Human-readable names — index must match LogChannel order
+    inline constexpr std::string_view CHANNEL_NAMES[] = {"Core", "Events", "Input", "Resources", "Window"};
+
+    inline constexpr std::string_view ChannelName(LogChannel ch) {
+        return CHANNEL_NAMES[static_cast<u8>(ch)];
+    }
 
     class AXLE_API Log {
     public:
@@ -35,13 +45,24 @@ namespace Axle {
         static void ShutDown();
 
         /**
+         * Gets the Logger singleton
+         *
+         * The manager has to have already been initilized before getting the instance.
+         *
+         * @returns Returns a reference to the Event Handler
+         */
+        inline static Log& GetInstance() noexcept {
+            return *s_Instance;
+        }
+
+        /**
          * Gets the core logger singleton
          * This function should only be used by the macro
          *
          * @returns Returns a reference to the Core logger
          */
-        inline static std::shared_ptr<spdlog::logger>& GetCoreLogger() {
-            return s_CoreLogger;
+        inline std::shared_ptr<spdlog::logger>& GetCoreLogger(LogChannel channel) {
+            return m_ChannelLoggers[static_cast<u8>(channel)];
         }
 
         /**
@@ -50,18 +71,54 @@ namespace Axle {
          *
          * @returns Returns a reference to the client logger
          */
-        inline static std::shared_ptr<spdlog::logger>& GetClientLogger() {
-            return s_ClientLogger;
+        inline std::shared_ptr<spdlog::logger>& GetClientLogger(LogChannel channel) {
+            return m_ChannelLoggers[static_cast<u8>(channel)];
+        }
+
+        void SetVerbosity(LogVerbosity verbosity) {
+            for (u8 i = 0; i < static_cast<u8>(LogChannel::MaxChannels); ++i) {
+                m_ChannelLoggers[i]->set_level(ToSpdlogLevel(verbosity));
+            }
+        }
+
+        void EnableChannel(LogChannel channel) {
+            m_ChannelLoggers[static_cast<u8>(channel)]->set_level(spdlog::level::trace);
+        }
+
+        void DisableChannels(LogChannel channel) {
+            m_ChannelLoggers[static_cast<u8>(channel)]->set_level(spdlog::level::off);
         }
 
     private:
-        /// Core logger singleton
-        static std::shared_ptr<spdlog::logger> s_CoreLogger;
-        /// Client logger singleton
-        static std::shared_ptr<spdlog::logger> s_ClientLogger;
+        /// Maps LogVerbosity to spdlog level
+        inline spdlog::level::level_enum ToSpdlogLevel(LogVerbosity v) {
+            switch (v) {
+                case LogVerbosity::Critical:
+                    return spdlog::level::critical;
+                case LogVerbosity::Error:
+                    return spdlog::level::err;
+                case LogVerbosity::Warn:
+                    return spdlog::level::warn;
+                case LogVerbosity::Info:
+                    return spdlog::level::info;
+                case LogVerbosity::All:
+                    return spdlog::level::trace;
+            }
+            return spdlog::level::trace;
+        }
 
-        /// Controls how verbose is the logger
-        LogVerbosity m_Verbosity = LogVerbosity::All;
+        static std::unique_ptr<Log> s_Instance;
+
+        // Sinks
+        std::shared_ptr<spdlog::sinks::stdout_color_sink_mt> m_ConsoleSink;
+
+        // Loggers
+        std::array<std::shared_ptr<spdlog::logger>, static_cast<u8>(LogChannel::MaxChannels)> m_ChannelLoggers;
+
+        /// Core logger singleton
+        // std::shared_ptr<spdlog::logger> m_CoreLogger;
+        /// Client logger singleton
+        // std::shared_ptr<spdlog::logger> m_ClientLogger;
 
         /// Marks channels are enabled
         /// TODO: Make it so that there might be more than 64 channels
@@ -70,15 +127,15 @@ namespace Axle {
 } // namespace Axle
 
 // Core log macros
-#define AX_CORE_TRACE(...) ::Axle::Log::GetCoreLogger()->trace(__VA_ARGS__)
-#define AX_CORE_INFO(...) ::Axle::Log::GetCoreLogger()->info(__VA_ARGS__)
-#define AX_CORE_WARN(...) ::Axle::Log::GetCoreLogger()->warn(__VA_ARGS__)
-#define AX_CORE_ERROR(...) ::Axle::Log::GetCoreLogger()->error(__VA_ARGS__)
-#define AX_CORE_CRITICAL(...) ::Axle::Log::GetCoreLogger()->critical(__VA_ARGS__)
+#define AX_CORE_TRACE(channel, ...) ::Axle::Log::GetInstance().GetCoreLogger(channel)->trace(__VA_ARGS__)
+#define AX_CORE_INFO(channel, ...) ::Axle::Log::GetInstance().GetCoreLogger(channel)->info(__VA_ARGS__)
+#define AX_CORE_WARN(channel, ...) ::Axle::Log::GetInstance().GetCoreLogger(channel)->warn(__VA_ARGS__)
+#define AX_CORE_ERROR(channel, ...) ::Axle::Log::GetInstance().GetCoreLogger(channel)->error(__VA_ARGS__)
+#define AX_CORE_CRITICAL(channel, ...) ::Axle::Log::GetInstance().GetCoreLogger(channel)->critical(__VA_ARGS__)
 
 // Client log macros
-#define AX_TRACE(...) ::Axle::Log::GetClientLogger()->trace(__VA_ARGS__)
-#define AX_INFO(...) ::Axle::Log::GetClientLogger()->info(__VA_ARGS__)
-#define AX_WARN(...) ::Axle::Log::GetClientLogger()->warn(__VA_ARGS__)
-#define AX_ERROR(...) ::Axle::Log::GetClientLogger()->error(__VA_ARGS__)
-#define AX_CRITICAL(...) ::Axle::Log::GetClientLogger()->critical(__VA_ARGS__)
+#define AX_TRACE(channel, ...) ::Axle::Log::GetInstance().GetClientLogger(channel)->trace(__VA_ARGS__)
+#define AX_INFO(channel, ...) ::Axle::Log::GetInstance().GetClientLogger(channel)->info(__VA_ARGS__)
+#define AX_WARN(channel, ...) ::Axle::Log::GetInstance().GetClientLogger(channel)->warn(__VA_ARGS__)
+#define AX_ERROR(channel, ...) ::Axle::Log::GetInstance().GetClientLogger(channel)->error(__VA_ARGS__)
+#define AX_CRITICAL(channel, ...) ::Axle::Log::GetInstance().GetClientLogger(channel)->critical(__VA_ARGS__)
