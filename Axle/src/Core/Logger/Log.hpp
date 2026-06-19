@@ -26,12 +26,20 @@ namespace Axle {
         return CHANNEL_NAMES[static_cast<u8>(ch)];
     }
 
-    inline LogVerbosity FromStr(const std::string& name) {
+    inline LogVerbosity VerbosityFromStr(const std::string& name) {
         auto it = std::find(std::begin(VERBOSITY_NAMES), std::end(VERBOSITY_NAMES), name);
         if (it != std::end(VERBOSITY_NAMES))
             return static_cast<LogVerbosity>(std::distance(std::begin(VERBOSITY_NAMES), it));
 
         return LogVerbosity::All;
+    }
+
+    inline LogChannel ChannelFromStr(const std::string& name) {
+        auto it = std::find(std::begin(CHANNEL_NAMES), std::end(CHANNEL_NAMES), name);
+        if (it != std::end(CHANNEL_NAMES))
+            return static_cast<LogChannel>(std::distance(std::begin(CHANNEL_NAMES), it));
+
+        return LogChannel::Core;
     }
 
     class AXLE_API Log {
