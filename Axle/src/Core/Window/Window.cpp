@@ -15,7 +15,7 @@ namespace Axle {
     static u8 active_windows = 0;
 
     static void ErrorCallback(int error, const char* description) {
-        AX_CORE_ERROR("GLFW Error ({0}): {1}", error, description);
+        AX_CORE_ERROR(LogChannel::Window, "GLFW Error ({0}): {1}", error, description);
     }
 
     Window* Window::Create(const WindowProps& props) {
@@ -27,11 +27,12 @@ namespace Axle {
         m_Data.Width = props.Width;
         m_Data.Height = props.Height;
 
-        AX_CORE_INFO("Creating window with title: {0} ({1}, {2})", props.Title, props.Width, props.Height);
+        AX_CORE_INFO(
+            LogChannel::Window, "Creating window with title: {0} ({1}, {2})", props.Title, props.Width, props.Height);
 
         if (!s_IsGlfwInitialized) {
             i32 success = glfwInit();
-            AX_ASSERT(success, "Could not initialize GLFW!");
+            AX_ASSERT(success, LogChannel::Window, "Could not initialize GLFW!");
 
             // Define openGL version (4.6 Core)
             glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -44,7 +45,7 @@ namespace Axle {
 
         // Creating the actual window with GLFW
         m_Window = glfwCreateWindow((int) props.Width, (int) props.Height, props.Title.c_str(), nullptr, nullptr);
-        AX_ASSERT(m_Window, "Failed to create GLFW window!");
+        AX_ASSERT(m_Window, LogChannel::Window, "Failed to create GLFW window!");
 
         ++active_windows;
 
@@ -52,10 +53,11 @@ namespace Axle {
 
         // Initialize Glad
         int version = gladLoaderLoadGL();
-        AX_ASSERT(version != 0, "Failed to initialize Glad!");
+        AX_ASSERT(version != 0, LogChannel::Window, "Failed to initialize Glad!");
         glViewport(0, 0, props.Width, props.Height);
 
-        AX_CORE_INFO("Loaded OpenGL {0}.{1}", GLAD_VERSION_MAJOR(version), GLAD_VERSION_MINOR(version));
+        AX_CORE_INFO(
+            LogChannel::Window, "Loaded OpenGL {0}.{1}", GLAD_VERSION_MAJOR(version), GLAD_VERSION_MINOR(version));
 
         // Set a way to retrieve the window data from the GLFW window easily
         glfwSetWindowUserPointer(m_Window, &m_Data);
@@ -83,7 +85,7 @@ namespace Axle {
         if (active_windows == 0) {
             glfwTerminate();
             s_IsGlfwInitialized = false;
-            AX_CORE_INFO("GLFW terminated successfully.");
+            AX_CORE_INFO(LogChannel::Window, "GLFW terminated successfully.");
         }
     }
 

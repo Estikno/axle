@@ -19,7 +19,7 @@ namespace Axle {
 
     void WindowSizeCallback(GLFWwindow* window, int width, int height) {
         if (width == 0 || height == 0) {
-            AX_CORE_WARN("Window minimized or has zero size!");
+            AX_CORE_WARN(LogChannel::Window, "Window minimized or has zero size!");
             return;
         }
 
@@ -29,7 +29,7 @@ namespace Axle {
         data->Height = static_cast<u32>(height);
 
         // Log the new window size
-        AX_CORE_TRACE("Window resized to: {0}x{1}", width, height);
+        AX_CORE_TRACE(LogChannel::Window, "Window resized to: {0}x{1}", width, height);
 
         // Send the event at the end to notify
         WindowResizeEvent event(static_cast<u32>(width), static_cast<u32>(height));

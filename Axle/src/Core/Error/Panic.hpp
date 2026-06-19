@@ -54,11 +54,14 @@ namespace Axle {
     }
 } // namespace Axle
 
+// TODO: Make a specific AX_CORE_PANIC so that when clients use AX_PANIC they dont have to set the channel as it will be
+// LogChannel::Client
+
 // Macros for easier error handling
-#define AX_PANIC(...)               \
-    do {                            \
-        AX_CORE_ERROR(__VA_ARGS__); \
-        ::Axle::Panic(__VA_ARGS__); \
+#define AX_PANIC(channel, ...)               \
+    do {                                     \
+        AX_CORE_ERROR(channel, __VA_ARGS__); \
+        ::Axle::Panic(__VA_ARGS__);          \
     } while (0)
 
 #define AX_ENSURE(condition, ...)  \

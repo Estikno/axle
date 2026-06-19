@@ -1,5 +1,6 @@
 #include <glad/gl.h>
 #include <Axle.hpp>
+#include "Core/Logger/Log.hpp"
 
 using namespace Axle;
 
@@ -41,7 +42,7 @@ public:
         glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
         if (!success) {
             glGetShaderInfoLog(vertexShader, 512, nullptr, infoLog);
-            AX_PANIC("ERROR::SHADER::VERTEX::COMPILATION_FAILED: {0}", infoLog);
+            AX_PANIC(LogChannel::Client, "ERROR::SHADER::VERTEX::COMPILATION_FAILED: {0}", infoLog);
         }
 
         // Compile fragment shader
@@ -52,7 +53,7 @@ public:
         glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
         if (!success) {
             glGetShaderInfoLog(fragmentShader, 512, nullptr, infoLog);
-            AX_PANIC("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED: {0}", infoLog);
+            AX_PANIC(LogChannel::Client, "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED: {0}", infoLog);
         }
 
         // Create the shader program
@@ -64,7 +65,7 @@ public:
         glGetProgramiv(program, GL_LINK_STATUS, &success);
         if (!success) {
             glGetProgramInfoLog(program, 512, nullptr, infoLog);
-            AX_PANIC("ERROR::SHADER::PROGRAM::LINK_FAILED: {0}", infoLog);
+            AX_PANIC(LogChannel::Client, "ERROR::SHADER::PROGRAM::LINK_FAILED: {0}", infoLog);
         }
 
         glUseProgram(program);

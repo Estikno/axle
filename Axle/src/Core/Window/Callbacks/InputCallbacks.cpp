@@ -18,12 +18,12 @@ namespace Axle {
         Keys key_enum = static_cast<Keys>(key);
 
         if (key == GLFW_KEY_UNKNOWN) {
-            AX_CORE_WARN("Unknown key pressed: {0}", key);
+            AX_CORE_WARN(LogChannel::Input, "Unknown key pressed: {0}", key);
             return;
         }
 
         if (action == GLFW_KEY_UNKNOWN) {
-            AX_CORE_WARN("Unknown action for key: {0}", key);
+            AX_CORE_WARN(LogChannel::Input, "Unknown action for key: {0}", key);
             return;
         }
 

@@ -32,6 +32,11 @@ namespace Axle::Debug {
             Commands.push_back("HISTORY");
             Commands.push_back("CLEAR");
             Commands.push_back("CLASSIFY");
+            Commands.push_back("ECHO");
+            Commands.push_back("SET_VERBOSITY");
+            Commands.push_back("ENABLE_CHANNEL");
+            Commands.push_back("DISABLE_CHANNEL");
+
             AutoScroll = true;
             ScrollToBottom = false;
             AddLog("Welcome to Dear ImGui!");
@@ -279,6 +284,28 @@ namespace Axle::Debug {
                 for (int i = first > 0 ? first : 0; i < History.Size; i++)
                     AddLog("%3d: %s\n", i, History[i]);
                 // Add more commands and their behavior here
+            } else if (Stricmp(tokens[0].c_str(), "ECHO") == 0) {
+                if (tokens.size() < 2) {
+                    AddLog("[error] ECHO requires an argument.");
+                } else {
+                    std::string msg;
+                    for (size_t i = 1; i < tokens.size(); ++i) {
+                        if (i > 1)
+                            msg += ' ';
+                        msg += tokens[i];
+                    }
+                    AddLog("%s", msg.c_str());
+                    AX_CORE_TRACE(LogChannel::Debug, msg);
+                }
+            } else if (Stricmp(tokens[0].c_str(), "SET_VERBOSITY") == 0) {
+                if (tokens.size() < 2) {
+                    AddLog("[error] Usage: SET_VERBOSITY <verbosity>");
+                    AddLog("verbosity: Critical, Error, Warn, Info, All");
+                } else {
+                    const std::string& verbosityStr = tokens[1];
+                    LogVerbosity verbosity = FromStr(verbosityStr);
+                    Log::GetInstance().SetVerbosity(verbosity);
+                }
             } else {
                 AddLog("Unknown command: '%s'\n", command_line);
             }
@@ -290,7 +317,7 @@ namespace Axle::Debug {
         // In C++11 you'd be better off using lambdas for this sort of forwarding callbacks
         static int TextEditCallbackStub(ImGuiInputTextCallbackData* data) {
             DebugConsole* console = (DebugConsole*) data->UserData;
-            AX_CORE_ERROR("CALLBACK");
+            AX_CORE_ERROR(LogChannel::Debug, "CALLBACK");
             return console->TextEditCallback(data);
         }
 

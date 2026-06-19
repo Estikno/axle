@@ -15,18 +15,18 @@ namespace Axle {
 
     void InputManager::Init() {
         if (s_Instance != nullptr) {
-            AX_CORE_WARN("Init method of the Input Manager has been called a second time. IGNORING");
+            AX_CORE_WARN(LogChannel::Input, "Init method of the Input Manager has been called a second time. IGNORING");
             return;
         }
 
         s_Instance = std::make_unique<InputManager>();
 
-        AX_CORE_INFO("Input Manager initialized...");
+        AX_CORE_INFO(LogChannel::Input, "Input Manager initialized...");
     }
 
     void InputManager::ShutDown() {
         s_Instance.reset();
-        AX_CORE_INFO("Input Manager deleted...");
+        AX_CORE_INFO(LogChannel::Input, "Input Manager deleted...");
     }
 
     void InputManager::Update() {

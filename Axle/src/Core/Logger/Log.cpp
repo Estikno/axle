@@ -34,12 +34,6 @@ namespace Axle {
             s_Instance->m_ChannelLoggers[i]->set_level(spdlog::level::trace);
         }
 
-        // Creates two multithread safe loggers
-        // s_Instance->m_CoreLogger = spdlog::stdout_color_mt("AXLE");
-        // s_Instance->m_CoreLogger->set_level(spdlog::level::trace);
-        //
-        // s_Instance->m_ClientLogger = spdlog::stdout_color_mt("APP");
-        // s_Instance->m_ClientLogger->set_level(spdlog::level::trace);
 
         AX_CORE_INFO(LogChannel::Core, "Logger initialized...");
     }

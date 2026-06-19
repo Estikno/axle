@@ -23,7 +23,7 @@ namespace Axle {
     void ImGuiLayer::OnUpdate(f64 FixedDeltaTime) {}
 
     void ImGuiLayer::OnDettach() {
-        AX_CORE_INFO("{0} layer detached", m_DebugName);
+        AX_CORE_INFO(LogChannel::Debug, "{0} layer detached", m_DebugName);
         Layer::OnDettach();
     }
 

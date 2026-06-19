@@ -21,10 +21,10 @@ namespace Axle {
     Application* Application::s_Instance = nullptr;
 
     Application::Application() {
-        AX_CORE_INFO("Starting the engine...");
+        AX_CORE_INFO(LogChannel::Core, "Starting the engine...");
 
         if (s_Instance != nullptr) {
-            AX_PANIC("Application already exists!");
+            AX_PANIC(LogChannel::Core, "Application already exists!");
         }
 
         s_Instance = this;
@@ -35,21 +35,21 @@ namespace Axle {
     }
 
     Application::~Application() {
-        AX_CORE_INFO("Stopping the engine...");
+        AX_CORE_INFO(LogChannel::Core, "Stopping the engine...");
 
         // By deleting the layer stack, we also delete all layers and detach them
         delete m_LayerStack;
     }
 
     void Application::PushLayer(Layer* layer) {
-        AX_CORE_INFO("{0} layer attached", layer->GetName());
-        AX_ENSURE(!m_Running, "Cannot push layers after Run() has been called — not thread safe");
+        AX_CORE_INFO(LogChannel::Core, "{0} layer attached", layer->GetName());
+        AX_ENSURE(!m_Running, LogChannel::Core, "Cannot push layers after Run() has been called — not thread safe");
         m_LayerStack->PushLayer(layer);
     }
 
     void Application::PushOverlay(Layer* layer) {
-        AX_CORE_INFO("{0} overlay attached", layer->GetName());
-        AX_ENSURE(!m_Running, "Cannot push overlays after Run() has been called — not thread safe");
+        AX_CORE_INFO(LogChannel::Core, "{0} overlay attached", layer->GetName());
+        AX_ENSURE(!m_Running, LogChannel::Core, "Cannot push overlays after Run() has been called — not thread safe");
         m_LayerStack->PushOverlay(layer);
     }
 
@@ -70,7 +70,8 @@ namespace Axle {
     }
 
     void Application::Update() {
-        AX_CORE_INFO("Welcome from thread {0}", std::hash<std::thread::id>{}(std::this_thread::get_id()));
+        AX_CORE_INFO(
+            LogChannel::Core, "Welcome from thread {0}", std::hash<std::thread::id>{}(std::this_thread::get_id()));
 
         for (Layer* layer : *m_LayerStack)
             layer->OnAttach();
@@ -111,7 +112,8 @@ namespace Axle {
     }
 
     void Application::Render() {
-        AX_CORE_INFO("Welcome from thread {0}", std::hash<std::thread::id>{}(std::this_thread::get_id()));
+        AX_CORE_INFO(
+            LogChannel::Core, "Welcome from thread {0}", std::hash<std::thread::id>{}(std::this_thread::get_id()));
 
         // // Sets up imporant stuff
         // m_Window = std::unique_ptr<Window>(Window::Create());

@@ -13,14 +13,25 @@ namespace Axle {
     /// Defines how verbose should the logger be. Each higher level includes all the previous ones
     enum class LogVerbosity { Critical = 0, Error, Warn, Info, All };
 
+    inline constexpr std::string_view VERBOSITY_NAMES[] = {"Critical", "Error", "Warn", "Info", "All"};
+
     /// Contains a list to all avaiblable channels.
-    enum class LogChannel { Core = 0, Events, Input, Resources, Window, MaxChannels };
+    enum class LogChannel { Core = 0, Client, Events, Input, Resources, Window, Debug, Other, MaxChannels };
 
     /// Human-readable names — index must match LogChannel order
-    inline constexpr std::string_view CHANNEL_NAMES[] = {"Core", "Events", "Input", "Resources", "Window"};
+    inline constexpr std::string_view CHANNEL_NAMES[] =
+        {"Core", "Client", "Events", "Input", "Resources", "Window", "Debug", "Other"};
 
     inline constexpr std::string_view ChannelName(LogChannel ch) {
         return CHANNEL_NAMES[static_cast<u8>(ch)];
+    }
+
+    inline LogVerbosity FromStr(const std::string& name) {
+        auto it = std::find(std::begin(VERBOSITY_NAMES), std::end(VERBOSITY_NAMES), name);
+        if (it != std::end(VERBOSITY_NAMES))
+            return static_cast<LogVerbosity>(std::distance(std::begin(VERBOSITY_NAMES), it));
+
+        return LogVerbosity::All;
     }
 
     class AXLE_API Log {
@@ -60,6 +71,8 @@ namespace Axle {
          * This function should only be used by the macro
          *
          * @returns Returns a reference to the Core logger
+         *
+         * Thread safe
          */
         inline std::shared_ptr<spdlog::logger>& GetCoreLogger(LogChannel channel) {
             return m_ChannelLoggers[static_cast<u8>(channel)];
@@ -70,22 +83,48 @@ namespace Axle {
          * This function should only be used by the macro
          *
          * @returns Returns a reference to the client logger
+         *
+         * Thread safe
          */
-        inline std::shared_ptr<spdlog::logger>& GetClientLogger(LogChannel channel) {
-            return m_ChannelLoggers[static_cast<u8>(channel)];
+        inline std::shared_ptr<spdlog::logger>& GetClientLogger() {
+            return m_ChannelLoggers[static_cast<u8>(LogChannel::Client)];
         }
 
+        /**
+         * Sets the global verbosity
+         *
+         * @param verbosity The desired verbosity
+         *
+         * Thread safe
+         * */
         void SetVerbosity(LogVerbosity verbosity) {
+            m_Verbosity.store(verbosity, std::memory_order_release);
             for (u8 i = 0; i < static_cast<u8>(LogChannel::MaxChannels); ++i) {
                 m_ChannelLoggers[i]->set_level(ToSpdlogLevel(verbosity));
             }
         }
 
+        /**
+         * Enables the specified channel
+         *
+         * @param channel The channel to enable
+         *
+         * Thread safe
+         * */
         void EnableChannel(LogChannel channel) {
-            m_ChannelLoggers[static_cast<u8>(channel)]->set_level(spdlog::level::trace);
+            // Set channel to current verbosity
+            m_ChannelLoggers[static_cast<u8>(channel)]->set_level(
+                ToSpdlogLevel(m_Verbosity.load(std::memory_order_acquire)));
         }
 
-        void DisableChannels(LogChannel channel) {
+        /**
+         * Disables the specified channel
+         *
+         * @param channel The channel to disable
+         *
+         * Thread safe
+         * */
+        void DisableChannel(LogChannel channel) {
             m_ChannelLoggers[static_cast<u8>(channel)]->set_level(spdlog::level::off);
         }
 
@@ -115,14 +154,8 @@ namespace Axle {
         // Loggers
         std::array<std::shared_ptr<spdlog::logger>, static_cast<u8>(LogChannel::MaxChannels)> m_ChannelLoggers;
 
-        /// Core logger singleton
-        // std::shared_ptr<spdlog::logger> m_CoreLogger;
-        /// Client logger singleton
-        // std::shared_ptr<spdlog::logger> m_ClientLogger;
-
-        /// Marks channels are enabled
-        /// TODO: Make it so that there might be more than 64 channels
-        std::atomic<u64> m_EnabledChannels = std::numeric_limits<u64>::max();
+        std::atomic<LogVerbosity> m_Verbosity{LogVerbosity::All};
+        static_assert(std::atomic<LogVerbosity>::is_always_lock_free, "LogVerbosity is not lock free");
     };
 } // namespace Axle
 
@@ -134,8 +167,8 @@ namespace Axle {
 #define AX_CORE_CRITICAL(channel, ...) ::Axle::Log::GetInstance().GetCoreLogger(channel)->critical(__VA_ARGS__)
 
 // Client log macros
-#define AX_TRACE(channel, ...) ::Axle::Log::GetInstance().GetClientLogger(channel)->trace(__VA_ARGS__)
-#define AX_INFO(channel, ...) ::Axle::Log::GetInstance().GetClientLogger(channel)->info(__VA_ARGS__)
-#define AX_WARN(channel, ...) ::Axle::Log::GetInstance().GetClientLogger(channel)->warn(__VA_ARGS__)
-#define AX_ERROR(channel, ...) ::Axle::Log::GetInstance().GetClientLogger(channel)->error(__VA_ARGS__)
-#define AX_CRITICAL(channel, ...) ::Axle::Log::GetInstance().GetClientLogger(channel)->critical(__VA_ARGS__)
+#define AX_TRACE(...) ::Axle::Log::GetInstance().GetClientLogger()->trace(__VA_ARGS__)
+#define AX_INFO(...) ::Axle::Log::GetInstance().GetClientLogger()->info(__VA_ARGS__)
+#define AX_WARN(...) ::Axle::Log::GetInstance().GetClientLogger()->warn(__VA_ARGS__)
+#define AX_ERROR(...) ::Axle::Log::GetInstance().GetClientLogger()->error(__VA_ARGS__)
+#define AX_CRITICAL(...) ::Axle::Log::GetInstance().GetClientLogger()->critical(__VA_ARGS__)

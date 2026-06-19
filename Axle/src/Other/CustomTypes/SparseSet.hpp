@@ -45,7 +45,7 @@ namespace Axle {
             // AX_ASSERT(id < m_Sparse.size(), "Index {0} is out of bounds for SparseSet with size {1}.", id, N);
             static_assert(std::is_same_v<T, std::decay_t<U>>,
                           "Trying to add a component of incorrect type to SparseSet");
-            AX_ENSURE(!Has(id), "Can't add an element that already exists.");
+            AX_ENSURE(!Has(id), LogChannel::Other, "SparseSet: Can't add an element that already exists.");
 
             if (id >= m_Sparse.size()) {
                 m_Sparse.resize(id + 1, InvalidIndex);
@@ -152,8 +152,11 @@ namespace Axle {
          * @returns A raw pointer to the specified element
          */
         void* GetRaw(size_t id) override {
-            AX_ASSERT(
-                Has(id), "Trying to retrieve a non-existent element of type: {0} from index {1}", typeid(T).name(), id);
+            AX_ASSERT(Has(id),
+                      LogChannel::Other,
+                      "SparseSet: Trying to retrieve a non-existent element of type: {0} from index {1}",
+                      typeid(T).name(),
+                      id);
 
             return static_cast<void*>(&Get(id).Unwrap().get());
         }
@@ -172,11 +175,19 @@ namespace Axle {
 
     template <typename T>
     void SparseSet<T>::Remove(size_t id) {
-        AX_ASSERT(id < m_Sparse.size(), "Index {0} is out of bounds in the SparseSet", id);
-        AX_ENSURE(Has(id), "Trying to remove a non-existent element of type {0} from index {1}", typeid(T).name(), id);
+        AX_ASSERT(
+            id < m_Sparse.size(), LogChannel::Other, "SparseSet: Index {0} is out of bounds in the SparseSet", id);
+        AX_ENSURE(Has(id),
+                  LogChannel::Other,
+                  "SparseSet: Trying to remove a non-existent element of type {0} from index {1}",
+                  typeid(T).name(),
+                  id);
 
         if (id >= m_Sparse.size()) {
-            AX_CORE_WARN("Trying to remove element {0} from an out of bounce index {1}", typeid(T).name(), id);
+            AX_CORE_WARN(LogChannel::Other,
+                         "SparseSet: Trying to remove element {0} from an out of bounce index {1}",
+                         typeid(T).name(),
+                         id);
             return;
         }
 
@@ -201,8 +212,11 @@ namespace Axle {
 
     template <typename T>
     Expected<std::reference_wrapper<T>> SparseSet<T>::Get(size_t id) {
-        AX_ASSERT(
-            Has(id), "Trying to retrieve a non-existent element of type: {0} from index {1}", typeid(T).name(), id);
+        AX_ASSERT(Has(id),
+                  LogChannel::Other,
+                  "SparseSet: Trying to retrieve a non-existent element of type: {0} from index {1}",
+                  typeid(T).name(),
+                  id);
 
         if (!Has(id)) {
             return Expected<std::reference_wrapper<T>>::FromException(std::invalid_argument(
@@ -215,8 +229,11 @@ namespace Axle {
 
     template <typename T>
     Expected<std::reference_wrapper<const T>> SparseSet<T>::Get(size_t id) const {
-        AX_ASSERT(
-            Has(id), "Trying to retrieve a non-existent element of type: {0} from index {1}", typeid(T).name(), id);
+        AX_ASSERT(Has(id),
+                  LogChannel::Other,
+                  "SparseSet: Trying to retrieve a non-existent element of type: {0} from index {1}",
+                  typeid(T).name(),
+                  id);
 
         if (!Has(id)) {
             return Expected<std::reference_wrapper<const T>>::FromException(std::invalid_argument(

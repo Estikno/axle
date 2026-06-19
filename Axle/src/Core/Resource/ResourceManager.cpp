@@ -14,13 +14,14 @@ namespace Axle {
 
     void ResourceManager::Init() {
         if (s_ResourceManager != nullptr) {
-            AX_CORE_WARN("Init method of the Resource Manager has been called a second time. IGNORING");
+            AX_CORE_WARN(LogChannel::Resources,
+                         "Init method of the Resource Manager has been called a second time. IGNORING");
             return;
         }
 
         s_ResourceManager = std::make_unique<ResourceManager>();
 
-        AX_CORE_INFO("Resource Manager initialized...");
+        AX_CORE_INFO(LogChannel::Resources, "Resource Manager initialized...");
     }
 
     void ResourceManager::ShutDown() {
@@ -41,25 +42,25 @@ namespace Axle {
                     mmap.sync(error);
 
                     if (error) {
-                        AX_CORE_ERROR("Error flushing a file to disk: {0}", error.message());
+                        AX_CORE_ERROR(LogChannel::Resources, "Error flushing a file to disk: {0}", error.message());
                     }
 
                     mmap.unmap();
                 }
 
-                AX_CORE_TRACE("Closed file: {0}", resource.path.string());
+                AX_CORE_TRACE(LogChannel::Resources, "Closed file: {0}", resource.path.string());
                 s_ResourceManager->m_Resources.Remove(AvailableFilesIdx[i]);
             }
         }
 
         s_ResourceManager.reset();
-        AX_CORE_INFO("Resource Manager deleted...");
+        AX_CORE_INFO(LogChannel::Resources, "Resource Manager deleted...");
     }
 
     Expected<ResourceManager::ManagedFileHandle> ResourceManager::Load(const std::filesystem::path& path,
                                                                        bool readOnly) {
         if (!DoesFileExist(path)) {
-            AX_CORE_ERROR("Trying to load a non-existing file: {0}", path.string());
+            AX_CORE_ERROR(LogChannel::Resources, "Trying to load a non-existing file: {0}", path.string());
             return Expected<ResourceManager::ManagedFileHandle>::FromException(
                 std::invalid_argument("Trying to load a non-existing file."));
         }
@@ -92,7 +93,7 @@ namespace Axle {
 
 
         if (error) {
-            AX_CORE_ERROR("There has been an error trying to read a file: {0}", error.message());
+            AX_CORE_ERROR(LogChannel::Resources, "There has been an error trying to read a file: {0}", error.message());
             return Expected<ResourceManager::ManagedFileHandle>::FromException(std::runtime_error(error.message()));
         }
 
@@ -113,7 +114,7 @@ namespace Axle {
                                  .m_Mutex = std::make_unique<std::shared_mutex>(),
                                  .m_RefCount = {1}});
 
-        AX_CORE_TRACE("Loaded file: {0}", path.string());
+        AX_CORE_TRACE(LogChannel::Resources, "Loaded file: {0}", path.string());
 
         return ResourceManager::ManagedFileHandle(h);
     }
@@ -135,7 +136,7 @@ namespace Axle {
 
     bool ResourceManager::CloseUnsafe(FileHandle handle) {
         if (!IsHandleValidUnsafe(handle)) {
-            AX_CORE_ERROR("Trying to close a file with an invalid handle");
+            AX_CORE_ERROR(LogChannel::Resources, "Trying to close a file with an invalid handle");
             return false;
         }
 
@@ -149,7 +150,7 @@ namespace Axle {
         else
             std::get<mio::mmap_sink>(resource.mmap).unmap();
 
-        AX_CORE_TRACE("Closed file: {0}", resource.path.string());
+        AX_CORE_TRACE(LogChannel::Resources, "Closed file: {0}", resource.path.string());
         m_Resources.Remove(GetIndexFromHandle(handle));
 
         // The index is now free
@@ -170,7 +171,7 @@ namespace Axle {
 
     bool ResourceManager::SyncUnsafe(FileHandle handle) {
         if (!IsHandleValidUnsafe(handle)) {
-            AX_CORE_ERROR("Trying to access a file with an invalid handle");
+            AX_CORE_ERROR(LogChannel::Resources, "Trying to access a file with an invalid handle");
             return false;
         }
 
@@ -184,11 +185,11 @@ namespace Axle {
         std::get<mio::mmap_sink>(resource.mmap).sync(error);
 
         if (error) {
-            AX_CORE_ERROR("Error flushing a file to disk: {0}", error.message());
+            AX_CORE_ERROR(LogChannel::Resources, "Error flushing a file to disk: {0}", error.message());
             return false;
         }
 
-        AX_CORE_TRACE("Flushed changes to disk from file: {0}", resource.path.string());
+        AX_CORE_TRACE(LogChannel::Resources, "Flushed changes to disk from file: {0}", resource.path.string());
         return true;
     }
 
@@ -200,7 +201,7 @@ namespace Axle {
         std::unique_lock lock(m_Mutex);
 
         if (!IsHandleValidUnsafe(handle)) {
-            AX_CORE_ERROR("Trying to access a file with an invalid handle");
+            AX_CORE_ERROR(LogChannel::Resources, "Trying to access a file with an invalid handle");
             return Expected<ResourceManager::WriteGuard>::FromException(
                 std::invalid_argument("Trying to access a file with an invalid handle"));
         }
@@ -208,7 +209,7 @@ namespace Axle {
         Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
 
         if (std::holds_alternative<mio::mmap_source>(resource.mmap)) {
-            AX_CORE_ERROR("Trying to get a mutable pointer to a read-only resource.");
+            AX_CORE_ERROR(LogChannel::Resources, "Trying to get a mutable pointer to a read-only resource.");
             return Expected<ResourceManager::WriteGuard>::FromException(
                 std::invalid_argument("Trying to get a mutable pointer to a read-only resource"));
         }
@@ -226,7 +227,7 @@ namespace Axle {
         std::shared_lock lock(m_Mutex);
 
         if (!IsHandleValidUnsafe(handle)) {
-            AX_CORE_ERROR("Trying to access a file with an invalid handle");
+            AX_CORE_ERROR(LogChannel::Resources, "Trying to access a file with an invalid handle");
             return Expected<ResourceManager::ReadGuard>::FromException(
                 std::invalid_argument("Trying to access a file with an invalid handle"));
         }
@@ -250,7 +251,7 @@ namespace Axle {
         std::shared_lock lock(m_Mutex);
 
         if (!IsHandleValidUnsafe(handle)) {
-            AX_CORE_ERROR("Trying to access a resource with an invalid handle");
+            AX_CORE_ERROR(LogChannel::Resources, "Trying to access a resource with an invalid handle");
             return Expected<u64>::FromException(
                 std::invalid_argument("Trying to access a resource with an invalid handle"));
         }
@@ -265,14 +266,14 @@ namespace Axle {
 
     bool ResourceManager::Create(const std::filesystem::path& path, u64 size) {
         if (DoesFileExist(path)) {
-            AX_CORE_ERROR("Trying to create a new file that already exists: {0}", path.string());
+            AX_CORE_ERROR(LogChannel::Resources, "Trying to create a new file that already exists: {0}", path.string());
             return false;
         }
 
         std::ofstream file(path, std::ios::binary);
 
         if (!file.is_open()) {
-            AX_ERROR("Failed to create file: {0}", path.string());
+            AX_CORE_ERROR(LogChannel::Resources, "Failed to create file: {0}", path.string());
             return false;
         }
         file.close();
@@ -282,11 +283,12 @@ namespace Axle {
         std::filesystem::resize_file(path, size, ec);
 
         if (ec) {
-            AX_CORE_ERROR("Failed to resize the file: {0} with error: {1}", path.string(), ec.message());
+            AX_CORE_ERROR(
+                LogChannel::Resources, "Failed to resize the file: {0} with error: {1}", path.string(), ec.message());
             return false;
         }
 
-        AX_CORE_TRACE("Created file: {0}, with size: {1}", path.string(), size);
+        AX_CORE_TRACE(LogChannel::Resources, "Created file: {0}, with size: {1}", path.string(), size);
 
         return true;
     }
@@ -299,7 +301,7 @@ namespace Axle {
         std::shared_lock lock(m_Mutex);
 
         if (!IsHandleValidUnsafe(handle)) {
-            AX_CORE_ERROR("Trying to access a resource with an invalid handle");
+            AX_CORE_ERROR(LogChannel::Resources, "Trying to access a resource with an invalid handle");
             return Expected<bool>::FromException(
                 std::invalid_argument("Trying to access a resource with an invalid handle"));
         }
@@ -317,7 +319,7 @@ namespace Axle {
         std::shared_lock lock(m_Mutex);
 
         if (!IsHandleValidUnsafe(handle)) {
-            AX_CORE_ERROR("Trying to access a resource with an invalid handle");
+            AX_CORE_ERROR(LogChannel::Resources, "Trying to access a resource with an invalid handle");
             return Expected<std::filesystem::path>::FromException(
                 std::invalid_argument("Trying to access a resource with an invalid handle"));
         }
@@ -340,7 +342,7 @@ namespace Axle {
         std::shared_lock lock(m_Mutex);
 
         if (!IsHandleValidUnsafe(handle)) {
-            AX_CORE_ERROR("Trying to access a resource with an invalid handle");
+            AX_CORE_ERROR(LogChannel::Resources, "Trying to access a resource with an invalid handle");
             return false;
         }
 
@@ -356,7 +358,7 @@ namespace Axle {
             std::shared_lock lock(m_Mutex);
 
             if (!IsHandleValidUnsafe(handle)) {
-                AX_CORE_ERROR("Trying to access a resource with an invalid handle");
+                AX_CORE_ERROR(LogChannel::Resources, "Trying to access a resource with an invalid handle");
                 return false;
             }
 
@@ -386,7 +388,7 @@ namespace Axle {
             // The count successfully went from 1 to 0 under exclusive ownership
             std::string path = rechecked.path.string();
             if (!CloseUnsafe(handle)) {
-                AX_CORE_ERROR("There was an error closing the file: {0}", path);
+                AX_CORE_ERROR(LogChannel::Resources, "There was an error closing the file: {0}", path);
                 return false;
             }
         } else {
@@ -405,7 +407,7 @@ namespace Axle {
         std::unique_lock lock(m_Mutex);
 
         if (!IsHandleValidUnsafe(handle)) {
-            AX_CORE_ERROR("Trying to access a resource with an invalid handle");
+            AX_CORE_ERROR(LogChannel::Resources, "Trying to access a resource with an invalid handle");
             return false;
         }
 
@@ -430,7 +432,10 @@ namespace Axle {
         std::filesystem::resize_file(resource.path, newSize, ec);
 
         if (ec) {
-            AX_CORE_ERROR("Failed to resize file {0}: {1}. Attempting rollback.", resource.path.string(), ec.message());
+            AX_CORE_ERROR(LogChannel::Resources,
+                          "Failed to resize file {0}: {1}. Attempting rollback.",
+                          resource.path.string(),
+                          ec.message());
 
             // ROLLBACK: Re-map the file using the old size so it isn't left dead
             std::error_code rollbackError;
@@ -441,12 +446,13 @@ namespace Axle {
 
             if (rollbackError) {
                 // Fatal error: We couldn't even map it back. The handle MUST be invalidated.
-                AX_CORE_CRITICAL("FATAL: Rollback failed for {0}. File is unmapped.", resource.path.string());
+                AX_CORE_CRITICAL(
+                    LogChannel::Resources, "Rollback failed for {0}. File is unmapped.", resource.path.string());
 
                 // FIX: Add a boolean that tells if a resource is poisoned or not if we can't rollback
                 // We try to close the file here to prevent segfaults
                 lockResources.unlock();
-                AX_PANIC("Failed to re-map file after failing to resize.");
+                AX_PANIC(LogChannel::Resources, "Failed to re-map file after failing to resize.");
             }
 
             return false;
@@ -461,16 +467,19 @@ namespace Axle {
             resource.mmap = mio::make_mmap_sink(resource.path.string(), error);
 
         if (error) {
-            AX_CORE_ERROR("Failed to resize the file: {0} with error: {1}", resource.path.string(), error.message());
+            AX_CORE_ERROR(LogChannel::Resources,
+                          "Failed to resize the file: {0} with error: {1}",
+                          resource.path.string(),
+                          error.message());
 
             // FIX: Add a boolean that tells if a resource is poisoned or not if we can't rollback
             // The file was resized but remapping failed. It must be destroyed.
             lockResources.unlock();
-            AX_PANIC("Failed to re-map file after resize.");
+            AX_PANIC(LogChannel::Resources, "Failed to re-map file after resize.");
             return false;
         }
 
-        AX_CORE_TRACE("File: {0} was resized to: {1} bytes", resource.path.string(), newSize);
+        AX_CORE_TRACE(LogChannel::Resources, "File: {0} was resized to: {1} bytes", resource.path.string(), newSize);
         return true;
     }
 } // namespace Axle

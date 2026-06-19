@@ -11,18 +11,19 @@ namespace Axle {
 
     void EventHandler::Init() {
         if (m_EventHandler != nullptr) {
-            AX_CORE_WARN("Init method of the event handler has been called a second time. IGNORING");
+            AX_CORE_WARN(LogChannel::Events,
+                         "Init method of the event handler has been called a second time. IGNORING");
             return;
         }
 
         m_EventHandler = std::make_unique<EventHandler>();
 
-        AX_CORE_INFO("Event handler initialized...");
+        AX_CORE_INFO(LogChannel::Events, "Event handler initialized...");
     }
 
     void EventHandler::ShutDown() {
         m_EventHandler.reset();
-        AX_CORE_INFO("Event handler deleted...");
+        AX_CORE_INFO(LogChannel::Events, "Event handler deleted...");
     }
 
     void EventHandler::SubmitEvent(std::unique_ptr<Event> event) {
