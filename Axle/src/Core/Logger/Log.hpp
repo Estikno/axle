@@ -7,7 +7,6 @@
 #include "spdlog/common.h"
 #include "spdlog/logger.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
-#include "spdlog/spdlog.h"
 
 namespace Axle {
     /// Defines how verbose should the logger be. Each higher level includes all the previous ones

@@ -7,6 +7,8 @@
 #include "Window/Window.hpp"
 #include "Events/Event.hpp"
 
+#include <CoroWeaver.hpp>
+
 namespace Axle {
     class AXLE_API Application {
     public:
@@ -14,8 +16,6 @@ namespace Axle {
         virtual ~Application();
 
         void Run();
-        void Update();
-        void Render();
         void Close();
 
         void OnEvent(Event& event);
@@ -40,7 +40,15 @@ namespace Axle {
         }
 
     private:
-        friend class BaseLayer;
+        /**
+         * Create the main window of the application. Initializes everything that is needed as well.
+         *
+         * This method should be called from the thread that will use GLFW and OpenGL
+         * */
+        cw::JobCoroutine<void> CreateMainWindow();
+
+        cw::JobCoroutine<void> UpdateLoop();
+        cw::JobCoroutine<void> RenderLoop();
 
         bool OnWindowClose(WindowCloseEvent& event);
         bool OnKeyPressed(KeyPressedEvent& event);

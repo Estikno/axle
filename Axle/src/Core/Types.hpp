@@ -38,4 +38,6 @@ namespace Axle {
     // Resource Manager
     using FileHandle = u64;
     constexpr FileHandle INVALID_FILE_HANDLE = std::numeric_limits<FileHandle>::max();
+
+#define RENDER_THREAD_ID 0
 } // namespace Axle

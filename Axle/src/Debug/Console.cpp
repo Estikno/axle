@@ -63,7 +63,7 @@ namespace Axle::Debug {
             ClearLog();
         }
         ImGui::SameLine();
-        bool copy_to_clipboard = ImGui::SmallButton("Copy");
+        // bool copy_to_clipboard = ImGui::SmallButton("Copy");
         // static float t = 0.0f; if (ImGui::GetTime() - t > 0.02f) { t = ImGui::GetTime(); AddLog("Spam %f", t); }
 
         ImGui::Separator();
@@ -120,8 +120,9 @@ namespace Axle::Debug {
             // - Split them into same height items would be simpler and facilitate random-seeking into your list.
             // - Consider using manual call to IsRectVisible() and skipping extraneous decoration from your items.
             ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1)); // Tighten spacing
-            if (copy_to_clipboard)
-                ImGui::LogToClipboard();
+            // DISABLE COPYING BUTTON FOR NOW
+            // if (copy_to_clipboard)
+            //     ImGui::LogToClipboard();
             for (const char* item : Items) {
                 if (!Filter.PassFilter(item))
                     continue;
@@ -143,8 +144,8 @@ namespace Axle::Debug {
                 if (has_color)
                     ImGui::PopStyleColor();
             }
-            if (copy_to_clipboard)
-                ImGui::LogFinish();
+            // if (copy_to_clipboard)
+            //     ImGui::LogFinish();
 
             // Keep up at the bottom of the scroll region if we were already at the bottom at the beginning of the
             // frame. Using a scrollbar or mouse-wheel will take away from the bottom edge.

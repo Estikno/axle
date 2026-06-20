@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
     Axle::EventHandler::Init();
     Axle::InputManager::Init();
     Axle::ResourceManager::Init();
-    cw::JobSystem::Init(2);
+    cw::JobSystem::Init(3);
 
     // Main application loop
     Axle::Application* app = Axle::CreateApplication();
@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
     Axle::EventHandler::Init();
     Axle::InputManager::Init();
     Axle::ResourceManager::Init();
-    cw::JobSystem::Init(2);
+    cw::JobSystem::Init(3);
 
     // Main application loop
     Axle::Application* app = Axle::CreateApplication();

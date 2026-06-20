@@ -1,5 +1,7 @@
 #pragma once
 
+#include "axpch.hpp"
+
 #include "Core/Events/Event.hpp"
 #include "Core/Layer/Layer.hpp"
 #include "Core/Types.hpp"

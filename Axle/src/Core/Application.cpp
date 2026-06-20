@@ -11,13 +11,18 @@
 #include "Core/Input/InputState.hpp"
 #include "Core/Layer/Layer.hpp"
 #include "Window/Window.hpp"
+#include "Types.hpp"
 
 #include "ImGui/ImGuiLayer.hpp"
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
+#include <CoroWeaver.hpp>
 
 namespace Axle {
+    static std::stop_source source;
+    static std::atomic<bool> renderDone{false};
+
     Application* Application::s_Instance = nullptr;
 
     Application::Application() {
@@ -54,32 +59,50 @@ namespace Axle {
     }
 
     void Application::Run() {
-        m_Running = true;
-        std::barrier initBarrier(2);
+        m_Running.store(true, std::memory_order_release);
 
-        std::thread RenderThread([this, &initBarrier]() {
-            m_Window = std::unique_ptr<Window>(Window::Create()); // GLFW + GLAD init
-            initBarrier.arrive_and_wait();                        // signal main thread that init is done
-            Render();
-        });
+        cw::ThreadAffinity id = cw::JobSystem::GetInstance().ConvertToWorkerThread();
 
-        initBarrier.arrive_and_wait();
-        Update();
+        // Schedule the main loop to the main thread
+        cw::JobCoroutine<void> updateCor = UpdateLoop();
+        cw::JobSystem::GetInstance().Schedule(updateCor, id);
 
-        RenderThread.join();
+        // Run the main loop for the entire duration
+        cw::JobSystem::GetInstance().RunWorkerUntil(source.get_token());
+
+        cw::JobSystem::GetInstance().DeregisterWorkerThread();
+
+        // Wait until all non-owned workers have been unregistered
+        bool done = renderDone.load(std::memory_order_acquire);
+        while (!done) {
+            renderDone.wait(done, std::memory_order_acquire);
+            done = renderDone.load(std::memory_order_acquire);
+        }
     }
 
-    void Application::Update() {
-        AX_CORE_INFO(
-            LogChannel::Core, "Welcome from thread {0}", std::hash<std::thread::id>{}(std::this_thread::get_id()));
 
+    cw::JobCoroutine<void> Application::CreateMainWindow() {
+        m_Window = std::unique_ptr<Window>(Window::Create()); // GLFW + GLAD init
+        co_return;
+    }
+
+    cw::JobCoroutine<void> Application::UpdateLoop() {
+        // Create the main window on the render thread and wait so we are sure to have glfw initiated
+        co_await cw::WhenAll(RENDER_THREAD_ID, CreateMainWindow());
+
+        // Schedule the render loop
+        cw::JobCoroutine<void> renderCor = RenderLoop();
+        cw::JobSystem::GetInstance().Schedule(renderCor, RENDER_THREAD_ID);
+
+        // Main loop logic
+        // ---------------
         for (Layer* layer : *m_LayerStack)
             layer->OnAttach();
 
         f64 previous = glfwGetTime();
         f64 lag = 0.0;
 
-        while (m_Running) {
+        while (m_Running.load(std::memory_order_acquire)) {
             // Calculate each frame time
             f64 current = glfwGetTime();
             f64 elapsed = current - previous;
@@ -109,13 +132,12 @@ namespace Axle {
 
         for (Layer* layer : *m_LayerStack)
             layer->OnDettach();
+
+        co_return;
     }
 
-    void Application::Render() {
-        AX_CORE_INFO(
-            LogChannel::Core, "Welcome from thread {0}", std::hash<std::thread::id>{}(std::this_thread::get_id()));
-
-        // // Sets up imporant stuff
+    cw::JobCoroutine<void> Application::RenderLoop() {
+        // Sets up imporant stuff (already done in CreateMainWindow)
         // m_Window = std::unique_ptr<Window>(Window::Create());
 
         for (Layer* layer : *m_LayerStack)
@@ -123,7 +145,7 @@ namespace Axle {
 
         f64 previous = glfwGetTime();
 
-        while (m_Running) {
+        while (m_Running.load(std::memory_order_acquire)) {
             // Calculate each frame time
             f64 current = glfwGetTime();
             f64 elapsed = current - previous;
@@ -148,14 +170,21 @@ namespace Axle {
 
         // We delete the main window and termninate GLFW
         m_Window.reset();
+
+        renderDone.store(true, std::memory_order_release);
+        renderDone.notify_all();
+
+        co_return;
     }
 
     void Application::Close() {
-        m_Running = false;
+        m_Running.store(false, std::memory_order_release);
+        source.request_stop();
     }
 
     bool Application::OnWindowClose(WindowCloseEvent& event) {
-        m_Running = false;
+        m_Running.store(false, std::memory_order_release);
+        source.request_stop();
         return true;
     }
 
