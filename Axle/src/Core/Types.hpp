@@ -39,5 +39,9 @@ namespace Axle {
     using FileHandle = u64;
     constexpr FileHandle INVALID_FILE_HANDLE = std::numeric_limits<FileHandle>::max();
 
+    // Job system defines
 #define RENDER_THREAD_ID 0
+
+#define EVENT_INPUT_TAG 0
+#define LAYERS_TAG 1
 } // namespace Axle

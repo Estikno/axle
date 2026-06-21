@@ -63,21 +63,17 @@ namespace Axle {
 
         cw::ThreadAffinity id = cw::JobSystem::GetInstance().ConvertToWorkerThread();
 
-        // Schedule the main loop to the main thread
+        // Schedule the main loop to the main thread's id
         cw::JobCoroutine<void> updateCor = UpdateLoop();
         cw::JobSystem::GetInstance().Schedule(updateCor, id);
 
-        // Run the main loop for the entire duration
+        // The main thread will now be a worker
         cw::JobSystem::GetInstance().RunWorkerUntil(source.get_token());
 
         cw::JobSystem::GetInstance().DeregisterWorkerThread();
 
-        // Wait until all non-owned workers have been unregistered
-        bool done = renderDone.load(std::memory_order_acquire);
-        while (!done) {
-            renderDone.wait(done, std::memory_order_acquire);
-            done = renderDone.load(std::memory_order_acquire);
-        }
+        // We shut down the system here so everything gets deleted correctly (GLFW, OpenGL, ...)
+        cw::JobSystem::Shutdown();
     }
 
 
@@ -97,7 +93,10 @@ namespace Axle {
         // Main loop logic
         // ---------------
         for (Layer* layer : *m_LayerStack)
-            layer->OnAttach();
+            cw::JobSystem::GetInstance().Schedule(
+                [layer, this]() { layer->OnAttach(); }, cw::JobPriority::Medium, cw::InvalidThreadIndex, LAYERS_TAG);
+
+        AX_SCHEDULE_TAG_AND_WAIT(LAYERS_TAG);
 
         f64 previous = glfwGetTime();
         f64 lag = 0.0;
@@ -117,11 +116,29 @@ namespace Axle {
             while (lag >= m_DeltaTime) {
                 // Update logic
                 // --------------------------
-                EventHandler::GetInstance().ProcessEvents(m_LayerStack->rbegin(), m_LayerStack->rend());
-                InputManager::GetInstance().Update();
+                cw::JobSystem::GetInstance().Schedule(
+                    [this]() {
+                        EventHandler::GetInstance().ProcessEvents(m_LayerStack->rbegin(), m_LayerStack->rend());
+                    },
+                    cw::JobPriority::Medium,
+                    cw::InvalidThreadIndex,
+                    EVENT_INPUT_TAG);
+
+                cw::JobSystem::GetInstance().Schedule([this]() { InputManager::GetInstance().Update(); },
+                                                      cw::JobPriority::Medium,
+                                                      cw::InvalidThreadIndex,
+                                                      EVENT_INPUT_TAG);
+
+                AX_SCHEDULE_TAG_AND_WAIT(EVENT_INPUT_TAG);
 
                 for (Layer* layer : *m_LayerStack)
-                    layer->OnUpdate(m_DeltaTime);
+                    cw::JobSystem::GetInstance().Schedule([layer, this]() { layer->OnUpdate(m_DeltaTime); },
+                                                          cw::JobPriority::Medium,
+                                                          cw::InvalidThreadIndex,
+                                                          LAYERS_TAG);
+
+                AX_SCHEDULE_TAG_AND_WAIT(LAYERS_TAG);
+
                 // --------------------------
                 lag -= m_DeltaTime;
             }
@@ -131,7 +148,10 @@ namespace Axle {
         }
 
         for (Layer* layer : *m_LayerStack)
-            layer->OnDettach();
+            cw::JobSystem::GetInstance().Schedule(
+                [layer, this]() { layer->OnDettach(); }, cw::JobPriority::Medium, cw::InvalidThreadIndex, LAYERS_TAG);
+
+        AX_SCHEDULE_TAG_AND_WAIT(LAYERS_TAG);
 
         co_return;
     }

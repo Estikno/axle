@@ -32,7 +32,6 @@ int main(int argc, char** argv) {
     app->Run();
     delete app;
 
-    cw::JobSystem::Shutdown();
     Axle::ResourceManager::ShutDown();
     Axle::InputManager::ShutDown();
     Axle::EventHandler::ShutDown();
@@ -66,7 +65,6 @@ int main(int argc, char** argv) {
     app->Run();
     delete app;
 
-    cw::JobSystem::Shutdown();
     Axle::ResourceManager::ShutDown();
     Axle::InputManager::ShutDown();
     Axle::EventHandler::ShutDown();
