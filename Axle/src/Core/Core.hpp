@@ -45,4 +45,4 @@
 
 #define AX_SCHEDULE_TAG_AND_WAIT(tag)              \
     cw::JobSystem::GetInstance().ScheduleTag(tag); \
-    co_await cw::WaitOnTag(tag);\
+    co_await cw::WaitOnTag(tag);

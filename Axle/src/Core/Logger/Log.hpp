@@ -7,6 +7,7 @@
 #include "spdlog/common.h"
 #include "spdlog/logger.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/sinks/rotating_file_sink.h"
 
 namespace Axle {
     /// Defines how verbose should the logger be. Each higher level includes all the previous ones
@@ -157,6 +158,7 @@ namespace Axle {
 
         // Sinks
         std::shared_ptr<spdlog::sinks::stdout_color_sink_mt> m_ConsoleSink;
+        std::shared_ptr<spdlog::sinks::rotating_file_sink_mt> m_FileSink;
 
         // Loggers
         std::array<std::shared_ptr<spdlog::logger>, static_cast<u8>(LogChannel::MaxChannels)> m_ChannelLoggers;

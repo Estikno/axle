@@ -5,6 +5,7 @@
 
 #include "spdlog/common.h"
 #include "spdlog/logger.h"
+#include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 
 namespace Axle {
@@ -27,10 +28,15 @@ namespace Axle {
         s_Instance->m_ConsoleSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
         s_Instance->m_ConsoleSink->set_pattern("%^[%T] %n: %v%$");
 
+        s_Instance->m_FileSink =
+            std::make_shared<spdlog::sinks::rotating_file_sink_mt>("assets/tests/logs.log", 1024 * 1024, 5);
+        s_Instance->m_FileSink->set_pattern("%^[%T] %n: %v%$");
+
         // Assign loggers
         for (u8 i = 0; i < static_cast<u8>(LogChannel::MaxChannels); ++i) {
-            s_Instance->m_ChannelLoggers[i] =
-                std::make_shared<spdlog::logger>(std::string(CHANNEL_NAMES[i]), s_Instance->m_ConsoleSink);
+            s_Instance->m_ChannelLoggers[i] = std::make_shared<spdlog::logger>(
+                std::string(CHANNEL_NAMES[i]),
+                spdlog::sinks_init_list{s_Instance->m_ConsoleSink, s_Instance->m_FileSink});
             s_Instance->m_ChannelLoggers[i]->set_level(spdlog::level::trace);
         }
 
