@@ -15,11 +15,11 @@ namespace Axle {
         ~ImGuiLayer() override = default;
 
         void OnAttach() override;
-        void OnUpdate(f64 FixedDeltaTime) override;
+        void OnUpdate(f64 fixedDeltaTime) override;
         void OnDettach() override;
 
         void OnAttachRender() override;
-        void OnRender(f64 DeltaTime) override;
+        void OnRender(f64 deltaTime) override;
         void OnDettachRender() override;
 
         void OnEvent(Event& event) override;

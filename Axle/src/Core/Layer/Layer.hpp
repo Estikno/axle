@@ -26,7 +26,7 @@ namespace Axle {
          *
          * Important: It is not guaranteed that all OnUpdate methods will be excecuted by the same thread.
          * */
-        virtual void OnUpdate(f64 FixedDeltaTime) = 0;
+        virtual void OnUpdate(f64 fixedDeltaTime) = 0;
 
         // TODO: Finish the implementation
         /**
@@ -35,7 +35,7 @@ namespace Axle {
          *
          * Important: It's not guaranteed that this method is always going to be excecuted by the same thread
          * */
-        virtual void CommitSnapshot() {}
+        virtual void CommitSnapshot(f64 alpha) {}
 
         /**
          * Called when the layer is dettached from the stack.
@@ -58,7 +58,7 @@ namespace Axle {
          *
          * Important: It is guaranteed that this method will be called only by the render thread
          * */
-        virtual void OnRender(f64 DeltaTime) = 0;
+        virtual void OnRender(f64 deltaTime) = 0;
 
         /**
          * Called when the layer is dettached from the stack, but in the render thread.

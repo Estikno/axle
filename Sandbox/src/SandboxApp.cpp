@@ -11,7 +11,7 @@ public:
     ~LearnLayer() override = default;
 
     void OnAttach() override {}
-    void OnUpdate(f64 FixedDeltaTime) override {}
+    void OnUpdate(f64 fixedDeltaTime) override {}
     void OnDettach() override {
         AX_INFO("Learn layer detached");
     }
@@ -98,7 +98,7 @@ public:
         // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     }
     void OnDettachRender() override {}
-    void OnRender(f64 DeltaTime) override {
+    void OnRender(f64 deltaTime) override {
         glUseProgram(program);
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 3);

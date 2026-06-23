@@ -20,7 +20,7 @@ namespace Axle {
          * @returns A reference to the back buffer
          * */
         T& GetForWritter() {
-            return m_Buffers[m_BackIdx];
+            return m_Buffers[m_BackIdx].buf;
         }
 
         /**
@@ -50,19 +50,26 @@ namespace Axle {
                 m_FrontIdx = prevSpare.idx;
             }
 
-            return {m_Buffers[m_FrontIdx], updated};
+            return {m_Buffers[m_FrontIdx].buf, updated};
         }
 
     private:
+        static constexpr size_t KeepApartSZ = std::hardware_destructive_interference_size;
+
         struct State {
             u8 idx;
             bool hasUpdate;
         };
+
+        struct alignas(KeepApartSZ) Buffer {
+            T buf;
+        };
+
         static_assert(std::atomic<State>::is_always_lock_free, "The TripleBuffer is not always lock-free");
 
-        T m_Buffers[3];
-        u8 m_FrontIdx{2};
-        std::atomic<State> m_Spare{{1, false}};
-        u8 m_BackIdx{2};
+        Buffer m_Buffers[3];
+        alignas(KeepApartSZ) u8 m_FrontIdx{2};
+        alignas(KeepApartSZ) std::atomic<State> m_Spare{{1, false}};
+        alignas(KeepApartSZ) u8 m_BackIdx{2};
     };
 } // namespace Axle

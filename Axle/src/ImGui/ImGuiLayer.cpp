@@ -20,7 +20,7 @@ namespace Axle {
 
     void ImGuiLayer::OnAttach() {}
 
-    void ImGuiLayer::OnUpdate(f64 FixedDeltaTime) {}
+    void ImGuiLayer::OnUpdate(f64 fixedDeltaTime) {}
 
     void ImGuiLayer::OnDettach() {
         AX_CORE_INFO(LogChannel::Debug, "{0} layer detached", m_DebugName);
@@ -49,7 +49,7 @@ namespace Axle {
         m_Console.Init();
     }
 
-    void ImGuiLayer::OnRender(f64 DeltaTime) {
+    void ImGuiLayer::OnRender(f64 deltaTime) {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -62,7 +62,7 @@ namespace Axle {
             m_Console.Draw("Debug console", &m_Console.Open);
         // Debug Information
         if (m_OpenOverlay)
-            Debug::ShowSimpleOverlay(&m_OpenOverlay, DeltaTime);
+            Debug::ShowSimpleOverlay(&m_OpenOverlay, deltaTime);
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

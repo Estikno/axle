@@ -143,6 +143,16 @@ namespace Axle {
                 lag -= m_DeltaTime;
             }
 
+            const f64 alpha = lag / m_DeltaTime;
+
+            for (Layer* layer : *m_LayerStack)
+                cw::JobSystem::GetInstance().Schedule([&]() { layer->CommitSnapshot(alpha); },
+                                                      cw::JobPriority::Medium,
+                                                      cw::InvalidThreadIndex,
+                                                      LAYERS_TAG);
+
+            AX_SCHEDULE_TAG_AND_WAIT(LAYERS_TAG);
+
             // Sleep a bit to avoid pegging a CPU core
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
