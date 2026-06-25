@@ -22,6 +22,7 @@
 namespace Axle {
     static std::stop_source source;
     static std::atomic<bool> renderDone{false};
+    static cw::ThreadAffinity mainId;
 
     Application* Application::s_Instance = nullptr;
 
@@ -61,11 +62,11 @@ namespace Axle {
     void Application::Run() {
         m_Running.store(true, std::memory_order_release);
 
-        cw::ThreadAffinity id = cw::JobSystem::GetInstance().ConvertToWorkerThread();
+        mainId = cw::JobSystem::GetInstance().ConvertToWorkerThread();
 
         // Schedule the main loop to the main thread's id
         cw::JobCoroutine<void> updateCor = UpdateLoop();
-        cw::JobSystem::GetInstance().Schedule(updateCor, id);
+        cw::JobSystem::GetInstance().Schedule(updateCor, mainId);
 
         // The main thread will now be a worker
         cw::JobSystem::GetInstance().RunWorkerUntil(source.get_token());
@@ -146,7 +147,7 @@ namespace Axle {
             const f64 alpha = lag / m_DeltaTime;
 
             for (Layer* layer : *m_LayerStack)
-                cw::JobSystem::GetInstance().Schedule([&]() { layer->CommitSnapshot(alpha); },
+                cw::JobSystem::GetInstance().Schedule([layer, alpha]() { layer->CommitSnapshot(alpha); },
                                                       cw::JobPriority::Medium,
                                                       cw::InvalidThreadIndex,
                                                       LAYERS_TAG);
@@ -159,10 +160,11 @@ namespace Axle {
 
         for (Layer* layer : *m_LayerStack)
             cw::JobSystem::GetInstance().Schedule(
-                [layer, this]() { layer->OnDettach(); }, cw::JobPriority::Medium, cw::InvalidThreadIndex, LAYERS_TAG);
+                [layer]() { layer->OnDettach(); }, cw::JobPriority::Medium, cw::InvalidThreadIndex, LAYERS_TAG);
 
         AX_SCHEDULE_TAG_AND_WAIT(LAYERS_TAG);
 
+        source.request_stop();
         co_return;
     }
 
@@ -209,12 +211,10 @@ namespace Axle {
 
     void Application::Close() {
         m_Running.store(false, std::memory_order_release);
-        source.request_stop();
     }
 
     bool Application::OnWindowClose(WindowCloseEvent& event) {
         m_Running.store(false, std::memory_order_release);
-        source.request_stop();
         return true;
     }
 

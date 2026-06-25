@@ -16,16 +16,34 @@ set(INC_MIO     "${VENDOR}/mio/include")
 set(INC_ENTT    "${VENDOR}/entt/single_include")
 set(INC_CONCURRENTQUEUE    "${VENDOR}/concurrentqueue")
 set(INC_COROWEAVER         "${VENDOR}/CoroWeaver")
+set(INC_STB_IMAGE         "${VENDOR}/stb_image")
 
 # Make these available to Sandbox and Tests via a cached variable
 set(AXLE_VENDOR_INCLUDES
     "${INC_GLFW}"
     "${INC_GLAD}"
     "${INC_SPDLOG}"
+    "${INC_STB_IMAGE}"
     "${INC_GLM}"
     CACHE INTERNAL "Vendor include dirs needed by Axle consumers")
 
 set(AXLE_DOCTEST_INCLUDE "${INC_DOCTEST}" CACHE INTERNAL "")
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  stb_image (C static lib)
+# ══════════════════════════════════════════════════════════════════════════════
+add_library(stb_image STATIC
+    "${VENDOR}/stb_image/stb_image.cpp"
+    "${VENDOR}/stb_image/stb_image.h"
+)
+
+target_include_directories(stb_image PUBLIC "${VENDOR}/stb_image")
+
+if(UNIX)
+    set_target_properties(stb_image PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    # Avoid reduplication of simbols. Keep comented for now to avoid errors in the Sandbox project
+    # target_compile_options(stb_image PRIVATE -fvisibility=hidden)
+endif()
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  Glad  (C static lib)
@@ -47,7 +65,7 @@ set_target_properties(Glad PROPERTIES
 # PIC required on Linux so it can be linked into the Axle shared lib
 if(UNIX)
     set_target_properties(Glad PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    # Avoid reduplication of simbols. Keep comented for now to avoid errors with glad
+    # Avoid reduplication of simbols. Keep comented for now to avoid errors in the Sandbox project
     # target_compile_options(Glad PRIVATE -fvisibility=hidden)
 endif()
 
@@ -130,6 +148,7 @@ target_include_directories(Axle
         "${CMAKE_BINARY_DIR}/generated"
         "${INC_CONCURRENTQUEUE}"
         "${INC_COROWEAVER}"
+        "${INC_STB_IMAGE}"
 )
 
 target_compile_definitions(Axle
@@ -156,11 +175,11 @@ if(UNIX)
     # Note: glfw manage their own symbols correctly so they
     # sit outside the --whole-archive block.
     target_link_libraries(Axle PUBLIC
-        -Wl,--whole-archive Glad ImGui -Wl,--no-whole-archive
+        -Wl,--whole-archive Glad ImGui stb_image -Wl,--no-whole-archive
         glfw
     )
 else()
-    target_link_libraries(Axle PUBLIC glfw Glad ImGui)
+    target_link_libraries(Axle PUBLIC glfw Glad ImGui stb_image)
 endif()
 
 # ── Precompiled header ─────────────────────────────────────────────────────────
@@ -204,7 +223,3 @@ target_compile_options(Axle PRIVATE
     $<$<AND:$<CXX_COMPILER_ID:GNU,Clang>,$<CONFIG:Release,Dist>>:-O2>
     $<$<AND:$<CXX_COMPILER_ID:MSVC>,$<CONFIG:Release,Dist>>:/O2>
 )
-
-
-
-
