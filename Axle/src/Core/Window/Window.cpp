@@ -74,6 +74,9 @@ namespace Axle {
         glfwSetCursorPosCallback(m_Window, CursorPositionCallback);
         glfwSetMouseButtonCallback(m_Window, MouseButtonCallback);
         glfwSetScrollCallback(m_Window, ScrollCallback);
+
+        // Enable depth testing
+        glEnable(GL_DEPTH_TEST);
     }
 
     Window::~Window() {
