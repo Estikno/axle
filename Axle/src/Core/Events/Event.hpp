@@ -13,6 +13,7 @@ namespace Axle {
         // Window
         WindowClose,
         WindowResize,
+        FrameBufferResize,
         WindowFocus,
         WindowLostFocus,
         WindowMoved,
@@ -127,6 +128,27 @@ namespace Axle {
         }
 
         DEFINE_EVENT_TYPE(WindowResize);
+        DEFINE_EVENT_CATEGORY(Window);
+
+    private:
+        u32 m_Width;
+        u32 m_Height;
+    };
+
+    class FrameBufferResizeEvent : public Event {
+    public:
+        FrameBufferResizeEvent(u32 width, u32 height)
+            : m_Width(width),
+              m_Height(height) {}
+
+        u32 GetWidth() const noexcept {
+            return m_Width;
+        }
+        u32 GetHeight() const noexcept {
+            return m_Height;
+        }
+
+        DEFINE_EVENT_TYPE(FrameBufferResize);
         DEFINE_EVENT_CATEGORY(Window);
 
     private:

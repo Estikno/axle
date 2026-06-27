@@ -54,7 +54,11 @@ public:
     void ProcessKeyboard(f32 deltaTime);
     // processes input received from a mouse input system. Expects the offset value in both the x and y direction.
     void ProcessMouseMovement(f32 deltaTime, bool constrainPitch = true);
-    void ProcessMouseScroll();
+    void ProcessMouseScroll(f32 yOffset);
+
+    inline f32 GetZoom() const {
+        return m_Zoom;
+    }
 
 private:
     void UpdateCameraVectors();

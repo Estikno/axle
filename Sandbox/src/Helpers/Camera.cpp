@@ -41,8 +41,8 @@ void Camera::ProcessMouseMovement(f32 deltaTime, bool constrainPitch) {
     UpdateCameraVectors();
 }
 
-void Camera::ProcessMouseScroll() {
-    m_Zoom = static_cast<f32>(InputManager::GetMouseWheelOffset().second);
+void Camera::ProcessMouseScroll(f32 yOffset) {
+    m_Zoom -= yOffset;
 
     if (m_Zoom < 1.0f)
         m_Zoom = 1.0f;

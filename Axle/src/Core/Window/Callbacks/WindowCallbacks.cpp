@@ -43,5 +43,7 @@ namespace Axle {
         WindowData* data = static_cast<WindowData*>(glfwGetWindowUserPointer(window));
         data->FramebufferWidth = static_cast<u32>(width);
         data->FramebufferHeight = static_cast<u32>(height);
+
+        AX_SUBMIT_EVENT(FrameBufferResizeEvent(static_cast<u32>(width), static_cast<u32>(height)));
     }
 } // namespace Axle
