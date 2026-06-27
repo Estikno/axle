@@ -181,6 +181,10 @@ namespace Axle {
         glm::vec2 position;
         // 0 == not pressed, 1 == pressed
         std::bitset<static_cast<u32>(MouseButtons::MaxButtons)> m_Buttons;
+
+        // Mouse wheel offsets
+        f64 xOffset;
+        f64 yOffset;
     };
 
     struct InputState {

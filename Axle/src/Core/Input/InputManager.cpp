@@ -212,9 +212,14 @@ namespace Axle {
         AX_SUBMIT_EVENT(std::move(event));
     }
 
-    void InputManager::SetMouseWheel(f32 deltax, f32 deltay) {
+    void InputManager::SetMouseWheel(f64 xOffset, f64 yOffset) {
+        std::unique_lock lock(m_Mutex);
+
+        m_InputState.m_MouseCurrent.xOffset = xOffset;
+        m_InputState.m_MouseCurrent.yOffset = yOffset;
+
         // Fire off an event informing of the change in state
-        MouseScrollEvent event(deltax, deltay);
+        MouseScrollEvent event(xOffset, yOffset);
         AX_SUBMIT_EVENT(std::move(event));
     }
 
@@ -254,6 +259,16 @@ namespace Axle {
     glm::vec2 InputManager::GetMousePositionImpl() const {
         std::shared_lock lock(m_Mutex);
         return m_InputState.m_MouseCurrent.position;
+    }
+
+    std::pair<f64, f64> InputManager::GetMouseWheelOffsetImpl() const {
+        std::shared_lock lock(m_Mutex);
+        return std::make_pair(m_InputState.m_MouseCurrent.xOffset, m_InputState.m_MouseCurrent.yOffset);
+    }
+
+    glm::vec2 InputManager::GetMousePositionOffsetImpl() const {
+        std::shared_lock lock(m_Mutex);
+        return m_InputState.m_MouseCurrent.position - m_InputState.m_MousePrevious.position;
     }
 
     bool InputManager::GetKeyUnsafe(Keys key) const {

@@ -32,7 +32,7 @@ namespace Axle {
     }
 
     void CursorPositionCallback(GLFWwindow* window, double xpos, double ypos) {
-        glm::vec2 position(static_cast<f32>(xpos), static_cast<f32>(ypos));
+        glm::vec2 position(static_cast<f32>(xpos), -static_cast<f32>(ypos));
         InputManager::GetInstance().SetMousePosition(position);
     }
 
@@ -44,6 +44,6 @@ namespace Axle {
     }
 
     void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
-        InputManager::GetInstance().SetMouseWheel(static_cast<f32>(xoffset), static_cast<f32>(yoffset));
+        InputManager::GetInstance().SetMouseWheel(xoffset, yoffset);
     }
 } // namespace Axle

@@ -127,6 +127,24 @@ namespace Axle {
         }
 
         /**
+         * Gets the mouse wheel offset
+         *
+         * @returns A pair which contains the offset in the x/horizontal axis first and the vertical/y offset second
+         */
+        inline static std::pair<f64, f64> GetMouseWheelOffset() {
+            return s_Instance->GetMouseWheelOffsetImpl();
+        }
+
+        /**
+         * Gets the mouse position offset
+         *
+         * @returns A vec2 which contains the two (x and y) position offsets
+         */
+        inline static glm::vec2 GetMousePositionOffset() {
+            return s_Instance->GetMousePositionOffsetImpl();
+        }
+
+        /**
          * Checks if the given key has been tappend n times repeatedly
          *
          * @param key The key to check
@@ -236,7 +254,7 @@ namespace Axle {
          *
          * @param delta The amount the mouse wheel has been scrolled.
          */
-        void SetMouseWheel(f32 deltax, f32 deltay);
+        void SetMouseWheel(f64 xOffset, f64 yOffset);
 
         /**
          * Updates the input state.
@@ -269,6 +287,8 @@ namespace Axle {
         bool IsMouseButtonDoubleClickedImpl(MouseButtons button) const;
         u32 DefineKeySequenceImpl(const std::vector<Keys>& sec, f32 dtMax);
         u32 DefineMouseButtonSequenceImpl(const std::vector<MouseButtons>& sec, f32 dtMax);
+        std::pair<f64, f64> GetMouseWheelOffsetImpl() const;
+        glm::vec2 GetMousePositionOffsetImpl() const;
 
         // Unsafe Implementations
         bool GetKeyUnsafe(Keys key) const;

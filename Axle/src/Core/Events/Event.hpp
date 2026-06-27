@@ -301,14 +301,14 @@ namespace Axle {
 
     class MouseScrollEvent : public Event {
     public:
-        MouseScrollEvent(f32 xoffset, f32 yoffset)
+        MouseScrollEvent(f64 xoffset, f64 yoffset)
             : m_xOffset(xoffset),
               m_yOffset(yoffset) {}
 
-        f32 GetXOffset() const noexcept {
+        f64 GetXOffset() const noexcept {
             return m_xOffset;
         }
-        f32 GetYOffset() const noexcept {
+        f64 GetYOffset() const noexcept {
             return m_yOffset;
         }
 
@@ -316,7 +316,7 @@ namespace Axle {
         DEFINE_EVENT_CATEGORY(Input);
 
     private:
-        f32 m_xOffset, m_yOffset;
+        f64 m_xOffset, m_yOffset;
     };
     // ---------------------
 } // namespace Axle

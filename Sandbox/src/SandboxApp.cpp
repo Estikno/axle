@@ -1,12 +1,14 @@
-#include "glm/ext/matrix_float4x4.hpp"
 #include <glad/gl.h>
-#include <Axle.hpp>
-#include "Core/Logger/Log.hpp"
+#include <AxleApp.hpp>
 
 #include <stb_image.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+#include "Helpers/Shader.hpp"
+#include "Helpers/Camera.hpp"
+#include "Core/Application.hpp"
 
 using namespace Axle;
 
@@ -24,61 +26,13 @@ public:
     }
 
     void OnAttachRender() override {
-        // Load shader files
-        ResourceManager::ManagedFileHandle VertexShaderHandle =
-            ResourceManager::GetInstance().Load("Sandbox/src/Shaders/default.vert").Unwrap();
-        ResourceManager::ManagedFileHandle FragmentShaderHandle =
-            ResourceManager::GetInstance().Load("Sandbox/src/Shaders/default.frag").Unwrap();
+        // Setup shaders
+        shader = Shader("Sandbox/src/Shaders/default.vert", "Sandbox/src/Shaders/default.frag");
+        shader.Use();
 
-        ResourceManager::ReadGuard rVertex =
-            std::move(ResourceManager::GetInstance().DataConst(VertexShaderHandle).Unwrap());
-        const char* rVertexData = rVertex.Data();
-        GLint vertexSize = (GLint) rVertex.Size();
-        ResourceManager::ReadGuard rFrag =
-            std::move(ResourceManager::GetInstance().DataConst(FragmentShaderHandle).Unwrap());
-        const char* rFragData = rFrag.Data();
-        GLint fragSize = (GLint) rFrag.Size();
-
-        // Compile vertex shader
-        GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-        glShaderSource(vertexShader, 1, &rVertexData, &vertexSize);
-        glCompileShader(vertexShader);
-
-        i32 success;
-        char infoLog[512];
-        glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-        if (!success) {
-            glGetShaderInfoLog(vertexShader, 512, nullptr, infoLog);
-            AX_PANIC(LogChannel::Client, "ERROR::SHADER::VERTEX::COMPILATION_FAILED: {0}", infoLog);
-        }
-
-        // Compile fragment shader
-        GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-        glShaderSource(fragmentShader, 1, &rFragData, &fragSize);
-        glCompileShader(fragmentShader);
-
-        glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-        if (!success) {
-            glGetShaderInfoLog(fragmentShader, 512, nullptr, infoLog);
-            AX_PANIC(LogChannel::Client, "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED: {0}", infoLog);
-        }
-
-        // Create the shader program
-        program = glCreateProgram();
-        glAttachShader(program, vertexShader);
-        glAttachShader(program, fragmentShader);
-        glLinkProgram(program);
-
-        glGetProgramiv(program, GL_LINK_STATUS, &success);
-        if (!success) {
-            glGetProgramInfoLog(program, 512, nullptr, infoLog);
-            AX_PANIC(LogChannel::Client, "ERROR::SHADER::PROGRAM::LINK_FAILED: {0}", infoLog);
-        }
-
-        glUseProgram(program);
-        // We no longer need the shader objects since we linked with the program
-        glDeleteShader(vertexShader);
-        glDeleteShader(fragmentShader);
+        // Setup camera
+        camera = Camera(glm::vec3(0.0f, 0.0f, 3.0f));
+        glfwSetInputMode(Application::GetInstance().GetWindow().GetNativeWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
         // Load textures
         int width1, height1, nrChannels1;
@@ -128,9 +82,9 @@ public:
         stbi_image_free(data2);
 
         // Set texture unit
-        glUseProgram(program);
-        glUniform1i(glGetUniformLocation(program, "texture1"), 0);
-        glUniform1i(glGetUniformLocation(program, "texture2"), 1);
+        glUseProgram(shader.ID);
+        shader.SetInt("texture1", 0);
+        shader.SetInt("texture2", 1);
 
         glGenVertexArrays(1, &VAO);
         glBindVertexArray(VAO);
@@ -166,13 +120,13 @@ public:
         glm::mat4 projection;
         projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
 
-        glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        glUniformMatrix4fv(glGetUniformLocation(program, "view"), 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(glGetUniformLocation(program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+        shader.SetMat4("model", model);
+        shader.SetMat4("view", view);
+        shader.SetMat4("projection", projection);
     }
     void OnDettachRender() override {}
     void OnRender(f64 deltaTime) override {
-        glUseProgram(program);
+        shader.Use();
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture1);
@@ -187,17 +141,25 @@ public:
             model = glm::translate(model, cubePositions[i]);
             float angle = 20.0f * i;
             model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-            glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            shader.SetMat4("model", model);
+
+            shader.SetMat4("view", camera.GetViewMatrix());
 
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
-        // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+        camera.ProcessKeyboard(deltaTime);
+        camera.ProcessMouseMovement(deltaTime);
+        camera.ProcessMouseScroll();
     }
 
     void OnEvent(Event& event) override {}
 
 private:
-    GLuint program, VAO, texture1, texture2;
+    Shader shader;
+    Camera camera;
+
+    GLuint VAO, texture1, texture2;
     float vertices[180] = {
         -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 0.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
         0.5f,  0.5f,  -0.5f, 1.0f, 1.0f, -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
