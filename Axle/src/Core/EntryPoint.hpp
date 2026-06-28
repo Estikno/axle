@@ -2,12 +2,7 @@
 
 #include "axpch.hpp"
 
-#include "Application.hpp"
-#include "Events/EventHandler.hpp"
-#include "Logger/Log.hpp"
-#include "Core/Input/InputManager.hpp"
-#include "Core/Resource/ResourceManager.hpp"
-#include <CoroWeaver.hpp>
+#include "Core/Systems.hpp"
 
 #ifdef AX_PLATFORM_WINDOWS
 
@@ -21,21 +16,14 @@ extern Axle::Application* Axle::CreateApplication();
 of focusing on making the main loop.
 */
 int main(int argc, char** argv) {
-    Axle::Log::Init();
-    Axle::EventHandler::Init();
-    Axle::InputManager::Init();
-    Axle::ResourceManager::Init();
-    cw::JobSystem::Init(3);
+    Axle::InitSystems();
 
     // Main application loop
     Axle::Application* app = Axle::CreateApplication();
     app->Run();
     delete app;
 
-    Axle::ResourceManager::ShutDown();
-    Axle::InputManager::ShutDown();
-    Axle::EventHandler::ShutDown();
-    Axle::Log::ShutDown();
+    Axle::ShutdownSystems();
 
     return 0;
 }
@@ -54,21 +42,14 @@ extern Axle::Application* Axle::CreateApplication();
 of focusing on making the main loop.
 */
 int main(int argc, char** argv) {
-    Axle::Log::Init();
-    Axle::EventHandler::Init();
-    Axle::InputManager::Init();
-    Axle::ResourceManager::Init();
-    cw::JobSystem::Init(3);
+    Axle::InitSystems();
 
     // Main application loop
     Axle::Application* app = Axle::CreateApplication();
     app->Run();
     delete app;
 
-    Axle::ResourceManager::ShutDown();
-    Axle::InputManager::ShutDown();
-    Axle::EventHandler::ShutDown();
-    Axle::Log::ShutDown();
+    Axle::ShutdownSystems();
 
     return 0;
 }

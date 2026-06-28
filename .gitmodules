@@ -22,3 +22,6 @@
 [submodule "Axle/vendor/entt"]
 	path = Axle/vendor/entt
 	url = https://github.com/skypjack/entt.git
+[submodule "Axle/vendor/simpleini"]
+	path = Axle/vendor/simpleini
+	url = https://github.com/brofield/simpleini.git

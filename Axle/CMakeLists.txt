@@ -17,6 +17,7 @@ set(INC_ENTT    "${VENDOR}/entt/single_include")
 set(INC_CONCURRENTQUEUE    "${VENDOR}/concurrentqueue")
 set(INC_COROWEAVER         "${VENDOR}/CoroWeaver")
 set(INC_STB_IMAGE         "${VENDOR}/stb_image")
+set(INC_SIMPLEINI         "${VENDOR}/simpleini")
 
 # Make these available to Sandbox and Tests via a cached variable
 set(AXLE_VENDOR_INCLUDES
@@ -149,6 +150,7 @@ target_include_directories(Axle
         "${INC_CONCURRENTQUEUE}"
         "${INC_COROWEAVER}"
         "${INC_STB_IMAGE}"
+        "${INC_SIMPLEINI}"
 )
 
 target_compile_definitions(Axle
