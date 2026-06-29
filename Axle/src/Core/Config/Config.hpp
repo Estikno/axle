@@ -10,10 +10,10 @@
 
 namespace Axle {
     template <typename T>
-    concept ConfigType = std::same_as<T, bool> || std::same_as<T, i32> || std::same_as<T, u32> ||
-                         std::same_as<T, f32> || std::same_as<T, f64> || std::same_as<T, i64> || std::same_as<T, u64> ||
-                         std::same_as<T, i16> || std::same_as<T, u16> || std::same_as<T, i8> || std::same_as<T, u8> ||
-                         std::same_as<T, char> || std::same_as<T, std::string>;
+    concept ConfigType =
+        std::same_as<T, bool> || std::same_as<T, i32> || std::same_as<T, u32> || std::same_as<T, f32> ||
+        std::same_as<T, f64> || std::same_as<T, i64> || std::same_as<T, u64> || std::same_as<T, i16> ||
+        std::same_as<T, u16> || std::same_as<T, i8> || std::same_as<T, u8> || std::same_as<T, std::string>;
 
     template <typename T>
     concept ConfigIntegerType =
@@ -24,7 +24,7 @@ namespace Axle {
     concept ConfigDecimalType = std::same_as<T, f32> || std::same_as<T, f64>;
 
     template <typename T>
-    concept ConfigStringType = std::same_as<T, std::string> || std::same_as<T, const char*>;
+    concept ConfigStringType = std::same_as<T, std::string>;
 
     class AXLE_API Config {
     public:
@@ -166,10 +166,7 @@ namespace Axle {
         } else if constexpr (ConfigDecimalType<T>) {
             return static_cast<T>(s_Instance->GetDecimalValueUnsafe(section, name));
         } else if constexpr (ConfigStringType<T>) {
-            if constexpr (std::same_as<T, std::string>) {
-                return std::string(s_Instance->GetStringValueUnsafe(section, name));
-            }
-            return s_Instance->GetStringValueUnsafe(section, name);
+            return std::string(s_Instance->GetStringValueUnsafe(section, name));
         }
     }
 
@@ -180,14 +177,11 @@ namespace Axle {
         if constexpr (std::same_as<T, bool>) {
             return s_Instance->SetBoolValueUnsafe(section, name, value);
         } else if constexpr (ConfigIntegerType<T>) {
-            return static_cast<T>(s_Instance->SetIntegerValueUnsafe(section, name, static_cast<i64>(value)));
+            return s_Instance->SetIntegerValueUnsafe(section, name, static_cast<i64>(value));
         } else if constexpr (ConfigDecimalType<T>) {
-            return static_cast<T>(s_Instance->SetDecimalValueUnsafe(section, name, static_cast<f64>(value)));
+            return s_Instance->SetDecimalValueUnsafe(section, name, static_cast<f64>(value));
         } else if constexpr (ConfigStringType<T>) {
-            if constexpr (std::same_as<T, std::string>) {
-                return s_Instance->SetStringValueUnsafe(section, name, value.c_srt());
-            }
-            return s_Instance->SetStringValueUnsafe(section, name, value);
+            return s_Instance->SetStringValueUnsafe(section, name, value.c_str());
         }
     }
 } // namespace Axle

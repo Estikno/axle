@@ -3,6 +3,7 @@
 #include "Config.hpp"
 
 #include <SimpleIni.h>
+#include "Core/Error/Panic.hpp"
 #include "Core/Logger/Log.hpp"
 
 namespace Axle {
@@ -18,8 +19,8 @@ namespace Axle {
         s_Instance = std::make_unique<Config>();
         s_Instance->m_File = file;
 
-        s_Instance->m_Ini.LoadFile(file.c_str());
-
+        AX_ENSURE(
+            s_Instance->m_Ini.LoadFile(file.c_str()) >= 0, LogChannel::Config, "Error trying to load the config file");
         AX_CORE_INFO(LogChannel::Config, "Config manager initialized...");
     }
 
