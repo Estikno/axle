@@ -37,7 +37,7 @@ namespace Axle {
          *
          * The manager has to have already been initilized before getting the instance.
          *
-         * @returns Returns a reference to the Event Handler
+         * @returns Returns a reference to the Input manager
          */
         inline static InputManager& GetInstance() noexcept {
             return *s_Instance;

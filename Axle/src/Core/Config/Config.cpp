@@ -24,13 +24,13 @@ namespace Axle {
     }
 
     void Config::ShutDown() {
-        s_Instance->Save();
+        Save();
 
         s_Instance.reset();
         AX_CORE_INFO(LogChannel::Config, "Config manager deleted...");
     }
 
-    void Config::Save() {
+    void Config::SaveImpl() {
         std::scoped_lock lock(m_Mutex);
 
         SI_Error err;
@@ -39,7 +39,4 @@ namespace Axle {
         if (err < 0)
             AX_CORE_ERROR(LogChannel::Config, "Error trying to save the config file.");
     }
-
-
-    bool Config::DoesKeyExist(const std::string& section, const std::string& name) {}
 } // namespace Axle

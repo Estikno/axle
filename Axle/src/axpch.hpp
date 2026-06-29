@@ -27,6 +27,7 @@
 #include <variant>
 #include <tuple>
 #include <bit>
+#include <concepts>
 
 // Error handling
 #include <stdexcept>
