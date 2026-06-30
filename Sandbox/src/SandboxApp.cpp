@@ -93,14 +93,44 @@ public:
         shader.SetInt("material.diffuse", 0);
         shader.SetInt("material.specular", 1);
         shader.SetFloat("material.shininess", 64.0f);
-        shader.SetVec3("light.ambient", glm::vec3(0.2f, 0.2f, 0.2f));
-        shader.SetVec3("light.diffuse", glm::vec3(0.5f, 0.5f, 0.5f)); // darken diffuse light a bit
-        shader.SetVec3("light.specular", glm::vec3(1.0f, 1.0f, 1.0f));
-        shader.SetVec3("light.position", lightPos);
-        // shader.SetVec3("light.direction", glm::vec3(-0.2f, -1.0f, -0.3f));
-        shader.SetFloat("light.constant", 1.0f);
-        shader.SetFloat("light.linear", 0.09f);
-        shader.SetFloat("light.quadratic", 0.032f);
+
+        // directional light
+        shader.SetVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+        shader.SetVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
+        shader.SetVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
+        shader.SetVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+        // point light 1
+        shader.SetVec3("pointLights[0].position", pointLightPositions[0]);
+        shader.SetVec3("pointLights[0].ambient", 0.05f, 0.05f, 0.05f);
+        shader.SetVec3("pointLights[0].diffuse", 0.8f, 0.8f, 0.8f);
+        shader.SetVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
+        shader.SetFloat("pointLights[0].constant", 1.0f);
+        shader.SetFloat("pointLights[0].linear", 0.09f);
+        shader.SetFloat("pointLights[0].quadratic", 0.032f);
+        // point light 2
+        shader.SetVec3("pointLights[1].position", pointLightPositions[1]);
+        shader.SetVec3("pointLights[1].ambient", 0.05f, 0.05f, 0.05f);
+        shader.SetVec3("pointLights[1].diffuse", 0.8f, 0.8f, 0.8f);
+        shader.SetVec3("pointLights[1].specular", 1.0f, 1.0f, 1.0f);
+        shader.SetFloat("pointLights[1].constant", 1.0f);
+        shader.SetFloat("pointLights[1].linear", 0.09f);
+        shader.SetFloat("pointLights[1].quadratic", 0.032f);
+        // point light 3
+        shader.SetVec3("pointLights[2].position", pointLightPositions[2]);
+        shader.SetVec3("pointLights[2].ambient", 0.05f, 0.05f, 0.05f);
+        shader.SetVec3("pointLights[2].diffuse", 0.8f, 0.8f, 0.8f);
+        shader.SetVec3("pointLights[2].specular", 1.0f, 1.0f, 1.0f);
+        shader.SetFloat("pointLights[2].constant", 1.0f);
+        shader.SetFloat("pointLights[2].linear", 0.09f);
+        shader.SetFloat("pointLights[2].quadratic", 0.032f);
+        // point light 4
+        shader.SetVec3("pointLights[3].position", pointLightPositions[3]);
+        shader.SetVec3("pointLights[3].ambient", 0.05f, 0.05f, 0.05f);
+        shader.SetVec3("pointLights[3].diffuse", 0.8f, 0.8f, 0.8f);
+        shader.SetVec3("pointLights[3].specular", 1.0f, 1.0f, 1.0f);
+        shader.SetFloat("pointLights[3].constant", 1.0f);
+        shader.SetFloat("pointLights[3].linear", 0.09f);
+        shader.SetFloat("pointLights[3].quadratic", 0.032f);
 
 
         // Light
@@ -112,13 +142,6 @@ public:
         // set the vertex attribute
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*) 0);
         glEnableVertexAttribArray(0);
-
-
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, lightPos);
-        model = glm::scale(model, glm::vec3(0.2f));
-
-        lightShader.SetMat4("model", model);
 
         // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     }
@@ -151,7 +174,15 @@ public:
         // Draw light cube
         lightShader.Use();
         glBindVertexArray(lightVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        for (u32 i = 0; i < 4; ++i) {
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, pointLightPositions[i]);
+            model = glm::scale(model, glm::vec3(0.2f));
+
+            lightShader.SetMat4("model", model);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
 
         // Update camera
         camera.ProcessKeyboard(deltaTime);
@@ -221,7 +252,10 @@ private:
         -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f, 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
         -0.5f, 0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  0.0f, 1.0f};
-    glm::vec3 lightPos = glm::vec3(1.2f, 1.0f, 2.0f);
+    glm::vec3 pointLightPositions[4] = {glm::vec3(0.7f, 0.2f, 2.0f),
+                                        glm::vec3(2.3f, -3.3f, -4.0f),
+                                        glm::vec3(-4.0f, 2.0f, -12.0f),
+                                        glm::vec3(0.0f, 0.0f, -3.0f)};
     glm::vec3 cubePositions[10] = {glm::vec3(0.0f, 0.0f, 0.0f),
                                    glm::vec3(2.0f, 5.0f, -15.0f),
                                    glm::vec3(-1.5f, -2.2f, -2.5f),

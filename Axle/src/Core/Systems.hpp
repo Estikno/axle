@@ -20,7 +20,7 @@ namespace Axle {
         Axle::EventHandler::Init();
         Axle::InputManager::Init();
         Axle::ResourceManager::Init();
-        cw::JobSystem::Init(Config::GetOrSet<u8>("jobsystem", "name", 3));
+        cw::JobSystem::Init(Config::GetOrSet<u8>("jobsystem", "threads", 3));
     }
 
     /**

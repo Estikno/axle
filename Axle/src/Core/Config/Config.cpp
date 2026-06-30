@@ -19,8 +19,9 @@ namespace Axle {
         s_Instance = std::make_unique<Config>();
         s_Instance->m_File = file;
 
-        AX_ENSURE(
-            s_Instance->m_Ini.LoadFile(file.c_str()) >= 0, LogChannel::Config, "Error trying to load the config file");
+        if (s_Instance->m_Ini.LoadFile(file.c_str()) < 0)
+            AX_CORE_WARN(LogChannel::Config, "Error trying to load the config file");
+
         AX_CORE_INFO(LogChannel::Config, "Config manager initialized...");
     }
 
