@@ -11,12 +11,6 @@
 
 namespace Axle {
     template <typename T>
-    concept ConfigType =
-        std::same_as<T, bool> || std::same_as<T, i32> || std::same_as<T, u32> || std::same_as<T, f32> ||
-        std::same_as<T, f64> || std::same_as<T, i64> || std::same_as<T, u64> || std::same_as<T, i16> ||
-        std::same_as<T, u16> || std::same_as<T, i8> || std::same_as<T, u8> || std::same_as<T, std::string>;
-
-    template <typename T>
     concept ConfigIntegerType =
         std::same_as<T, i32> || std::same_as<T, u32> || std::same_as<T, i64> || std::same_as<T, u64> ||
         std::same_as<T, i16> || std::same_as<T, u16> || std::same_as<T, i8> || std::same_as<T, u8>;
@@ -26,6 +20,9 @@ namespace Axle {
 
     template <typename T>
     concept ConfigStringType = std::same_as<T, std::string>;
+
+    template <typename T>
+    concept ConfigType = ConfigIntegerType<T> || ConfigDecimalType<T> || ConfigStringType<T> || std::same_as<T, bool>;
 
     class AXLE_API Config {
     public:
@@ -53,6 +50,8 @@ namespace Axle {
 
         /**
          * Saves the changes made to the file on disk.
+         *
+         * Thread safe
          * */
         inline static void Save() {
             s_Instance->SaveImpl();
