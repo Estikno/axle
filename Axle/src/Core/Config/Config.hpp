@@ -4,6 +4,7 @@
 
 #include "Core/Core.hpp"
 #include "Other/CustomTypes/Expected.hpp"
+#include "Core/Logger/Log.hpp"
 #include "Core/Types.hpp"
 
 #include <SimpleIni.h>
@@ -64,9 +65,14 @@ namespace Axle {
          * @param name The name of the key
          *
          * @returns An Expected which contains the value if it does exist
+         *
+         * Thread safe
          * */
         template <ConfigType T>
-        static Expected<T> Get(const std::string& section, const std::string& name);
+        inline static Expected<T> Get(const std::string& section, const std::string& name) {
+            std::scoped_lock lock(s_Instance->m_Mutex);
+            return s_Instance->GetUnsafe<T>(section, name);
+        }
 
         /**
          * Sets the given value and returns if there has been any errors.
@@ -78,9 +84,30 @@ namespace Axle {
          * @param value The new value to set
          *
          * @returns true if the operation was successful, false otherwise
+         *
+         * Thread safe
          * */
         template <ConfigType T>
-        static bool Set(const std::string& section, const std::string& name, const T& value);
+        inline static bool Set(const std::string& section, const std::string& name, const T& value) {
+            std::scoped_lock lock(s_Instance->m_Mutex);
+            return s_Instance->SetUnsafe<T>(section, name, value);
+        }
+
+        /**
+         * Atomically gets a value if it exists, or sets and returns a default if it doesn't.
+         * Unlike calling Get() then Set() separately, this holds the lock for the whole
+         * operation so no other thread can race between the check and the write.
+         *
+         * @param section The name of the section the key is in
+         * @param name The name of the key
+         * @param defaultValue The value to set and return if the key doesn't exist
+         *
+         * @returns The existing value, or defaultValue if it was just created
+         *
+         * Thread safe
+         * */
+        template <ConfigType T>
+        static T GetOrSet(const std::string& section, const std::string& name, const T& defaultValue);
 
         /**
          * Deletes a key/name from the given section.
@@ -89,6 +116,8 @@ namespace Axle {
          * @param name The key/name to delete
          *
          * @returns true if the operation was successful, false otherwise
+         *
+         * Thread safe
          * */
         inline static bool DeleteName(const std::string& section, const std::string& name) {
             return s_Instance->DeleteImpl(section.c_str(), name.c_str());
@@ -100,6 +129,8 @@ namespace Axle {
          * @param section The section to delete
          *
          * @returns true if the operation was successful, false otherwise
+         *
+         * Thread safe
          * */
         inline static bool DeleteSection(const std::string& section) {
             return s_Instance->DeleteImpl(section.c_str(), nullptr);
@@ -113,10 +144,16 @@ namespace Axle {
             return m_Ini.Delete(section, name);
         }
 
+        // Unsafe functions
         inline bool DoesKeyExistUnsafe(const std::string& section, const std::string& name) {
             return m_Ini.GetValue(section.c_str(), name.c_str()) != nullptr;
         }
+        template <ConfigType T>
+        Expected<T> GetUnsafe(const std::string& section, const std::string& name);
+        template <ConfigType T>
+        bool SetUnsafe(const std::string& section, const std::string& name, const T& value);
 
+        // Specialized getters and setters
         inline bool GetBoolValueUnsafe(const std::string& section, const std::string& name) {
             return m_Ini.GetBoolValue(section.c_str(), name.c_str());
         }
@@ -153,35 +190,49 @@ namespace Axle {
 
 
     template <ConfigType T>
-    Expected<T> Config::Get(const std::string& section, const std::string& name) {
-        std::scoped_lock lock(s_Instance->m_Mutex);
-
-        if (!s_Instance->DoesKeyExistUnsafe(section, name))
+    Expected<T> Config::GetUnsafe(const std::string& section, const std::string& name) {
+        if (!DoesKeyExistUnsafe(section, name))
             return Expected<T>::FromException(std::invalid_argument("Can't access a non-existing element"));
 
         if constexpr (std::same_as<T, bool>) {
-            return s_Instance->GetBoolValueUnsafe(section, name);
+            return GetBoolValueUnsafe(section, name);
         } else if constexpr (ConfigIntegerType<T>) {
-            return static_cast<T>(s_Instance->GetIntegerValueUnsafe(section, name));
+            return static_cast<T>(GetIntegerValueUnsafe(section, name));
         } else if constexpr (ConfigDecimalType<T>) {
-            return static_cast<T>(s_Instance->GetDecimalValueUnsafe(section, name));
+            return static_cast<T>(GetDecimalValueUnsafe(section, name));
         } else if constexpr (ConfigStringType<T>) {
-            return std::string(s_Instance->GetStringValueUnsafe(section, name));
+            return std::string(GetStringValueUnsafe(section, name));
         }
     }
 
     template <ConfigType T>
-    bool Config::Set(const std::string& section, const std::string& name, const T& value) {
+    bool Config::SetUnsafe(const std::string& section, const std::string& name, const T& value) {
+        if constexpr (std::same_as<T, bool>) {
+            return SetBoolValueUnsafe(section, name, value);
+        } else if constexpr (ConfigIntegerType<T>) {
+            return SetIntegerValueUnsafe(section, name, static_cast<i64>(value));
+        } else if constexpr (ConfigDecimalType<T>) {
+            return SetDecimalValueUnsafe(section, name, static_cast<f64>(value));
+        } else if constexpr (ConfigStringType<T>) {
+            return SetStringValueUnsafe(section, name, value.c_str());
+        }
+    }
+
+
+    template <ConfigType T>
+    T Config::GetOrSet(const std::string& section, const std::string& name, const T& defaultValue) {
         std::scoped_lock lock(s_Instance->m_Mutex);
 
-        if constexpr (std::same_as<T, bool>) {
-            return s_Instance->SetBoolValueUnsafe(section, name, value);
-        } else if constexpr (ConfigIntegerType<T>) {
-            return s_Instance->SetIntegerValueUnsafe(section, name, static_cast<i64>(value));
-        } else if constexpr (ConfigDecimalType<T>) {
-            return s_Instance->SetDecimalValueUnsafe(section, name, static_cast<f64>(value));
-        } else if constexpr (ConfigStringType<T>) {
-            return s_Instance->SetStringValueUnsafe(section, name, value.c_str());
-        }
+        Expected<T> exp = s_Instance->GetUnsafe<T>(section, name);
+
+        // Key found
+        if (exp.IsValid())
+            return exp.Unwrap();
+
+        // Key missing — write the default under the same lock
+        if (!s_Instance->SetUnsafe<T>(section, name, defaultValue))
+            AX_CORE_ERROR(LogChannel::Config, "Error setting a value");
+
+        return defaultValue;
     }
 } // namespace Axle

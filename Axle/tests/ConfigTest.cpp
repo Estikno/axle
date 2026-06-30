@@ -135,3 +135,102 @@ TEST_SUITE("Config") {
         CHECK(val.Unwrap() == 1280);
     }
 }
+
+TEST_SUITE("Config.GetOrSet") {
+    TEST_CASE("Returns existing value without modifying it") {
+        ConfigGuard g("[Window]\nwidth = 1280\n");
+
+        i32 width = Axle::Config::GetOrSet<i32>("Window", "width", 1920);
+        CHECK(width == 1280);
+
+        auto raw = Axle::Config::Get<i32>("Window", "width");
+        REQUIRE(raw.IsValid());
+        CHECK(raw.Unwrap() == 1280);
+    }
+
+    TEST_CASE("Returns default when key is missing") {
+        ConfigGuard g("[Window]\n");
+
+        i32 width = Axle::Config::GetOrSet<i32>("Window", "width", 1920);
+        CHECK(width == 1920);
+    }
+
+    TEST_CASE("Writes default back to config when key is missing") {
+        ConfigGuard g("[Window]\n");
+
+        Axle::Config::GetOrSet<i32>("Window", "width", 1920);
+
+        auto val = Axle::Config::Get<i32>("Window", "width");
+        REQUIRE(val.IsValid());
+        CHECK(val.Unwrap() == 1920);
+    }
+
+    TEST_CASE("Returns default when section is missing entirely") {
+        ConfigGuard g("");
+
+        bool vsync = Axle::Config::GetOrSet<bool>("Renderer", "vsync", true);
+        CHECK(vsync == true);
+
+        auto val = Axle::Config::Get<bool>("Renderer", "vsync");
+        REQUIRE(val.IsValid());
+        CHECK(val.Unwrap() == true);
+    }
+
+    TEST_CASE("Persists default to disk after Save") {
+        WriteTestIni("[Window]\n");
+        Axle::Config::Init(k_TestFile);
+
+        Axle::Config::GetOrSet<i32>("Window", "width", 1920);
+        Axle::Config::Save();
+        Axle::Config::ShutDown();
+
+        Axle::Config::Init(k_TestFile);
+        auto val = Axle::Config::Get<i32>("Window", "width");
+        REQUIRE(val.IsValid());
+        CHECK(val.Unwrap() == 1920);
+        Axle::Config::ShutDown();
+        Cleanup();
+    }
+
+    TEST_CASE("Works for float type") {
+        ConfigGuard g("[Renderer]\n");
+        f32 gamma = Axle::Config::GetOrSet<f32>("Renderer", "gamma", 2.2f);
+        CHECK(gamma == doctest::Approx(2.2f).epsilon(0.001f));
+    }
+
+    TEST_CASE("Works for bool type") {
+        ConfigGuard g("[Renderer]\n");
+        bool vsync = Axle::Config::GetOrSet<bool>("Renderer", "vsync", false);
+        CHECK(vsync == false);
+    }
+
+    TEST_CASE("Works for string type") {
+        ConfigGuard g("[Window]\n");
+        std::string title = Axle::Config::GetOrSet<std::string>("Window", "title", std::string("Axle Engine"));
+        CHECK(title == "Axle Engine");
+    }
+
+    TEST_CASE("Concurrent GetOrSet on the same missing key: exactly one default wins") {
+        ConfigGuard g("[Window]\n");
+
+        constexpr int kThreads = 16;
+        std::vector<std::thread> threads;
+        std::vector<i32> results(kThreads);
+
+        for (int i = 0; i < kThreads; ++i) {
+            threads.emplace_back([&, i]() { results[i] = Axle::Config::GetOrSet<i32>("Window", "width", 1000 + i); });
+        }
+        for (auto& t : threads)
+            t.join();
+
+        // Every thread must observe the SAME final value — whichever thread's
+        // write actually landed first under the lock — never a mix of values.
+        i32 finalValue = results[0];
+        for (i32 r : results)
+            CHECK(r == finalValue);
+
+        auto val = Axle::Config::Get<i32>("Window", "width");
+        REQUIRE(val.IsValid());
+        CHECK(val.Unwrap() == finalValue);
+    }
+}

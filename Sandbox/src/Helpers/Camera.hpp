@@ -60,6 +60,14 @@ public:
         return m_Zoom;
     }
 
+    inline glm::vec3 GetPosition() const {
+        return m_Position;
+    }
+
+    inline glm::vec3 GetFront() const {
+        return m_Front;
+    }
+
 private:
     void UpdateCameraVectors();
 
