@@ -18,7 +18,6 @@ set(INC_CONCURRENTQUEUE    "${VENDOR}/concurrentqueue")
 set(INC_COROWEAVER         "${VENDOR}/CoroWeaver")
 set(INC_STB_IMAGE         "${VENDOR}/stb_image")
 set(INC_SIMPLEINI         "${VENDOR}/simpleini")
-set(INC_EASY_PROFILER         "${VENDOR}/easy_profiler/easy_profiler_core/include")
 
 # Make these available to Sandbox and Tests via a cached variable
 set(AXLE_VENDOR_INCLUDES
@@ -27,7 +26,6 @@ set(AXLE_VENDOR_INCLUDES
     "${INC_SPDLOG}"
     "${INC_STB_IMAGE}"
     "${INC_GLM}"
-    "${INC_EASY_PROFILER}"
     CACHE INTERNAL "Vendor include dirs needed by Axle consumers")
 
 set(AXLE_DOCTEST_INCLUDE "${INC_DOCTEST}" CACHE INTERNAL "")
@@ -73,6 +71,21 @@ if(UNIX)
 endif()
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  Tracy (official submodule, uses its own CMakeLists.txt)
+# ══════════════════════════════════════════════════════════════════════════════
+
+option(TRACY_ENABLE "Enable Tracy profiler" ON)
+option(TRACY_ON_DEMAND "Enable Tracy on-demand mode" ON)
+
+if(UNIX)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL "" FORCE)
+    add_subdirectory("${VENDOR}/tracy")
+    set(CMAKE_POSITION_INDEPENDENT_CODE OFF CACHE BOOL "" FORCE)
+else()
+    add_subdirectory("${VENDOR}/tracy")
+endif()
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  GLFW  (official submodule, uses its own CMakeLists.txt)
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -83,23 +96,6 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(GLFW_INSTALL        OFF CACHE BOOL "" FORCE)
 
 add_subdirectory("${VENDOR}/GLFW" SYSTEM)
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  easy_profiler (official submodule, uses its own CMakeLists.txt)
-# ══════════════════════════════════════════════════════════════════════════════
-
-# Disable extras we don't need
-set(EASY_PROFILER_NO_GUI ON CACHE BOOL "")
-set(EASY_PROFILER_NO_SAMPLES ON CACHE BOOL "")
-
-# PIC required on Linux so it can be linked into the Axle shared lib
-if(UNIX)
-    set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL "" FORCE)
-    add_subdirectory("${VENDOR}/easy_profiler")
-    set(CMAKE_POSITION_INDEPENDENT_CODE OFF CACHE BOOL "" FORCE)
-else()
-    add_subdirectory("${VENDOR}/easy_profiler")
-endif()
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  ImGui  (C++20 static lib)
@@ -181,6 +177,8 @@ target_compile_definitions(Axle
         $<$<CONFIG:Debug>:AXLE_TESTING>
         $<$<CONFIG:Release>:AX_RELEASE>
         $<$<CONFIG:Dist>:AX_DIST>
+        # Tracy: enabled in Debug and Release, disabled in Dist
+        $<$<NOT:$<CONFIG:Dist>>:TRACY_ENABLE>
 )
 
 # Platform defines
@@ -197,10 +195,10 @@ if(UNIX)
     # sit outside the --whole-archive block.
     target_link_libraries(Axle PUBLIC
         -Wl,--whole-archive Glad ImGui stb_image -Wl,--no-whole-archive
-        glfw easy_profiler
+        glfw Tracy::TracyClient
     )
 else()
-    target_link_libraries(Axle PUBLIC glfw Glad ImGui stb_image easy_profiler)
+    target_link_libraries(Axle PUBLIC glfw Glad ImGui stb_image Tracy::TracyClient)
 endif()
 
 # ── Precompiled header ─────────────────────────────────────────────────────────
