@@ -3,6 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+# 3D Graphics Cookbook book resources
+assets/tests/CookBookAssets
+
 # CMake build directories
 build/
 build-*/

@@ -19,6 +19,10 @@
 #include <GLFW/glfw3.h>
 #include <CoroWeaver.hpp>
 
+#ifdef AX_DEBUG
+#    include <easy/profiler.h>
+#endif // AX_DEBUG
+
 namespace Axle {
     static std::stop_source source;
     static std::atomic<bool> renderDone{false};
@@ -60,6 +64,11 @@ namespace Axle {
     }
 
     void Application::Run() {
+#ifdef AX_DEBUG
+        EASY_MAIN_THREAD
+        EASY_PROFILER_ENABLE
+#endif // AX_DEBUG
+
         m_Running.store(true, std::memory_order_release);
 
         mainId = cw::JobSystem::GetInstance().ConvertToWorkerThread();
@@ -75,6 +84,10 @@ namespace Axle {
 
         // We shut down the system here so everything gets deleted correctly (GLFW, OpenGL, ...)
         cw::JobSystem::Shutdown();
+
+#ifdef AX_DEBUG
+        profiler::dumpBlocksToFile("assets/tests/profile_dump.prof");
+#endif // AX_DEBUG
     }
 
 
@@ -117,28 +130,38 @@ namespace Axle {
             while (lag >= m_DeltaTime) {
                 // Update logic
                 // --------------------------
-                cw::JobSystem::GetInstance().Schedule(
-                    [this]() {
-                        EventHandler::GetInstance().ProcessEvents(m_LayerStack->rbegin(), m_LayerStack->rend());
-                    },
-                    cw::JobPriority::Medium,
-                    cw::InvalidThreadIndex,
-                    EVENT_INPUT_TAG);
+                {
+#ifdef AX_DEBUG
+                    EASY_BLOCK("Events/Inputs");
+#endif // AX_DEBUG
+                    cw::JobSystem::GetInstance().Schedule(
+                        [this]() {
+                            EventHandler::GetInstance().ProcessEvents(m_LayerStack->rbegin(), m_LayerStack->rend());
+                        },
+                        cw::JobPriority::Medium,
+                        cw::InvalidThreadIndex,
+                        EVENT_INPUT_TAG);
 
-                cw::JobSystem::GetInstance().Schedule([this]() { InputManager::GetInstance().Update(); },
-                                                      cw::JobPriority::Medium,
-                                                      cw::InvalidThreadIndex,
-                                                      EVENT_INPUT_TAG);
-
-                AX_SCHEDULE_TAG_AND_WAIT(EVENT_INPUT_TAG);
-
-                for (Layer* layer : *m_LayerStack)
-                    cw::JobSystem::GetInstance().Schedule([layer, this]() { layer->OnUpdate(m_DeltaTime); },
+                    cw::JobSystem::GetInstance().Schedule([this]() { InputManager::GetInstance().Update(); },
                                                           cw::JobPriority::Medium,
                                                           cw::InvalidThreadIndex,
-                                                          LAYERS_TAG);
+                                                          EVENT_INPUT_TAG);
 
-                AX_SCHEDULE_TAG_AND_WAIT(LAYERS_TAG);
+                    AX_SCHEDULE_TAG_AND_WAIT(EVENT_INPUT_TAG);
+                }
+
+                {
+#ifdef AX_DEBUG
+                    EASY_BLOCK("Update");
+#endif // AX_DEBUG
+                    for (Layer* layer : *m_LayerStack)
+                        cw::JobSystem::GetInstance().Schedule([layer, this]() { layer->OnUpdate(m_DeltaTime); },
+                                                              cw::JobPriority::Medium,
+                                                              cw::InvalidThreadIndex,
+                                                              LAYERS_TAG);
+
+                    AX_SCHEDULE_TAG_AND_WAIT(LAYERS_TAG);
+                }
 
                 // --------------------------
                 lag -= m_DeltaTime;
@@ -154,15 +177,22 @@ namespace Axle {
 
             AX_SCHEDULE_TAG_AND_WAIT(LAYERS_TAG);
 
-            // Sleep a bit to avoid pegging a CPU core
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            // Sleep until the next tick is due, minus a small margin
+            f64 timeUntilNextTick = m_DeltaTime - lag;
+            if (timeUntilNextTick > 0.002) // only sleep if more than 2ms away
+                std::this_thread::sleep_for(std::chrono::duration<f64>(timeUntilNextTick - 0.001)); // wake 1ms early
         }
 
-        for (Layer* layer : *m_LayerStack)
-            cw::JobSystem::GetInstance().Schedule(
-                [layer]() { layer->OnDettach(); }, cw::JobPriority::Medium, cw::InvalidThreadIndex, LAYERS_TAG);
+        {
+#ifdef AX_DEBUG
+            EASY_BLOCK("OnDettach")
+#endif // AX_DEBUG
+            for (Layer* layer : *m_LayerStack)
+                cw::JobSystem::GetInstance().Schedule(
+                    [layer]() { layer->OnDettach(); }, cw::JobPriority::Medium, cw::InvalidThreadIndex, LAYERS_TAG);
 
-        AX_SCHEDULE_TAG_AND_WAIT(LAYERS_TAG);
+            AX_SCHEDULE_TAG_AND_WAIT(LAYERS_TAG);
+        }
 
         source.request_stop();
         co_return;

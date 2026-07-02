@@ -18,6 +18,7 @@ set(INC_CONCURRENTQUEUE    "${VENDOR}/concurrentqueue")
 set(INC_COROWEAVER         "${VENDOR}/CoroWeaver")
 set(INC_STB_IMAGE         "${VENDOR}/stb_image")
 set(INC_SIMPLEINI         "${VENDOR}/simpleini")
+set(INC_EASY_PROFILER         "${VENDOR}/easy_profiler/easy_profiler_core/include")
 
 # Make these available to Sandbox and Tests via a cached variable
 set(AXLE_VENDOR_INCLUDES
@@ -26,6 +27,7 @@ set(AXLE_VENDOR_INCLUDES
     "${INC_SPDLOG}"
     "${INC_STB_IMAGE}"
     "${INC_GLM}"
+    "${INC_EASY_PROFILER}"
     CACHE INTERNAL "Vendor include dirs needed by Axle consumers")
 
 set(AXLE_DOCTEST_INCLUDE "${INC_DOCTEST}" CACHE INTERNAL "")
@@ -81,6 +83,23 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(GLFW_INSTALL        OFF CACHE BOOL "" FORCE)
 
 add_subdirectory("${VENDOR}/GLFW" SYSTEM)
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  easy_profiler (official submodule, uses its own CMakeLists.txt)
+# ══════════════════════════════════════════════════════════════════════════════
+
+# Disable extras we don't need
+set(EASY_PROFILER_NO_GUI ON CACHE BOOL "")
+set(EASY_PROFILER_NO_SAMPLES ON CACHE BOOL "")
+
+# PIC required on Linux so it can be linked into the Axle shared lib
+if(UNIX)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL "" FORCE)
+    add_subdirectory("${VENDOR}/easy_profiler")
+    set(CMAKE_POSITION_INDEPENDENT_CODE OFF CACHE BOOL "" FORCE)
+else()
+    add_subdirectory("${VENDOR}/easy_profiler")
+endif()
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  ImGui  (C++20 static lib)
@@ -178,10 +197,10 @@ if(UNIX)
     # sit outside the --whole-archive block.
     target_link_libraries(Axle PUBLIC
         -Wl,--whole-archive Glad ImGui stb_image -Wl,--no-whole-archive
-        glfw
+        glfw easy_profiler
     )
 else()
-    target_link_libraries(Axle PUBLIC glfw Glad ImGui stb_image)
+    target_link_libraries(Axle PUBLIC glfw Glad ImGui stb_image easy_profiler)
 endif()
 
 # ── Precompiled header ─────────────────────────────────────────────────────────
