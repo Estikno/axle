@@ -8,9 +8,7 @@ enum ShaderStage : byte {
     /// Domain shader in D3D terminology
     TessEval     = 3,
     Geometry     = 4,
-    /// Pixel shader — always required
     Fragment     = 5,
-    /// Replaces Vertex + Tessellation + Geometry
 }
 
 /// A single GLSL source file for one stage.

@@ -5,12 +5,12 @@
 
 using namespace Axle;
 
-class Shader {
+class ShaderHelper {
 public:
     u32 ID;
 
-    Shader() = default;
-    Shader(const std::string& vertexPath, const std::string& fragmentPath);
+    ShaderHelper() = default;
+    ShaderHelper(const std::string& vertexPath, const std::string& fragmentPath);
     void Use();
 
     void SetBool(const std::string& name, bool value) const;

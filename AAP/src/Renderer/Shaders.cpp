@@ -1,6 +1,3 @@
-#include "flatbuffers/buffer.h"
-#include "flatbuffers/string.h"
-#include "flatbuffers/vector.h"
 #include <iostream>
 #include <ostream>
 #include <string>
@@ -11,7 +8,7 @@
 #include "Utils.hpp"
 #include "../Setups.hpp"
 
-#include "ShadeSource_generated.h"
+#include "ShaderSource_generated.h"
 #include "flatbuffers/flatbuffers.h"
 
 namespace AAP {
@@ -23,6 +20,9 @@ namespace AAP {
 
         static std::string shaderVersion = "";
         shader->add_option("-v,--version", shaderVersion, "Semantic version of this shader package (e.g. 1.0.3)");
+
+        static std::string outputName = "shader.bin";
+        shader->add_option("-o,--output", outputName, "Name of the output file");
 
         static std::vector<std::string> shader_files;
         shader
@@ -82,7 +82,7 @@ namespace AAP {
             u8* buf = builder.GetBufferPointer();
             u32 size = builder.GetSize();
 
-            WriteFile("test.bin", buf, size);
+            WriteFile(outputName.c_str(), buf, size);
         });
     }
 } // namespace AAP

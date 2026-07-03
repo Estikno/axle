@@ -16,11 +16,23 @@ namespace Axle {
     inline constexpr std::string_view VERBOSITY_NAMES[] = {"Critical", "Error", "Warn", "Info", "All"};
 
     /// Contains a list to all avaiblable channels.
-    enum class LogChannel { Core = 0, Client, Config, Events, Input, Resources, Window, Debug, Other, MaxChannels };
+    enum class LogChannel {
+        Core = 0,
+        Client,
+        Config,
+        Events,
+        Input,
+        Resources,
+        Window,
+        Debug,
+        Renderer,
+        Other,
+        MaxChannels
+    };
 
     /// Human-readable names — index must match LogChannel order
     inline constexpr std::string_view CHANNEL_NAMES[] =
-        {"Core", "Client", "Config", "Events", "Input", "Resources", "Window", "Debug", "Other"};
+        {"Core", "Client", "Config", "Events", "Input", "Resources", "Window", "Debug", "Renderer", "Other"};
 
     inline constexpr std::string_view ChannelName(LogChannel ch) {
         return CHANNEL_NAMES[static_cast<u8>(ch)];

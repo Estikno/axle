@@ -1,4 +1,3 @@
-#include "glm/fwd.hpp"
 #include <glad/gl.h>
 #include <AxleApp.hpp>
 
@@ -7,7 +6,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "Helpers/Shader.hpp"
+#include "Helpers/ShaderHelper.hpp"
 #include "Helpers/Camera.hpp"
 #include "Core/Application.hpp"
 
@@ -28,8 +27,8 @@ public:
 
     void OnAttachRender() override {
         // Setup shaders
-        lightShader = Shader("Sandbox/src/Shaders/default.vert", "Sandbox/src/Shaders/lightFragment.frag");
-        shader = Shader("Sandbox/src/Shaders/default.vert", "Sandbox/src/Shaders/default.frag");
+        lightShader = ShaderHelper("Sandbox/src/Shaders/default.vert", "Sandbox/src/Shaders/lightFragment.frag");
+        shader = ShaderHelper("Sandbox/src/Shaders/default.vert", "Sandbox/src/Shaders/default.frag");
         shader.Use();
 
         shader.SetVec3("objectColor", glm::vec3(1.0f, 0.5f, 0.31f));
@@ -222,7 +221,7 @@ public:
     }
 
 private:
-    Shader shader, lightShader;
+    ShaderHelper shader, lightShader;
     Camera camera;
 
     f32 width = 1280.0f, height = 720.0f;

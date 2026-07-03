@@ -3,9 +3,9 @@
 
 #include "glm/gtc/type_ptr.hpp"
 
-#include "Shader.hpp"
+#include "ShaderHelper.hpp"
 
-Shader::Shader(const std::string& vertexPath, const std::string& fragmentPath) {
+ShaderHelper::ShaderHelper(const std::string& vertexPath, const std::string& fragmentPath) {
     // Load shader files
     ResourceManager::ManagedFileHandle VertexShaderHandle = ResourceManager::GetInstance().Load(vertexPath).Unwrap();
     ResourceManager::ManagedFileHandle FragmentShaderHandle =
@@ -61,24 +61,24 @@ Shader::Shader(const std::string& vertexPath, const std::string& fragmentPath) {
     glDeleteShader(fragmentShader);
 }
 
-void Shader::Use() {
+void ShaderHelper::Use() {
     glUseProgram(ID);
 }
 
-void Shader::SetBool(const std::string& name, bool value) const {
+void ShaderHelper::SetBool(const std::string& name, bool value) const {
     SetInt(name, static_cast<i32>(value));
 }
-void Shader::SetInt(const std::string& name, i32 value) const {
+void ShaderHelper::SetInt(const std::string& name, i32 value) const {
     glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
 }
-void Shader::SetFloat(const std::string& name, f32 value) const {
+void ShaderHelper::SetFloat(const std::string& name, f32 value) const {
     glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
 }
 
-void Shader::SetMat4(const std::string& name, const glm::mat4& value) const {
+void ShaderHelper::SetMat4(const std::string& name, const glm::mat4& value) const {
     glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
 }
 
-void Shader::SetVec3(const std::string& name, const glm::vec3& value) const {
+void ShaderHelper::SetVec3(const std::string& name, const glm::vec3& value) const {
     glUniform3fv(glGetUniformLocation(ID, name.c_str()), 1, glm::value_ptr(value));
 }
