@@ -6,18 +6,19 @@
 # ── Vendor include paths (used by multiple targets below) ─────────────────────
 set(VENDOR "${CMAKE_CURRENT_SOURCE_DIR}/vendor")
 
-set(INC_GLFW    "${VENDOR}/GLFW/include")
-set(INC_GLAD    "${VENDOR}/Glad/include")
-set(INC_SPDLOG  "${VENDOR}/spdlog/include")
-set(INC_GLM     "${VENDOR}/glm")
-set(INC_IMGUI   "${VENDOR}/imgui")
-set(INC_DOCTEST "${VENDOR}/doctest/doctest")
-set(INC_MIO     "${VENDOR}/mio/include")
-set(INC_ENTT    "${VENDOR}/entt/single_include")
+set(INC_GLFW               "${VENDOR}/GLFW/include")
+set(INC_GLAD               "${VENDOR}/Glad/include")
+set(INC_SPDLOG             "${VENDOR}/spdlog/include")
+set(INC_GLM                "${VENDOR}/glm")
+set(INC_IMGUI              "${VENDOR}/imgui")
+set(INC_DOCTEST            "${VENDOR}/doctest/doctest")
+set(INC_MIO                "${VENDOR}/mio/include")
+set(INC_ENTT               "${VENDOR}/entt/single_include")
 set(INC_CONCURRENTQUEUE    "${VENDOR}/concurrentqueue")
 set(INC_COROWEAVER         "${VENDOR}/CoroWeaver")
-set(INC_STB_IMAGE         "${VENDOR}/stb_image")
-set(INC_SIMPLEINI         "${VENDOR}/simpleini")
+set(INC_STB_IMAGE          "${VENDOR}/stb_image")
+set(INC_SIMPLEINI          "${VENDOR}/simpleini")
+set(INC_ASSIMP             "${VENDOR}/assimp/include")
 
 # Make these available to Sandbox and Tests via a cached variable
 set(AXLE_VENDOR_INCLUDES
@@ -69,6 +70,30 @@ if(UNIX)
     # Avoid reduplication of simbols. Keep comented for now to avoid errors in the Sandbox project
     # target_compile_options(Glad PRIVATE -fvisibility=hidden)
 endif()
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  assimp (official submodule, uses its own CMakeLists.txt)
+# ══════════════════════════════════════════════════════════════════════════════
+
+# only OBJ and glTF import support
+set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_OBJ_IMPORTER ON CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_GLTF_IMPORTER ON CACHE BOOL "" FORCE)
+
+# We only need import, not export
+set(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT OFF CACHE BOOL "" FORCE)
+set(ASSIMP_NO_EXPORT ON CACHE BOOL "" FORCE)
+
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
+set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
+set(ASSIMP_INJECT_DEBUG_POSTFIX OFF CACHE BOOL "" FORCE)
+
+# Assimp defaults to building both shared and static; pick one to match Axle's conventions
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+
+add_subdirectory("${VENDOR}/assimp")
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  Tracy (official submodule, uses its own CMakeLists.txt)
@@ -166,6 +191,7 @@ target_include_directories(Axle
         "${INC_COROWEAVER}"
         "${INC_STB_IMAGE}"
         "${INC_SIMPLEINI}"
+        "${INC_ASSIMP}"
 )
 
 target_compile_definitions(Axle
@@ -195,10 +221,10 @@ if(UNIX)
     # sit outside the --whole-archive block.
     target_link_libraries(Axle PUBLIC
         -Wl,--whole-archive Glad ImGui stb_image -Wl,--no-whole-archive
-        glfw Tracy::TracyClient
+        glfw Tracy::TracyClient assimp
     )
 else()
-    target_link_libraries(Axle PUBLIC glfw Glad ImGui stb_image Tracy::TracyClient)
+    target_link_libraries(Axle PUBLIC glfw Glad ImGui stb_image Tracy::TracyClient assimp)
 endif()
 
 # ── Precompiled header ─────────────────────────────────────────────────────────

@@ -28,3 +28,6 @@
 [submodule "Axle/vendor/tracy"]
 	path = Axle/vendor/tracy
 	url = https://github.com/wolfpld/tracy.git
+[submodule "Axle/vendor/assimp"]
+	path = Axle/vendor/assimp
+	url = https://github.com/assimp/assimp.git
