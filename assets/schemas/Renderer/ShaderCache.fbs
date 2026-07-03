@@ -1,0 +1,25 @@
+namespace Axle;
+
+/// Cached, driver-compiled program binary (glGetProgramBinary output).
+/// Always treat as invalidatable: if glProgramBinary() fails to load it,
+/// or driver_fingerprint doesn't match, fall back to recompiling from the
+/// matching ShaderCollection's ShaderPipeline and re-cache.
+table ProgramBinaryCache {
+    /// The GLenum returned by glGetProgramBinary as the binary's format.
+    /// Driver/vendor-specific — do not assume portability across GPUs/drivers.
+    binary_format: uint32;
+    /// Raw bytes as returned by glGetProgramBinary.
+    binary: [ubyte] (required);
+    /// Opaque string identifying the driver/GPU this was compiled on
+    /// (e.g. GL_VENDOR + GL_RENDERER + GL_VERSION concatenated), used to
+    /// sanity-check the cache before attempting glProgramBinary().
+    driver_fingerprint: string;
+    /// Hash of the source ShaderCollection this was built from (e.g. FNV-1a
+    /// or xxhash over the .shader file's bytes). Lets you detect a stale
+    /// cache even when the driver fingerprint still matches — i.e. the
+    /// user edited the shader source without bumping `version`.
+    source_hash: uint64;
+}
+
+root_type ProgramBinaryCache;
+file_identifier "SHCA";   // "shader cache"

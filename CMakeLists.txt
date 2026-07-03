@@ -98,7 +98,7 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/vendor/flatbuffers")
 set(INC_FLATBUFFERS "${CMAKE_SOURCE_DIR}/vendor/flatbuffers/include" CACHE INTERNAL "")
 
 # ── Flatbuffers schema generation (shared between Axle and AAP) ───────────────
-file(GLOB ALL_SCHEMAS "${CMAKE_SOURCE_DIR}/assets/schemas/**.fbs")
+file(GLOB_RECURSE ALL_SCHEMAS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/assets/schemas/**.fbs")
 
 if(ALL_SCHEMAS)
     set(FLATBUFFERS_FLATC_SCHEMA_EXTRA_ARGS "--gen-mutable" "--gen-object-api")
@@ -114,6 +114,8 @@ if(ALL_SCHEMAS)
     )
 
     set(HAS_SCHEMAS ON CACHE INTERNAL "")
+else()
+    set(HAS_SCHEMAS OFF CACHE INTERNAL "")
 endif()
 
 # ── Subprojects ────────────────────────────────────────────────────────────────

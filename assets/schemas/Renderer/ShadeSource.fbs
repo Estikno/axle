@@ -1,0 +1,48 @@
+namespace Axle;
+
+enum ShaderStage : byte {
+    Unknown      = 0,
+    Vertex       = 1,
+    /// Hull shader in D3D terminology
+    TessControl  = 2,
+    /// Domain shader in D3D terminology
+    TessEval     = 3,
+    Geometry     = 4,
+    /// Pixel shader — always required
+    Fragment     = 5,
+    /// Replaces Vertex + Tessellation + Geometry
+}
+
+/// A single GLSL source file for one stage.
+table ShaderSource {
+    stage: ShaderStage;
+    /// Human-readable name / asset path for debugging and hot-reload.
+    name: string;
+    /// Raw GLSL source text (UTF-8).
+    source: [ubyte] (required);
+    /// Optional: preprocessor defines injected before compilation.
+    /// Stored as alternating key/value pairs: ["SAMPLES", "4", "DEBUG", "1"]
+    defines: [string];
+}
+
+/// Classic rasterization pipeline: vertex → (tess control → tess eval) → (geometry) → fragment.
+/// Tessellation stages must appear together (both or neither).
+table ShaderPipeline {
+    vertex: ShaderSource (required);
+    tess_control: ShaderSource;
+    tess_eval: ShaderSource;
+    geometry: ShaderSource;
+    fragment: ShaderSource (required);
+}
+
+/// Root table — one per renderable object / material.
+table ShaderCollection {
+    /// Human-readable identifier for the owning object or material.
+    object_name: string;
+    /// Semantic version of this shader package (e.g. "1.0.3").
+    version: string;
+    pipeline: ShaderPipeline (required);
+}
+
+root_type ShaderCollection;
+file_identifier "SHSR";   // "shader source"
