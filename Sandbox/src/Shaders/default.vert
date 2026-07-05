@@ -1,20 +1,31 @@
 #version 460 core
-layout (location = 0) in vec3 aPos;
-layout (location = 1) in vec3 aNormal;
-layout (location = 2) in vec2 aTexCoords;
 
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
+layout(std140, binding = 0) uniform PerFrameData{
+    uniform mat4 MVP;
+};
 
-out vec3 Normal;
-out vec3 FragPos;
-out vec2 TexCoords;
+struct Vertex{
+    float p[3];
+    float tc[2];
+};
 
-void main()
-{
-    gl_Position = projection * view * model * vec4(aPos, 1.0);
-    FragPos = vec3(model * vec4(aPos, 1.0));
-    Normal = mat3(transpose(inverse(model))) * aNormal;
-    TexCoords = aTexCoords;
+layout(std430, binding = 1) restrict readonly buffer Vertices {
+    Vertex inVertices[];
+};
+
+vec3 getPosition(int i){
+    return vec3(inVertices[i].p[0], inVertices[i].p[1], inVertices[i].p[2]);
+}
+
+vec2 getTexCoord(int i){
+    return vec2(inVertices[i].tc[0], inVertices[i].tc[1]);
+}
+
+layout (location = 0) out vec2 uv;
+
+void main(){
+    vec3 pos = getPosition(gl_VertexID);
+    gl_Position = MVP * vec4(pos, 1.0);
+
+    uv = getTexCoord(gl_VertexID);
 }

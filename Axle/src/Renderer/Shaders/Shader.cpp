@@ -20,10 +20,10 @@ namespace Axle {
         // Flatbuffer binary
         const ShaderCollection* collection = GetShaderCollection(readGuard.Data());
 
-        AX_ENSURE(ShaderCollectionBufferHasIdentifier(readGuard.Data()),
-                  LogChannel::Renderer,
-                  "The provided file {0} is not compatible with shaders",
-                  filename);
+        // AX_ENSURE(ShaderCollectionBufferHasIdentifier(collection),
+        //           LogChannel::Renderer,
+        //           "The provided file {0} is not compatible with shaders",
+        //           filename);
         // TODO: Put an ugly default shader if it couldn't load the file
 
         m_Type = type;
@@ -84,5 +84,17 @@ namespace Axle {
 
     Shader::~Shader() {
         glDeleteShader(m_ID);
+    }
+
+    Shader& Shader::operator=(Shader&& other) noexcept {
+        if (this != &other) {
+            glDeleteShader(m_ID);
+            m_ID = other.m_ID;
+            m_Type = other.m_Type;
+
+            other.m_ID = 0;
+            other.m_Type = ShaderType::Unknown;
+        }
+        return *this;
     }
 } // namespace Axle

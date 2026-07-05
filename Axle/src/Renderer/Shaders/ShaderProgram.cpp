@@ -15,7 +15,26 @@ namespace Axle {
         glAttachShader(m_ID, b.GetID());
         glLinkProgram(m_ID);
 
-        // Check linking errors
+        CheckLinkErrors();
+    }
+
+    ShaderProgram::ShaderProgram(const Shader& a, const Shader& b, const Shader& c) {
+        m_ID = glCreateProgram();
+
+        // Link shaders
+        glAttachShader(m_ID, a.GetID());
+        glAttachShader(m_ID, b.GetID());
+        glAttachShader(m_ID, c.GetID());
+        glLinkProgram(m_ID);
+
+        CheckLinkErrors();
+    }
+
+    ShaderProgram::~ShaderProgram() {
+        glDeleteProgram(m_ID);
+    }
+
+    void ShaderProgram::CheckLinkErrors() const {
         i32 success;
         char infoLog[1024];
 
@@ -29,11 +48,17 @@ namespace Axle {
         }
     }
 
-    ShaderProgram::~ShaderProgram() {
-        glDeleteProgram(m_ID);
-    }
-
     void ShaderProgram::Use() const {
         glUseProgram(m_ID);
     }
+
+    ShaderProgram& ShaderProgram::operator=(ShaderProgram&& other) noexcept {
+        if (this != &other) {
+            glDeleteProgram(m_ID);
+            m_ID = other.m_ID;
+            other.m_ID = 0;
+        }
+        return *this;
+    }
+
 } // namespace Axle
