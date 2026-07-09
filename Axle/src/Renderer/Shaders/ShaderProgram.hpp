@@ -27,12 +27,22 @@ namespace Axle {
         }
         ShaderProgram& operator=(ShaderProgram&& other) noexcept;
 
+        /**
+         * Tells OpenGL to use the program.
+         * */
         void Use() const;
+
+        /**
+         * Gets the underlying OpenGL identifier of the program.
+         * */
         inline u32 GetID() const {
             return m_ID;
         }
 
     private:
+        /**
+         * Checks for any linking errors.
+         * */
         void CheckLinkErrors() const;
 
         u32 m_ID;

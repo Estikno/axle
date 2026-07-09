@@ -16,7 +16,10 @@
 #include "Renderer/Shaders/ShaderProgram.hpp"
 #include "Renderer/Shaders/Shader.hpp"
 #include "Core/Application.hpp"
+#include "Core/Core.hpp"
 #include "Core/Error/Panic.hpp"
+#include "Core/Events/Event.hpp"
+#include "Renderer/Camera/Camera.hpp"
 
 using namespace Axle;
 
@@ -38,6 +41,11 @@ public:
     }
 
     void OnAttachRender() override {
+        glfwSetInputMode(Application::GetInstance().GetWindow().GetNativeWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+        positionerDebug = CameraPositionerDebug();
+        camera = Camera(positionerDebug);
+
         // Shaders
         Shader vertexShader("Sandbox/src/Shaders/default.bin", ShaderType::Vertex);
         Shader fragmentShader("Sandbox/src/Shaders/default.bin", ShaderType::Fragment);
@@ -124,8 +132,11 @@ public:
         const glm::mat4 m = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.5f, -1.5f)),
                                         (float) glfwGetTime(),
                                         glm::vec3(0.0f, 1.0f, 0.0f));
-        const glm::mat4 p = glm::perspective(45.0f, width / height, 0.1f, 1000.0f);
-        const PerFrameData perFrameData = {.mvp = p * m};
+
+        positionerDebug.Update(deltaTime);
+
+        const glm::mat4 p = glm::perspective(glm::radians(positionerDebug.GetFOV()), width / height, 0.1f, 1000.0f);
+        const PerFrameData perFrameData = {.mvp = p * positionerDebug.GetViewMatrix() * m};
 
         glNamedBufferSubData(perFrameBuffer, 0, sizeof(PerFrameData), &perFrameData);
         glDrawElements(GL_TRIANGLES, static_cast<unsigned>(indices.size()), GL_UNSIGNED_INT, nullptr);
@@ -137,14 +148,23 @@ public:
         return false;
     }
 
+    bool OnMouseScroll(MouseScrollEvent& event) {
+        positionerDebug.ProcessMouseScroll(event.GetYOffset());
+        return false;
+    }
+
     void OnEvent(Event& event) override {
         EventDispatcher dispatcher(event);
         dispatcher.Dispatch<FrameBufferResizeEvent>(AX_BIND_EVENT_FN(OnFrameBufferResize));
+        dispatcher.Dispatch<MouseScrollEvent>(AX_BIND_EVENT_FN(OnMouseScroll));
     }
 
 private:
     ShaderProgram program;
     std::vector<u32> indices;
+
+    Camera camera;
+    CameraPositionerDebug positionerDebug;
 
     GLuint dataIndices, dataVertices, VAO, texture, perFrameBuffer;
 

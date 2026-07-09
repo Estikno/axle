@@ -1,3 +1,4 @@
+#include "glm/trigonometric.hpp"
 #include <glad/gl.h>
 #include "Core/Input/InputManager.hpp"
 #include "Core/Input/InputState.hpp"

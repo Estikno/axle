@@ -33,10 +33,16 @@ namespace Axle {
 
         Shader& operator=(Shader&& other) noexcept;
 
+        /**
+         * Gets the underlying OpenGL identifier.
+         * */
         inline u32 GetID() const {
             return m_ID;
         }
 
+        /**
+         * Whats the shader's type?
+         * */
         inline ShaderType GetType() const {
             return m_Type;
         }
