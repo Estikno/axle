@@ -13,6 +13,7 @@
 
 #include "Debug/Console.hpp"
 #include "Debug/Overlay.hpp"
+#include "Debug/Inspector.hpp"
 
 namespace Axle {
     ImGuiLayer::ImGuiLayer()
@@ -54,8 +55,9 @@ namespace Axle {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // Show demo window! :)
-        // ImGui::ShowDemoWindow();
+        // Inspector
+        if (m_OpenInspector)
+            m_Inspector.Draw("Test", &m_OpenInspector);
 
         // Console
         if (m_Console.Open)
@@ -94,6 +96,9 @@ namespace Axle {
 
         if (event.GetKey() == Keys::F2)
             m_OpenOverlay = !m_OpenOverlay;
+
+        if (event.GetKey() == Keys::F3)
+            m_OpenInspector = !m_OpenInspector;
 
         return false;
     }

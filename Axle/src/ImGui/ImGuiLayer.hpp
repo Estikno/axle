@@ -7,6 +7,7 @@
 #include "Core/Types.hpp"
 
 #include "Debug/Console.hpp"
+#include "Debug/Inspector.hpp"
 
 namespace Axle {
     class ImGuiLayer : public Layer {
@@ -29,6 +30,8 @@ namespace Axle {
 
         // Renderer variables
         Debug::DebugConsole m_Console;
+        Debug::Inspector m_Inspector;
         bool m_OpenOverlay = true;
+        bool m_OpenInspector = true;
     };
 } // namespace Axle

@@ -4,6 +4,9 @@
 #include "Core/Input/InputManager.hpp"
 #include "Core/Input/InputState.hpp"
 
+#include "glm/trigonometric.hpp"
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/euler_angles.hpp>
 #include <glm/glm.hpp>
 
 namespace Axle {
@@ -59,6 +62,22 @@ namespace Axle {
 
         m_Right = glm::normalize(glm::cross(m_Forward, m_WorldUp));
         m_Up = glm::normalize(glm::cross(m_Right, m_Forward));
+    }
+
+    void CameraPositionerMoveTo::Update(f32 deltaTime) {
+        // Update position
+        m_PositionCurrent += p_DampingLinear * deltaTime * (m_PositionDesired - m_PositionCurrent);
+
+        // Normalize angles
+        m_AnglesCurrent = ClipAngles(m_AnglesCurrent);
+        m_AnglesDesired = ClipAngles(m_AnglesDesired);
+
+        // Update angles
+        m_AnglesCurrent -= AngleDelta(m_AnglesCurrent, m_AnglesDesired) * p_DampingEulerAngles * deltaTime;
+        m_AnglesCurrent = ClipAngles(m_AnglesCurrent);
+
+        const glm::vec3 a = glm::radians(m_AnglesCurrent);
+        m_CurrentTransform = glm::translate(glm::yawPitchRoll(a.y, a.x, a.z), -m_PositionCurrent);
     }
 
 } // namespace Axle

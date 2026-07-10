@@ -19,6 +19,7 @@
 #include "Core/Core.hpp"
 #include "Core/Error/Panic.hpp"
 #include "Core/Events/Event.hpp"
+#include "Core/Input/InputState.hpp"
 #include "Renderer/Camera/Camera.hpp"
 
 using namespace Axle;
@@ -41,8 +42,6 @@ public:
     }
 
     void OnAttachRender() override {
-        glfwSetInputMode(Application::GetInstance().GetWindow().GetNativeWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
         positionerDebug = CameraPositionerDebug(glm::vec3(0.0f, 0.0f, -10.0f), 90.0f, 0.0f);
         camera = Camera(positionerDebug);
 
@@ -129,11 +128,17 @@ public:
     }
 
     void OnRender(f64 deltaTime) override {
+        if (updateCameraTrigger.load()) {
+            updateCameraTrigger.store(false);
+            UpdateCameraDebug();
+        }
+
+        if (updateDebugCamera)
+            positionerDebug.Update(deltaTime);
+
         const glm::mat4 m = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.5f, -1.5f)),
                                         (float) glfwGetTime(),
                                         glm::vec3(0.0f, 1.0f, 0.0f));
-
-        positionerDebug.Update(deltaTime);
 
         const glm::mat4 p = glm::perspective(glm::radians(positionerDebug.GetFOV()), width / height, 0.1f, 1000.0f);
         const PerFrameData perFrameData = {.mvp = p * positionerDebug.GetViewMatrix() * m};
@@ -153,10 +158,28 @@ public:
         return false;
     }
 
+    bool OnKeyPressed(KeyPressedEvent& event) {
+        if (event.GetKey() == Keys::F4)
+            updateCameraTrigger.store(true);
+
+        return false;
+    }
+
     void OnEvent(Event& event) override {
         EventDispatcher dispatcher(event);
         dispatcher.Dispatch<FrameBufferResizeEvent>(AX_BIND_EVENT_FN(OnFrameBufferResize));
         dispatcher.Dispatch<MouseScrollEvent>(AX_BIND_EVENT_FN(OnMouseScroll));
+        dispatcher.Dispatch<KeyPressedEvent>(AX_BIND_EVENT_FN(OnKeyPressed));
+    }
+
+    void UpdateCameraDebug() {
+        updateDebugCamera = !updateDebugCamera;
+        if (!updateDebugCamera) {
+            glfwSetInputMode(Application::GetInstance().GetWindow().GetNativeWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        } else {
+            glfwSetInputMode(
+                Application::GetInstance().GetWindow().GetNativeWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        }
     }
 
 private:
@@ -165,6 +188,8 @@ private:
 
     Camera camera;
     CameraPositionerDebug positionerDebug;
+    bool updateDebugCamera = false;
+    std::atomic_bool updateCameraTrigger{false};
 
     GLuint dataIndices, dataVertices, VAO, texture, perFrameBuffer;
 
