@@ -22,10 +22,6 @@ set(INC_ASSIMP             "${VENDOR}/assimp/include")
 
 # Make these available to Sandbox and Tests via a cached variable
 set(AXLE_VENDOR_INCLUDES
-    "${INC_GLFW}"
-    "${INC_GLAD}"
-    "${INC_SPDLOG}"
-    "${INC_STB_IMAGE}"
     "${INC_GLM}"
     CACHE INTERNAL "Vendor include dirs needed by Axle consumers")
 
@@ -43,8 +39,8 @@ target_include_directories(stb_image PUBLIC "${VENDOR}/stb_image")
 
 if(UNIX)
     set_target_properties(stb_image PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    # Avoid reduplication of simbols. Keep comented for now to avoid errors in the Sandbox project
-    # target_compile_options(stb_image PRIVATE -fvisibility=hidden)
+    # Avoid reduplication of simbols
+    target_compile_options(stb_image PRIVATE -fvisibility=hidden)
 endif()
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -67,8 +63,8 @@ set_target_properties(Glad PROPERTIES
 # PIC required on Linux so it can be linked into the Axle shared lib
 if(UNIX)
     set_target_properties(Glad PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    # Avoid reduplication of simbols. Keep comented for now to avoid errors in the Sandbox project
-    # target_compile_options(Glad PRIVATE -fvisibility=hidden)
+    # Avoid reduplication of simbols
+    target_compile_options(Glad PRIVATE -fvisibility=hidden)
 endif()
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -95,6 +91,10 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
 add_subdirectory("${VENDOR}/assimp")
 
+if(UNIX)
+    set_target_properties(assimp PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
+endif()
+
 # ══════════════════════════════════════════════════════════════════════════════
 #  Tracy (official submodule, uses its own CMakeLists.txt)
 # ══════════════════════════════════════════════════════════════════════════════
@@ -108,6 +108,10 @@ if(UNIX)
     set(CMAKE_POSITION_INDEPENDENT_CODE OFF CACHE BOOL "" FORCE)
 else()
     add_subdirectory("${VENDOR}/tracy")
+endif()
+
+if(UNIX)
+    set_target_properties(TracyClient PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
 endif()
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -178,10 +182,11 @@ endif()
 target_include_directories(Axle
     PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
+        "${INC_GLM}"
+    PRIVATE
         "${INC_SPDLOG}"
         "${INC_GLFW}"
         "${INC_GLAD}"
-        "${INC_GLM}"
         "${INC_IMGUI}"
         "${INC_MIO}"
         "${INC_ENTT}"
@@ -219,12 +224,12 @@ if(UNIX)
     # otherwise the linker silently drops unreferenced symbols.
     # Note: glfw manage their own symbols correctly so they
     # sit outside the --whole-archive block.
-    target_link_libraries(Axle PUBLIC
+    target_link_libraries(Axle PRIVATE
         -Wl,--whole-archive Glad ImGui stb_image -Wl,--no-whole-archive
         glfw Tracy::TracyClient assimp
     )
 else()
-    target_link_libraries(Axle PUBLIC glfw Glad ImGui stb_image Tracy::TracyClient assimp)
+    target_link_libraries(Axle PRIVATE glfw Glad ImGui stb_image Tracy::TracyClient assimp)
 endif()
 
 # ── Precompiled header ─────────────────────────────────────────────────────────

@@ -17,7 +17,9 @@
 
 namespace Axle {
     ImGuiLayer::ImGuiLayer()
-        : Layer("ImGui") {}
+        : Layer("ImGui") {
+        Debug::Inspector::Init();
+    }
 
     void ImGuiLayer::OnAttach() {}
 
@@ -57,7 +59,7 @@ namespace Axle {
 
         // Inspector
         if (m_OpenInspector)
-            m_Inspector.Draw("Test", &m_OpenInspector);
+            Debug::Inspector::Draw("Inspector", &m_OpenInspector);
 
         // Console
         if (m_Console.Open)
@@ -77,6 +79,8 @@ namespace Axle {
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
+
+        Debug::Inspector::Shutdown();
     }
 
     void ImGuiLayer::OnEvent(Event& event) {

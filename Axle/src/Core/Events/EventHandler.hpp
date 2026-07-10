@@ -17,9 +17,6 @@ namespace Axle {
      */
     class AXLE_API EventHandler {
     public:
-        /// The type of function the subject accepts
-        using HandlerType = std::function<void(Event&)>;
-
         EventHandler(const EventHandler&) = delete;
         EventHandler& operator=(const EventHandler&) = delete;
 
