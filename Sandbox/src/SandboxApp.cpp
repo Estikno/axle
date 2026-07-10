@@ -43,7 +43,7 @@ public:
     void OnAttachRender() override {
         glfwSetInputMode(Application::GetInstance().GetWindow().GetNativeWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-        positionerDebug = CameraPositionerDebug();
+        positionerDebug = CameraPositionerDebug(glm::vec3(0.0f, 0.0f, -10.0f), 90.0f, 0.0f);
         camera = Camera(positionerDebug);
 
         // Shaders

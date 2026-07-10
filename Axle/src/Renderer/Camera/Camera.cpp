@@ -9,7 +9,7 @@
 namespace Axle {
     void CameraPositionerDebug::Update(f32 deltaTime) {
         // Mouse input
-        glm::vec2 offsets = InputManager::GetMousePositionOffset() * p_MouseSensitivity * deltaTime;
+        glm::vec2 offsets = InputManager::GetMousePositionOffset() * p_MouseSensitivity;
 
         m_Yaw += offsets.x;
         m_Pitch += offsets.y;

@@ -44,13 +44,7 @@ namespace Axle {
     class AXLE_API CameraPositionerDebug final : public ICameraPositioner {
     public:
         CameraPositionerDebug()
-            : m_Position(glm::vec3(0.0f, 0.0f, 0.0f)),
-              m_Up(glm::vec3(0.0f, 1.0f, 0.0f)),
-              m_Forward(glm::vec3(0.0f, 0.0f, -1.0f)),
-              m_Right(glm::vec3(1.0f, 0.0f, 0.0f)),
-              m_WorldUp(glm::vec3(0.0f, 1.0f, 0.0f)),
-              m_Pitch(-90.0f),
-              m_Yaw(0.0f) {
+            : CameraPositionerDebug(glm::vec3(0.0f), -90.0f, 0.0f) {
             InitPublicVariables();
             UpdateCameraVectors();
         }
@@ -95,6 +89,7 @@ namespace Axle {
             p_MoveSpeed = Config::GetOrSet(std::string(ConfigSection), "MoveSpeed", 10.0f);
             p_MinFOV = Config::GetOrSet(std::string(ConfigSection), "MinFOV", 1.0f);
             p_MaxFOV = Config::GetOrSet(std::string(ConfigSection), "MaxFOV", 45.0f);
+            m_FOV = p_MaxFOV;
         }
 
         void UpdateCameraVectors();
