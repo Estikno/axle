@@ -1,12 +1,11 @@
 #pragma once
 
 #include "axpch.hpp"
+
 #include "Other/CustomTypes/Expected.hpp"
 #include "Core/Core.hpp"
 #include "Core/Types.hpp"
 #include "Other/CustomTypes/SparseSet.hpp"
-
-#include <mio/mmap.hpp>
 
 namespace Axle {
     class AXLE_TEST_API ResourceManager {
@@ -182,8 +181,8 @@ namespace Axle {
         ResourceManager(const ResourceManager&) = delete;
         ResourceManager& operator=(const ResourceManager&) = delete;
 
-        ResourceManager() {}
-        ~ResourceManager() {}
+        ResourceManager();
+        ~ResourceManager();
 
         /**
          * Initializes the event handler and its singleton
@@ -459,13 +458,7 @@ namespace Axle {
         };
 
         /// Small struct designed to keep resources organized
-        struct Resource {
-            std::variant<mio::mmap_source, mio::mmap_sink> mmap;
-            std::filesystem::path path;
-            u32 magic;
-            std::unique_ptr<std::shared_mutex> m_Mutex;
-            MovableAtomic m_RefCount{1};
-        };
+        struct Resource;
 
         /**
          * Incremets the reference count associated with the given handle.
@@ -529,10 +522,7 @@ namespace Axle {
          *
          * @returns true if the handle is valid, false otherwise
          * */
-        bool IsHandleValidUnsafe(FileHandle handle) const {
-            return handle != INVALID_FILE_HANDLE && m_Resources.Has(GetIndexFromHandle(handle)) &&
-                   m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get().magic == GetMagicFromHandle(handle);
-        }
+        bool IsHandleValidUnsafe(FileHandle handle) const;
 
         /**
          * Checks if the given path points to an existing file.
@@ -626,7 +616,7 @@ namespace Axle {
 
         u32 m_MagicNumberCounter = 0;
         /// The id of the SparseSet are the indexes, not the whole handle
-        SparseSet<Resource> m_Resources{};
+        std::unique_ptr<SparseSet<Resource>> m_Resources{};
 
         mutable std::shared_mutex m_Mutex;
     };

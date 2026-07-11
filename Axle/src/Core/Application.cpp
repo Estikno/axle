@@ -26,6 +26,18 @@ namespace Axle {
 
     Application* Application::s_Instance = nullptr;
 
+    struct Application::AppInternalManagement {
+        /**
+         * Create the main window of the application. Initializes everything that is needed as well.
+         *
+         * This method should be called from the thread that will use GLFW and OpenGL
+         * */
+        static cw::JobCoroutine<void> CreateMainWindow(Application* app);
+
+        static cw::JobCoroutine<void> UpdateLoop(Application* app);
+        static cw::JobCoroutine<void> RenderLoop(Application* app);
+    };
+
     Application::Application() {
         AX_CORE_INFO(LogChannel::Core, "Starting the engine...");
 
@@ -65,7 +77,7 @@ namespace Axle {
         mainId = cw::JobSystem::GetInstance().ConvertToWorkerThread();
 
         // Schedule the main loop to the main thread's id
-        cw::JobCoroutine<void> updateCor = UpdateLoop();
+        cw::JobCoroutine<void> updateCor = AppInternalManagement::UpdateLoop(this);
         cw::JobSystem::GetInstance().Schedule(updateCor, mainId);
 
         // The main thread will now be a worker
@@ -78,31 +90,31 @@ namespace Axle {
     }
 
 
-    cw::JobCoroutine<void> Application::CreateMainWindow() {
-        m_Window = std::unique_ptr<Window>(Window::Create()); // GLFW + GLAD init
+    cw::JobCoroutine<void> Application::AppInternalManagement::CreateMainWindow(Application* app) {
+        app->m_Window = std::unique_ptr<Window>(Window::Create()); // GLFW + GLAD init
         co_return;
     }
 
-    cw::JobCoroutine<void> Application::UpdateLoop() {
+    cw::JobCoroutine<void> Application::AppInternalManagement::UpdateLoop(Application* app) {
         // Create the main window on the render thread and wait so we are sure to have glfw initiated
-        co_await cw::WhenAll(RENDER_THREAD_ID, CreateMainWindow());
+        co_await cw::WhenAll(RENDER_THREAD_ID, AppInternalManagement::CreateMainWindow(app));
 
         // Schedule the render loop
-        cw::JobCoroutine<void> renderCor = RenderLoop();
+        cw::JobCoroutine<void> renderCor = AppInternalManagement::RenderLoop(app);
         cw::JobSystem::GetInstance().Schedule(renderCor, RENDER_THREAD_ID);
 
         // Main loop logic
         // ---------------
-        for (Layer* layer : *m_LayerStack)
+        for (Layer* layer : *(app->m_LayerStack))
             cw::JobSystem::GetInstance().Schedule(
-                [layer, this]() { layer->OnAttach(); }, cw::JobPriority::Medium, cw::InvalidThreadIndex, LAYERS_TAG);
+                [layer, app]() { layer->OnAttach(); }, cw::JobPriority::Medium, cw::InvalidThreadIndex, LAYERS_TAG);
 
         AX_SCHEDULE_TAG_AND_WAIT(LAYERS_TAG);
 
         f64 previous = glfwGetTime();
         f64 lag = 0.0;
 
-        while (m_Running.load(std::memory_order_acquire)) {
+        while (app->m_Running.load(std::memory_order_acquire)) {
             // Calculate each frame time
             f64 current = glfwGetTime();
             f64 elapsed = current - previous;
@@ -114,38 +126,39 @@ namespace Axle {
             // Use this varible to make sure that update loops at a fixed rate
             lag += elapsed;
 
-            while (lag >= m_DeltaTime) {
+            while (lag >= app->m_DeltaTime) {
                 // Update logic
                 // --------------------------
                 cw::JobSystem::GetInstance().Schedule(
-                    [this]() {
-                        EventHandler::GetInstance().ProcessEvents(m_LayerStack->rbegin(), m_LayerStack->rend());
+                    [app]() {
+                        EventHandler::GetInstance().ProcessEvents(app->m_LayerStack->rbegin(),
+                                                                  app->m_LayerStack->rend());
                     },
                     cw::JobPriority::Medium,
                     cw::InvalidThreadIndex,
                     EVENT_INPUT_TAG);
 
-                cw::JobSystem::GetInstance().Schedule([this]() { InputManager::GetInstance().Update(); },
+                cw::JobSystem::GetInstance().Schedule([]() { InputManager::GetInstance().Update(); },
                                                       cw::JobPriority::Medium,
                                                       cw::InvalidThreadIndex,
                                                       EVENT_INPUT_TAG);
 
                 AX_SCHEDULE_TAG_AND_WAIT(EVENT_INPUT_TAG);
 
-                for (Layer* layer : *m_LayerStack)
-                    cw::JobSystem::GetInstance().Schedule([layer, this]() { layer->OnUpdate(m_DeltaTime); },
+                for (Layer* layer : *(app->m_LayerStack))
+                    cw::JobSystem::GetInstance().Schedule([layer, app]() { layer->OnUpdate(app->m_DeltaTime); },
                                                           cw::JobPriority::Medium,
                                                           cw::InvalidThreadIndex,
                                                           LAYERS_TAG);
 
                 AX_SCHEDULE_TAG_AND_WAIT(LAYERS_TAG);
                 // --------------------------
-                lag -= m_DeltaTime;
+                lag -= app->m_DeltaTime;
             }
 
-            const f64 alpha = lag / m_DeltaTime;
+            const f64 alpha = lag / app->m_DeltaTime;
 
-            for (Layer* layer : *m_LayerStack)
+            for (Layer* layer : *(app->m_LayerStack))
                 cw::JobSystem::GetInstance().Schedule([layer, alpha]() { layer->CommitSnapshot(alpha); },
                                                       cw::JobPriority::Medium,
                                                       cw::InvalidThreadIndex,
@@ -154,12 +167,12 @@ namespace Axle {
             AX_SCHEDULE_TAG_AND_WAIT(LAYERS_TAG);
 
             // Sleep until the next tick is due, minus a small margin
-            f64 timeUntilNextTick = m_DeltaTime - lag;
+            f64 timeUntilNextTick = app->m_DeltaTime - lag;
             if (timeUntilNextTick > 0.002) // only sleep if more than 2ms away
                 std::this_thread::sleep_for(std::chrono::duration<f64>(timeUntilNextTick - 0.001)); // wake 1ms early
         }
 
-        for (Layer* layer : *m_LayerStack)
+        for (Layer* layer : *(app->m_LayerStack))
             cw::JobSystem::GetInstance().Schedule(
                 [layer]() { layer->OnDettach(); }, cw::JobPriority::Medium, cw::InvalidThreadIndex, LAYERS_TAG);
 
@@ -169,16 +182,16 @@ namespace Axle {
         co_return;
     }
 
-    cw::JobCoroutine<void> Application::RenderLoop() {
+    cw::JobCoroutine<void> Application::AppInternalManagement::RenderLoop(Application* app) {
         // Sets up imporant stuff (already done in CreateMainWindow)
         // m_Window = std::unique_ptr<Window>(Window::Create());
 
-        for (Layer* layer : *m_LayerStack)
+        for (Layer* layer : *(app->m_LayerStack))
             layer->OnAttachRender();
 
         f64 previous = glfwGetTime();
 
-        while (m_Running.load(std::memory_order_acquire)) {
+        while (app->m_Running.load(std::memory_order_acquire)) {
             // Calculate each frame time
             f64 current = glfwGetTime();
             f64 elapsed = current - previous;
@@ -191,18 +204,18 @@ namespace Axle {
             glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            for (Layer* layer : *m_LayerStack)
+            for (Layer* layer : *(app->m_LayerStack))
                 layer->OnRender(elapsed);
 
-            m_Window->OnUpdate();
+            app->m_Window->OnUpdate();
             // --------------------------
         }
 
-        for (Layer* layer : *m_LayerStack)
+        for (Layer* layer : *(app->m_LayerStack))
             layer->OnDettachRender();
 
         // We delete the main window and termninate GLFW
-        m_Window.reset();
+        app->m_Window.reset();
 
         renderDone.store(true, std::memory_order_release);
         renderDone.notify_all();

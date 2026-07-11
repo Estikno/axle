@@ -7,8 +7,6 @@
 #include "Window/Window.hpp"
 #include "Events/Event.hpp"
 
-#include <CoroWeaver.hpp>
-
 namespace Axle {
     class AXLE_API Application {
     public:
@@ -41,14 +39,9 @@ namespace Axle {
 
     private:
         /**
-         * Create the main window of the application. Initializes everything that is needed as well.
-         *
-         * This method should be called from the thread that will use GLFW and OpenGL
+         * A simple struct used for controlling essential parts of the application such as the main and rendering loop
          * */
-        cw::JobCoroutine<void> CreateMainWindow();
-
-        cw::JobCoroutine<void> UpdateLoop();
-        cw::JobCoroutine<void> RenderLoop();
+        struct AppInternalManagement;
 
         bool OnWindowClose(WindowCloseEvent& event);
         bool OnKeyPressed(KeyPressedEvent& event);

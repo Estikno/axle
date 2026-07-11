@@ -2,6 +2,7 @@
 
 #include "axpch.hpp"
 
+#include "Application.hpp"
 #include "Core/Systems.hpp"
 
 #ifdef AX_PLATFORM_WINDOWS

@@ -23,6 +23,7 @@ set(INC_ASSIMP             "${VENDOR}/assimp/include")
 # Make these available to Sandbox and Tests via a cached variable
 set(AXLE_VENDOR_INCLUDES
     "${INC_GLM}"
+    "${INC_SPDLOG}"
     CACHE INTERNAL "Vendor include dirs needed by Axle consumers")
 
 set(AXLE_DOCTEST_INCLUDE "${INC_DOCTEST}" CACHE INTERNAL "")
@@ -183,8 +184,8 @@ target_include_directories(Axle
     PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
         "${INC_GLM}"
-    PRIVATE
         "${INC_SPDLOG}"
+    PRIVATE
         "${INC_GLFW}"
         "${INC_GLAD}"
         "${INC_IMGUI}"

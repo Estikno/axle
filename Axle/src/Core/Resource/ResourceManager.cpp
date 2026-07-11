@@ -12,6 +12,19 @@
 namespace Axle {
     std::unique_ptr<ResourceManager> ResourceManager::s_ResourceManager;
 
+    struct ResourceManager::Resource {
+        std::variant<mio::mmap_source, mio::mmap_sink> mmap;
+        std::filesystem::path path;
+        u32 magic;
+        std::unique_ptr<std::shared_mutex> m_Mutex;
+        MovableAtomic m_RefCount{1};
+    };
+
+    ResourceManager::ResourceManager()
+        : m_Resources(std::make_unique<SparseSet<Resource>>()) {}
+
+    ResourceManager::~ResourceManager() = default;
+
     void ResourceManager::Init() {
         if (s_ResourceManager != nullptr) {
             AX_CORE_WARN(LogChannel::Resources,
@@ -26,10 +39,10 @@ namespace Axle {
 
     void ResourceManager::ShutDown() {
         // Close all remaining files
-        const std::vector<size_t> AvailableFilesIdx = s_ResourceManager->m_Resources.GetList();
+        const std::vector<size_t> AvailableFilesIdx = s_ResourceManager->m_Resources->GetList();
 
         for (u64 i = 0; i < AvailableFilesIdx.size(); ++i) {
-            auto got = s_ResourceManager->m_Resources.Get(AvailableFilesIdx[i]);
+            auto got = s_ResourceManager->m_Resources->Get(AvailableFilesIdx[i]);
             if (got.IsValid()) {
                 Resource& resource = got.Unwrap().get();
                 FileHandle h = s_ResourceManager->MakeHandle((u32) AvailableFilesIdx[i], resource.magic);
@@ -49,7 +62,7 @@ namespace Axle {
                 }
 
                 AX_CORE_TRACE(LogChannel::Resources, "Closed file: {0}", resource.path.string());
-                s_ResourceManager->m_Resources.Remove(AvailableFilesIdx[i]);
+                s_ResourceManager->m_Resources->Remove(AvailableFilesIdx[i]);
             }
         }
 
@@ -71,7 +84,7 @@ namespace Axle {
         Expected<FileHandle> e = IsAlreadyOpenedUnsafe(path);
         if (e.IsValid()) {
             FileHandle h = e.Unwrap();
-            m_Resources.Get(GetIndexFromHandle(h))
+            m_Resources->Get(GetIndexFromHandle(h))
                 .Unwrap()
                 .get()
                 .m_RefCount.count.fetch_add(1, std::memory_order_relaxed);
@@ -107,12 +120,12 @@ namespace Axle {
             m_AvailableIndexes.pop();
         }
         FileHandle h = MakeHandle(index, magic);
-        m_Resources.Add(index,
-                        Resource{.mmap = std::move(mmap),
-                                 .path = path,
-                                 .magic = magic,
-                                 .m_Mutex = std::make_unique<std::shared_mutex>(),
-                                 .m_RefCount = {1}});
+        m_Resources->Add(index,
+                         Resource{.mmap = std::move(mmap),
+                                  .path = path,
+                                  .magic = magic,
+                                  .m_Mutex = std::make_unique<std::shared_mutex>(),
+                                  .m_RefCount = {1}});
 
         AX_CORE_TRACE(LogChannel::Resources, "Loaded file: {0}", path.string());
 
@@ -120,10 +133,10 @@ namespace Axle {
     }
 
     Expected<FileHandle> ResourceManager::IsAlreadyOpenedUnsafe(const std::filesystem::path& path) const {
-        const std::vector<size_t> AvailableFilesIdx = m_Resources.GetList();
+        const std::vector<size_t> AvailableFilesIdx = m_Resources->GetList();
 
         for (u64 i = 0; i < AvailableFilesIdx.size(); ++i) {
-            auto got = m_Resources.Get(AvailableFilesIdx[i]);
+            auto got = m_Resources->Get(AvailableFilesIdx[i]);
             if (got.IsValid() && got.Unwrap().get().path == path) {
                 // File has already been opened, return a valid handle to it
                 FileHandle h = MakeHandle((u32) AvailableFilesIdx[i], got.Unwrap().get().magic);
@@ -140,7 +153,7 @@ namespace Axle {
             return false;
         }
 
-        Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
+        Resource& resource = m_Resources->Get(GetIndexFromHandle(handle)).Unwrap().get();
 
         // We sync changes to disk and then close the file
         SyncUnsafe(handle);
@@ -151,7 +164,7 @@ namespace Axle {
             std::get<mio::mmap_sink>(resource.mmap).unmap();
 
         AX_CORE_TRACE(LogChannel::Resources, "Closed file: {0}", resource.path.string());
-        m_Resources.Remove(GetIndexFromHandle(handle));
+        m_Resources->Remove(GetIndexFromHandle(handle));
 
         // The index is now free
         m_AvailableIndexes.push(GetIndexFromHandle(handle));
@@ -175,7 +188,7 @@ namespace Axle {
             return false;
         }
 
-        Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
+        Resource& resource = m_Resources->Get(GetIndexFromHandle(handle)).Unwrap().get();
 
         // If the holded map is read-only simply return
         if (std::holds_alternative<mio::mmap_source>(resource.mmap))
@@ -206,7 +219,7 @@ namespace Axle {
                 std::invalid_argument("Trying to access a file with an invalid handle"));
         }
 
-        Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
+        Resource& resource = m_Resources->Get(GetIndexFromHandle(handle)).Unwrap().get();
 
         if (std::holds_alternative<mio::mmap_source>(resource.mmap)) {
             AX_CORE_ERROR(LogChannel::Resources, "Trying to get a mutable pointer to a read-only resource.");
@@ -232,7 +245,7 @@ namespace Axle {
                 std::invalid_argument("Trying to access a file with an invalid handle"));
         }
 
-        const Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
+        const Resource& resource = m_Resources->Get(GetIndexFromHandle(handle)).Unwrap().get();
 
         if (std::holds_alternative<mio::mmap_source>(resource.mmap)) {
             const mio::mmap_source& map = std::get<mio::mmap_source>(resource.mmap);
@@ -256,7 +269,7 @@ namespace Axle {
                 std::invalid_argument("Trying to access a resource with an invalid handle"));
         }
 
-        const Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
+        const Resource& resource = m_Resources->Get(GetIndexFromHandle(handle)).Unwrap().get();
 
         if (std::holds_alternative<mio::mmap_source>(resource.mmap))
             return std::get<mio::mmap_source>(resource.mmap).size();
@@ -306,7 +319,7 @@ namespace Axle {
                 std::invalid_argument("Trying to access a resource with an invalid handle"));
         }
 
-        const Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
+        const Resource& resource = m_Resources->Get(GetIndexFromHandle(handle)).Unwrap().get();
 
         return std::holds_alternative<mio::mmap_source>(resource.mmap);
     }
@@ -324,7 +337,7 @@ namespace Axle {
                 std::invalid_argument("Trying to access a resource with an invalid handle"));
         }
 
-        const Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
+        const Resource& resource = m_Resources->Get(GetIndexFromHandle(handle)).Unwrap().get();
         return resource.path;
     }
 
@@ -346,7 +359,7 @@ namespace Axle {
             return false;
         }
 
-        m_Resources.Get(GetIndexFromHandle(handle))
+        m_Resources->Get(GetIndexFromHandle(handle))
             .Unwrap()
             .get()
             .m_RefCount.count.fetch_add(1, std::memory_order_relaxed);
@@ -362,7 +375,7 @@ namespace Axle {
                 return false;
             }
 
-            Resource& r = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
+            Resource& r = m_Resources->Get(GetIndexFromHandle(handle)).Unwrap().get();
 
             // If we're not the last one, just decrement and return
             u32 current = r.m_RefCount.count.load(std::memory_order_relaxed);
@@ -381,7 +394,7 @@ namespace Axle {
         if (!IsHandleValidUnsafe(handle))
             return true; // already closed by someone else
 
-        Resource& rechecked = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
+        Resource& rechecked = m_Resources->Get(GetIndexFromHandle(handle)).Unwrap().get();
 
         // Perform the final decrement entirely under the safety of the unique lock
         if (rechecked.m_RefCount.count.fetch_sub(1, std::memory_order_acq_rel) == 1) {
@@ -414,7 +427,7 @@ namespace Axle {
         // We can't use the Close method because we want to appear as if the file was never closed
         SyncUnsafe(handle);
 
-        Resource& resource = m_Resources.Get(GetIndexFromHandle(handle)).Unwrap().get();
+        Resource& resource = m_Resources->Get(GetIndexFromHandle(handle)).Unwrap().get();
         bool IsReadOnly = std::holds_alternative<mio::mmap_source>(resource.mmap);
 
         // We lock the resource mutex to prevent reading/writing threads to access its contents while we resize it
@@ -482,4 +495,10 @@ namespace Axle {
         AX_CORE_TRACE(LogChannel::Resources, "File: {0} was resized to: {1} bytes", resource.path.string(), newSize);
         return true;
     }
+
+    bool ResourceManager::IsHandleValidUnsafe(FileHandle handle) const {
+        return handle != INVALID_FILE_HANDLE && m_Resources->Has(GetIndexFromHandle(handle)) &&
+               m_Resources->Get(GetIndexFromHandle(handle)).Unwrap().get().magic == GetMagicFromHandle(handle);
+    }
+
 } // namespace Axle

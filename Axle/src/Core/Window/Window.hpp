@@ -5,7 +5,7 @@
 #include "Core/Core.hpp"
 #include "Core/Types.hpp"
 
-#include <GLFW/glfw3.h>
+struct GLFWwindow; // forward declaration — avoids pulling in glfw3.h here
 
 namespace Axle {
     struct WindowProps {

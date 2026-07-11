@@ -7,8 +7,6 @@
 #include "Core/Logger/Log.hpp"
 #include "Core/Types.hpp"
 
-#include <SimpleIni.h>
-
 namespace Axle {
     template <typename T>
     concept ConfigIntegerType =
@@ -29,10 +27,8 @@ namespace Axle {
         Config(const Config&) = delete;
         Config& operator=(const Config&) = delete;
 
-        // Constructors do nothing because the initialization/destruction is manual with Init/ShutDown
-        Config()
-            : m_Ini(false, false, false) {}
-        ~Config() {}
+        Config();
+        ~Config();
 
         /**
          * Initializes the Config manager and its singleton
@@ -136,52 +132,33 @@ namespace Axle {
         }
 
     private:
+        struct Impl; // defined in Config.cpp — keeps SimpleIni.h out of this header
+
         // Implementations of the static methods
         void SaveImpl();
-        inline bool DeleteImpl(const char* section, const char* name) {
-            std::scoped_lock lock(s_Instance->m_Mutex);
-            return m_Ini.Delete(section, name);
-        }
+        bool DeleteImpl(const char* section, const char* name);
 
         // Unsafe functions
-        inline bool DoesKeyExistUnsafe(const std::string& section, const std::string& name) {
-            return m_Ini.GetValue(section.c_str(), name.c_str()) != nullptr;
-        }
+        bool DoesKeyExistUnsafe(const std::string& section, const std::string& name);
         template <ConfigType T>
         Expected<T> GetUnsafe(const std::string& section, const std::string& name);
         template <ConfigType T>
         bool SetUnsafe(const std::string& section, const std::string& name, const T& value);
 
         // Specialized getters and setters
-        inline bool GetBoolValueUnsafe(const std::string& section, const std::string& name) {
-            return m_Ini.GetBoolValue(section.c_str(), name.c_str());
-        }
-        inline i64 GetIntegerValueUnsafe(const std::string& section, const std::string& name) {
-            return static_cast<i64>(m_Ini.GetLongValue(section.c_str(), name.c_str()));
-        }
-        inline f64 GetDecimalValueUnsafe(const std::string& section, const std::string& name) {
-            return m_Ini.GetDoubleValue(section.c_str(), name.c_str());
-        }
-        inline const char* GetStringValueUnsafe(const std::string& section, const std::string& name) {
-            return m_Ini.GetValue(section.c_str(), name.c_str());
-        }
+        bool GetBoolValueUnsafe(const std::string& section, const std::string& name);
+        i64 GetIntegerValueUnsafe(const std::string& section, const std::string& name);
+        f64 GetDecimalValueUnsafe(const std::string& section, const std::string& name);
+        const char* GetStringValueUnsafe(const std::string& section, const std::string& name);
 
-        inline bool SetBoolValueUnsafe(const std::string& section, const std::string& name, bool val) {
-            return m_Ini.SetBoolValue(section.c_str(), name.c_str(), val) >= 0;
-        }
-        inline bool SetIntegerValueUnsafe(const std::string& section, const std::string& name, i64 val) {
-            return m_Ini.SetLongValue(section.c_str(), name.c_str(), val) >= 0;
-        }
-        inline bool SetDecimalValueUnsafe(const std::string& section, const std::string& name, f64 val) {
-            return m_Ini.SetDoubleValue(section.c_str(), name.c_str(), val) >= 0;
-        }
-        inline bool SetStringValueUnsafe(const std::string& section, const std::string& name, const char* val) {
-            return m_Ini.SetValue(section.c_str(), name.c_str(), val) >= 0;
-        }
+        bool SetBoolValueUnsafe(const std::string& section, const std::string& name, bool val);
+        bool SetIntegerValueUnsafe(const std::string& section, const std::string& name, i64 val);
+        bool SetDecimalValueUnsafe(const std::string& section, const std::string& name, f64 val);
+        bool SetStringValueUnsafe(const std::string& section, const std::string& name, const char* val);
 
         static std::unique_ptr<Config> s_Instance;
 
-        CSimpleIniA m_Ini;
+        std::unique_ptr<Impl> m_Impl;
         std::string m_File;
 
         std::mutex m_Mutex;

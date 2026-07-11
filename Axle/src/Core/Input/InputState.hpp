@@ -197,4 +197,13 @@ namespace Axle {
         std::vector<Sequence<Keys>> m_KeySequences;
         std::vector<Sequence<MouseButtons>> m_MouseSequences;
     };
+
+    // Offset to the first cursor mode value in GLFW
+    constexpr i32 CursorModeOffset = 0x00034001;
+
+    enum class CursorMode {
+        CursorNormal = 0,
+        CursorHidden,
+        CursorDisabled,
+    };
 } // namespace Axle

@@ -209,6 +209,23 @@ namespace Axle {
             return s_Instance->DefineMouseButtonSequenceImpl(sec, dtMax);
         }
 
+        /**
+         * Sets the mode of the cursor
+         *
+         * The modes are:
+         * - Normal: The default one
+         * - Hidden: The cursor is hidden but everything else stays as in normal mode
+         * - Disabled: The cursor is hidden and locked to the specified window. It will then take care of all
+         * the details of cursor re-centering and offset calculations. Good for an FPS camera for exmaple.
+         *
+         * @param mode The desired cursor mode
+         *
+         * This function is NOT thread safe and should only be called from the render thread. If not it's undefined
+         * behavior.
+         * */
+        inline static void SetCursorMode(CursorMode mode) {
+            return s_Instance->SetCursorModeImpl(mode);
+        }
 
         // Modify the keys state. This should only be called by the event system and should not be available to the end
         // user.
@@ -279,6 +296,7 @@ namespace Axle {
         u32 DefineKeySequenceImpl(const std::vector<Keys>& sec, f32 dtMax);
         u32 DefineMouseButtonSequenceImpl(const std::vector<MouseButtons>& sec, f32 dtMax);
         glm::vec2 GetMousePositionOffsetImpl() const;
+        void SetCursorModeImpl(CursorMode mode) const;
 
         // Unsafe Implementations
         bool GetKeyUnsafe(Keys key) const;

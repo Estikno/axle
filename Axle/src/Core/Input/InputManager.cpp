@@ -4,6 +4,7 @@
 #include "InputManager.hpp"
 #include "../Logger/Log.hpp"
 #include "../Events/EventHandler.hpp"
+#include "Core/Application.hpp"
 #include "Core/Events/Event.hpp"
 #include "Core/Input/InputState.hpp"
 
@@ -311,6 +312,11 @@ namespace Axle {
         std::unique_lock lock(m_Mutex);
         m_InputState.m_MouseSequences.push_back({.m_Buttons = sec, .m_dtMax = dtMax, .m_iButton = 0, .m_tStart = 0});
         return m_InputState.m_MouseSequences.size() - 1;
+    }
+
+    void InputManager::SetCursorModeImpl(CursorMode mode) const {
+        const i32 glfwEquivalent = static_cast<i32>(mode) + CursorModeOffset;
+        glfwSetInputMode(Application::GetInstance().GetWindow().GetNativeWindow(), GLFW_CURSOR, glfwEquivalent);
     }
 
 #ifdef AXLE_TESTING
