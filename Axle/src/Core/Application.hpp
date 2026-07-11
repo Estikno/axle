@@ -6,6 +6,7 @@
 #include "Core.hpp"
 #include "Window/Window.hpp"
 #include "Events/Event.hpp"
+#include "Renderer/Camera/Camera.hpp"
 
 namespace Axle {
     class AXLE_API Application {
@@ -20,6 +21,10 @@ namespace Axle {
 
         void PushLayer(Layer* layer);
         void PushOverlay(Layer* layer);
+
+        inline Camera& GetCamera() {
+            return m_Camera;
+        }
 
         /**
          * Returns the window of the application.
@@ -54,6 +59,8 @@ namespace Axle {
 
         /// Time between update loops
         const f64 m_DeltaTime = 1.0 / 60.0;
+
+        Camera m_Camera;
     };
 
     // To be defined in client

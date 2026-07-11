@@ -1,3 +1,4 @@
+#include "Renderer/Camera/Camera.hpp"
 #include "axpch.hpp"
 
 #include "Application.hpp"
@@ -38,7 +39,8 @@ namespace Axle {
         static cw::JobCoroutine<void> RenderLoop(Application* app);
     };
 
-    Application::Application() {
+    Application::Application()
+        : m_Camera(new CameraPositionerDebug(), true) {
         AX_CORE_INFO(LogChannel::Core, "Starting the engine...");
 
         if (s_Instance != nullptr) {

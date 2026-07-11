@@ -10,6 +10,9 @@ namespace Axle::Debug {
         static void Init();
         static void Shutdown();
 
+        Inspector() = default;
+        ~Inspector() = default;
+
         static void Draw(const char* title, bool* open);
 
         inline static void AddHeader(std::function<void()> f) {

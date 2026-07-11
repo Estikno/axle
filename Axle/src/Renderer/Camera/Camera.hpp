@@ -2,6 +2,8 @@
 
 #include "axpch.hpp"
 #include "Core/Core.hpp"
+#include "Core/Error/Panic.hpp"
+#include "Core/Logger/Log.hpp"
 #include "Core/Types.hpp"
 #include "Core/Config/Config.hpp"
 
@@ -17,29 +19,78 @@ namespace Axle {
         virtual ~ICameraPositioner() = default;
         virtual glm::mat4 GetViewMatrix() const = 0;
         virtual glm::vec3 GetPosition() const = 0;
+        virtual void Update(f32 deltaTime) = 0;
     };
 
     class AXLE_API Camera final {
     public:
         explicit Camera()
-            : m_Positioner(nullptr) {}
+            : m_Positioner(nullptr),
+              m_DeletePositioner(true) {}
 
-        explicit Camera(ICameraPositioner& positioner)
-            : m_Positioner(&positioner) {}
+        explicit Camera(ICameraPositioner& positioner, bool deletePositioner)
+            : m_Positioner(&positioner),
+              m_DeletePositioner(deletePositioner) {}
 
-        Camera(const Camera&) = default;
-        Camera& operator=(const Camera&) = default;
+        explicit Camera(ICameraPositioner* positioner, bool deletePositioner)
+            : m_Positioner(positioner),
+              m_DeletePositioner(deletePositioner) {}
+
+        ~Camera() {
+            if (!m_DeletePositioner)
+                return;
+
+            ICameraPositioner* old = ExchangePositioner(nullptr);
+            if (old != nullptr)
+                delete old;
+        }
+
+        // Camera(const Camera&) = default;
+        // Camera& operator=(const Camera&) = default;
 
         inline glm::mat4 GetViewMatrix() const {
-            return m_Positioner->GetViewMatrix();
+            AX_ASSERT(m_Positioner.load(std::memory_order_acquire) != nullptr,
+                      LogChannel::Renderer,
+                      "Must add a positioner before calling any method.");
+            return m_Positioner.load(std::memory_order_acquire)->GetViewMatrix();
         }
 
         inline glm::vec3 GetPosition() const {
-            return m_Positioner->GetPosition();
+            AX_ASSERT(m_Positioner.load(std::memory_order_acquire) != nullptr,
+                      LogChannel::Renderer,
+                      "Must add a positioner before calling any method.");
+            return m_Positioner.load(std::memory_order_acquire)->GetPosition();
+        }
+
+        inline void ChangePositioner(ICameraPositioner& newPositioner) {
+            m_Positioner.store(&newPositioner, std::memory_order_release);
+        }
+
+        inline void ChangePositioner(ICameraPositioner* newPositioner) {
+            m_Positioner.store(newPositioner, std::memory_order_release);
+        }
+
+        inline ICameraPositioner* ExchangePositioner(ICameraPositioner& newPositioner) {
+            return m_Positioner.exchange(&newPositioner, std::memory_order_acq_rel);
+        }
+
+        inline ICameraPositioner* ExchangePositioner(ICameraPositioner* newPositioner) {
+            return m_Positioner.exchange(newPositioner, std::memory_order_acq_rel);
+        }
+
+        inline ICameraPositioner* GetPositioner() {
+            return m_Positioner.load(std::memory_order_acquire);
+        }
+
+        inline void SetDeletePolicy(bool policy) {
+            m_DeletePositioner.store(policy, std::memory_order_release);
         }
 
     private:
-        const ICameraPositioner* m_Positioner;
+        static_assert(std::atomic<ICameraPositioner*>::is_always_lock_free,
+                      "Positioner pointer is not always lock free");
+        std::atomic<ICameraPositioner*> m_Positioner = nullptr;
+        std::atomic_bool m_DeletePositioner = true;
     };
 
 
@@ -63,7 +114,7 @@ namespace Axle {
             UpdateCameraVectors();
         }
 
-        void Update(f32 deltaTime);
+        virtual void Update(f32 deltaTime) override;
         void ProcessMouseScroll(f32 yOffset);
 
         inline virtual glm::vec3 GetPosition() const override {
@@ -105,7 +156,7 @@ namespace Axle {
         f32 m_Yaw, m_Pitch, m_FOV;
     };
 
-    class CameraPositionerMoveTo final : public ICameraPositioner {
+    class AXLE_API CameraPositionerMoveTo final : public ICameraPositioner {
     public:
         CameraPositionerMoveTo()
             : CameraPositionerMoveTo(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f)) {}
@@ -116,7 +167,7 @@ namespace Axle {
               m_AnglesCurrent(angles),
               m_AnglesDesired(angles) {}
 
-        void Update(f32 deltaTime);
+        virtual void Update(f32 deltaTime) override;
 
         inline void SetPosition(const glm::vec3& pos) {
             m_PositionCurrent = pos;
