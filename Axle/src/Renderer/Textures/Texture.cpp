@@ -33,4 +33,6 @@ namespace Axle {
                 return GL_LINEAR_MIPMAP_LINEAR;
         }
     }
+
+
 } // namespace Axle

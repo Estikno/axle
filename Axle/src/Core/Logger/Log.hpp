@@ -11,7 +11,7 @@
 
 namespace Axle {
     /// Defines how verbose should the logger be. Each higher level includes all the previous ones
-    enum class LogVerbosity { Critical = 0, Error, Warn, Info, All };
+    enum class LogVerbosity { Critical = 0, Error, Warn, Info, All, MaxVerbosities };
 
     inline constexpr std::string_view VERBOSITY_NAMES[] = {"Critical", "Error", "Warn", "Info", "All"};
 
@@ -125,6 +125,17 @@ namespace Axle {
         }
 
         /**
+         * Gets the current verbosity.
+         *
+         * @returns The logger verbosity
+         *
+         * Thread safe
+         * */
+        LogVerbosity GetCurrentVerbosity() const {
+            return m_Verbosity.load(std::memory_order_acquire);
+        }
+
+        /**
          * Enables the specified channel
          *
          * @param channel The channel to enable
@@ -148,6 +159,19 @@ namespace Axle {
             m_ChannelLoggers[static_cast<u8>(channel)]->set_level(spdlog::level::off);
         }
 
+        /**
+         * Checks whether the specified channel is enabled or not
+         *
+         * @param channel The channel to check
+         *
+         * @returns true if the channel is enabled, false otherwise
+         *
+         * Thread safe
+         * */
+        bool IsChannelEnabled(LogChannel channel) {
+            return m_ChannelLoggers[static_cast<u8>(channel)]->level() != spdlog::level::off;
+        }
+
     private:
         /// Maps LogVerbosity to spdlog level
         inline spdlog::level::level_enum ToSpdlogLevel(LogVerbosity v) {
@@ -161,6 +185,8 @@ namespace Axle {
                 case LogVerbosity::Info:
                     return spdlog::level::info;
                 case LogVerbosity::All:
+                    return spdlog::level::trace;
+                case LogVerbosity::MaxVerbosities:
                     return spdlog::level::trace;
             }
             return spdlog::level::trace;

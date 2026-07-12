@@ -5,6 +5,8 @@
 #include "Core/Types.hpp"
 #include "Core/Resource/ResourceManager.hpp"
 
+#include <glm/glm.hpp>
+
 namespace Axle {
     enum class TextureWrapMode { Repeat = 0, MirroredRepeat, ClampToEdge, ClampToBorder };
     enum class TextureFilteringMode {
@@ -27,6 +29,7 @@ namespace Axle {
         void SetTextureWrapping(TextureWrapMode s, TextureWrapMode t);
         void SetTextureFiltering(TextureFilteringMode min, TextureFilteringMode mag);
         void GenerateMipmaps();
+        void SetBorderColor(const glm::vec4& color);
 
         void Bind(u32 textureUnit);
 
@@ -36,7 +39,7 @@ namespace Axle {
 
     private:
         u32 m_ID;
-        u32 m_Width, m_Height;
+        u32 m_Width, m_Height, m_NrChannels;
         ResourceManager::ManagedFileHandle m_FileHandle;
     };
 } // namespace Axle

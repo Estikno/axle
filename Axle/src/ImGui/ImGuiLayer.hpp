@@ -8,6 +8,7 @@
 
 #include "Debug/Console.hpp"
 #include "Debug/Inspector.hpp"
+#include "Debug/FPS.hpp"
 
 namespace Axle {
     class ImGuiLayer : public Layer {
@@ -27,10 +28,16 @@ namespace Axle {
 
     private:
         bool OnKeyPressed(KeyPressedEvent& event);
+        bool OnKeyIsPressed(KeyIsPressedEvent& event);
+        bool OnKeyReleased(KeyReleasedEvent& event);
+        bool OnMouseButtonPressed(MouseButtonPressedEvent& event);
+        bool OnMouseButtonIsPressed(MouseButtonIsPressedEvent& event);
+        bool OnMouseButtonReleased(MouseButtonReleasedEvent& event);
 
-        // Renderer variables
         Debug::DebugConsole m_Console;
         bool m_OpenOverlay = true;
         bool m_OpenInspector = true;
+
+        Debug::FPSCounter m_FPSCounter;
     };
 } // namespace Axle

@@ -26,6 +26,9 @@ namespace Axle::Debug {
         }
 
     private:
+        void CameraHeader();
+        void LogHeader();
+
         static std::unique_ptr<Inspector> s_Instance;
 
         std::vector<std::function<void()>> m_Headers;

@@ -17,7 +17,8 @@
 
 namespace Axle {
     ImGuiLayer::ImGuiLayer()
-        : Layer("ImGui") {
+        : Layer("ImGui"),
+          m_FPSCounter(0.5f) {
         Debug::Inspector::Init();
     }
 
@@ -53,6 +54,8 @@ namespace Axle {
     }
 
     void ImGuiLayer::OnRender(f64 deltaTime) {
+        m_FPSCounter.Tick(static_cast<f32>(deltaTime));
+
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -66,7 +69,7 @@ namespace Axle {
             m_Console.Draw("Debug console", &m_Console.Open);
         // Debug Information
         if (m_OpenOverlay)
-            Debug::ShowSimpleOverlay(&m_OpenOverlay, deltaTime);
+            Debug::ShowSimpleOverlay(&m_OpenOverlay, deltaTime, m_FPSCounter);
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -87,12 +90,14 @@ namespace Axle {
         EventDispatcher dispatcher(event);
 
         dispatcher.Dispatch<KeyPressedEvent>(AX_BIND_EVENT_FN(OnKeyPressed));
+        dispatcher.Dispatch<KeyIsPressedEvent>(AX_BIND_EVENT_FN(OnKeyIsPressed));
+        dispatcher.Dispatch<KeyReleasedEvent>(AX_BIND_EVENT_FN(OnKeyReleased));
+        dispatcher.Dispatch<MouseButtonPressedEvent>(AX_BIND_EVENT_FN(OnMouseButtonPressed));
+        dispatcher.Dispatch<MouseButtonIsPressedEvent>(AX_BIND_EVENT_FN(OnMouseButtonIsPressed));
+        dispatcher.Dispatch<MouseButtonReleasedEvent>(AX_BIND_EVENT_FN(OnMouseButtonReleased));
     }
 
     bool ImGuiLayer::OnKeyPressed(KeyPressedEvent& event) {
-        // TODO: In the future wire the inputs directly with the event system to IMGUI
-        // ImGuiIO& io = ImGui::GetIO();
-
         // FIX: There might be a race condition between the boolean variables as this method is not called by the render
         // one
         if (event.GetKey() == Keys::F1)
@@ -104,6 +109,29 @@ namespace Axle {
         if (event.GetKey() == Keys::F3)
             m_OpenInspector = !m_OpenInspector;
 
-        return false;
+        ImGuiIO& io = ImGui::GetIO();
+        return io.WantCaptureKeyboard;
+    }
+
+    bool ImGuiLayer::OnKeyIsPressed(KeyIsPressedEvent& event) {
+        ImGuiIO& io = ImGui::GetIO();
+        return io.WantCaptureKeyboard;
+    }
+
+    bool ImGuiLayer::OnKeyReleased(KeyReleasedEvent& event) {
+        ImGuiIO& io = ImGui::GetIO();
+        return io.WantCaptureKeyboard;
+    }
+    bool ImGuiLayer::OnMouseButtonPressed(MouseButtonPressedEvent& event) {
+        ImGuiIO& io = ImGui::GetIO();
+        return io.WantCaptureMouse;
+    }
+    bool ImGuiLayer::OnMouseButtonIsPressed(MouseButtonIsPressedEvent& event) {
+        ImGuiIO& io = ImGui::GetIO();
+        return io.WantCaptureMouse;
+    }
+    bool ImGuiLayer::OnMouseButtonReleased(MouseButtonReleasedEvent& event) {
+        ImGuiIO& io = ImGui::GetIO();
+        return io.WantCaptureMouse;
     }
 } // namespace Axle
