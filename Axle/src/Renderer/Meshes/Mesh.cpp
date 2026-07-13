@@ -1,21 +1,64 @@
-#include "Renderer/Textures/Texture.hpp"
 #include "axpch.hpp"
 
 #include <glad/gl.h>
-#include <cstddef>
-#include "Core/Error/Panic.hpp"
-#include "Core/Logger/Log.hpp"
 
 #include "Mesh.hpp"
 
+#include "Core/Error/Panic.hpp"
+#include "Core/Logger/Log.hpp"
+#include "Renderer/Textures/Texture.hpp"
+
+
 namespace Axle {
-    Mesh::Mesh(const std::vector<Vertex>& vertices,
-               const std::vector<u32>& indices,
-               const std::vector<Texture>& textures)
+    Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<u32>& indices, std::vector<Texture>&& textures)
         : m_Vertices(vertices),
           m_Indices(indices),
-          m_Textures(textures) {
+          m_Textures(std::move(textures)) {
         SetupMesh();
+    }
+
+    Mesh::~Mesh() {
+        if (m_VAO != 0)
+            glDeleteVertexArrays(1, &m_VAO);
+        if (m_EBO != 0)
+            glDeleteBuffers(1, &m_EBO);
+        if (m_VBO != 0)
+            glDeleteBuffers(1, &m_VBO);
+    }
+
+    Mesh::Mesh(Mesh&& other) noexcept
+        : m_VAO(other.m_VAO),
+          m_EBO(other.m_EBO),
+          m_VBO(other.m_VBO),
+          m_Vertices(std::move(other.m_Vertices)),
+          m_Indices(std::move(other.m_Indices)),
+          m_Textures(std::move(other.m_Textures)) {
+        other.m_VAO = 0;
+        other.m_VBO = 0;
+        other.m_EBO = 0;
+    }
+    Mesh& Mesh::operator=(Mesh&& other) noexcept {
+        if (this != &other) {
+            if (m_VAO != 0)
+                glDeleteVertexArrays(1, &m_VAO);
+            if (m_EBO != 0)
+                glDeleteBuffers(1, &m_EBO);
+            if (m_VBO != 0)
+                glDeleteBuffers(1, &m_VBO);
+
+            m_VAO = other.m_VAO;
+            m_VBO = other.m_VBO;
+            m_EBO = other.m_EBO;
+
+            other.m_VAO = 0;
+            other.m_VBO = 0;
+            other.m_EBO = 0;
+
+            m_Vertices = std::move(other.m_Vertices);
+            m_Indices = std::move(other.m_Indices);
+            m_Textures = std::move(other.m_Textures);
+        }
+        return *this;
     }
 
     void Mesh::SetupMesh() {
@@ -62,18 +105,21 @@ namespace Axle {
                     AX_ENSURE(DiffuseTextureNr < TextureUnitOffset,
                               LogChannel::Renderer,
                               "Reached maximum number of diffuse textures. Can't bind more");
-                    m_Textures[i].Bind((DiffuseTextureNr++) +
-                                       static_cast<u8>(TextureType::Diffuse) * TextureUnitOffset);
+                    m_Textures[i].Bind(DiffuseTextureNr + static_cast<u8>(TextureType::Diffuse) * TextureUnitOffset);
+                    DiffuseTextureNr++;
+                    break;
                 case TextureType::Specular:
                     // TODO: Instead of panicking simply log a warn message
                     AX_ENSURE(SpecularTextureNr < TextureUnitOffset,
                               LogChannel::Renderer,
                               "Reached maximum number of specular textures. Can't bind more");
-                    m_Textures[i].Bind((SpecularTextureNr++) +
-                                       static_cast<u8>(TextureType::Specular) * TextureUnitOffset);
+                    m_Textures[i].Bind(SpecularTextureNr + static_cast<u8>(TextureType::Specular) * TextureUnitOffset);
+                    SpecularTextureNr++;
+                    break;
                 case TextureType::Unknown:
                     // TODO: Maybe make a special case for unusual textures
                     AX_CORE_WARN(LogChannel::Renderer, "Can't bind a texture with and unknown type");
+                    break;
             }
         }
 

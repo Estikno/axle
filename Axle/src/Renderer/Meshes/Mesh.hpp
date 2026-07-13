@@ -17,9 +17,14 @@ namespace Axle {
 
     class Mesh {
     public:
-        Mesh(const std::vector<Vertex>& vertices,
-             const std::vector<u32>& indices,
-             const std::vector<Texture>& textures);
+        Mesh(const std::vector<Vertex>& vertices, const std::vector<u32>& indices, std::vector<Texture>&& textures);
+        ~Mesh();
+
+        Mesh(const Mesh&) = delete;
+        Mesh& operator=(const Mesh&) = delete;
+
+        Mesh(Mesh&& other) noexcept;
+        Mesh& operator=(Mesh&& other) noexcept;
 
         void Draw(ShaderProgram& program);
 

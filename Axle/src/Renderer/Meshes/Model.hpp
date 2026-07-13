@@ -20,5 +20,6 @@ namespace Axle {
 
         std::vector<Mesh> m_Meshes;
         ResourceManager::ManagedFileHandle m_Handle;
+        std::string m_Directory;
     };
 } // namespace Axle

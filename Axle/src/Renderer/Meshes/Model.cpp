@@ -1,4 +1,3 @@
-#include "assimp/types.h"
 #include "axpch.hpp"
 
 #include "Model.hpp"
@@ -13,28 +12,19 @@
 #include "assimp/mesh.h"
 #include "assimp/material.h"
 #include "assimp/postprocess.h"
+#include "assimp/types.h"
 
 namespace Axle {
     struct Model::InternalMethods {
         static void ProcessNode(aiNode* node, const aiScene* scene, Model* model);
-        static Mesh ProcessMesh(aiMesh* mesh, const aiScene* scene);
-        static std::vector<Texture> LoadMaterialTextures(aiMaterial* mat, aiTextureType aiType, TextureType type);
+        static Mesh ProcessMesh(aiMesh* mesh, const aiScene* scene, Model* model);
+        static std::vector<Texture>
+        LoadMaterialTextures(aiMaterial* mat, aiTextureType aiType, TextureType type, const std::string& directory);
     };
 
     Model::Model(const std::string& path) {
-        Expected<ResourceManager::ManagedFileHandle> exp = ResourceManager::GetInstance().Load(path);
-
-        if (!exp.IsValid()) {
-            AX_CORE_ERROR(LogChannel::Renderer, "Couldn't load model from file: {0}");
-            return;
-        }
-
-        m_Handle = exp.Unwrap();
-        ResourceManager::ReadGuard readGuard = ResourceManager::GetInstance().DataConst(m_Handle).Unwrap();
-
         Assimp::Importer import;
-        const aiScene* scene =
-            import.ReadFileFromMemory(readGuard.Data(), readGuard.Size(), aiProcess_Triangulate | aiProcess_FlipUVs);
+        const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
 
         if (scene == nullptr || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || scene->mRootNode == nullptr) {
             AX_CORE_ERROR(LogChannel::Renderer,
@@ -43,6 +33,13 @@ namespace Axle {
                           import.GetErrorString());
             return;
         }
+        m_Directory = path.substr(0, path.find_last_of('/'));
+
+        AX_CORE_INFO(LogChannel::Renderer,
+                     "Scene: meshes={} materials={} nodes={}",
+                     scene->mNumMeshes,
+                     scene->mNumMaterials,
+                     scene->mRootNode->mNumChildren);
 
         InternalMethods::ProcessNode(scene->mRootNode, scene, this);
     }
@@ -54,10 +51,15 @@ namespace Axle {
     }
 
     void Model::InternalMethods::ProcessNode(aiNode* node, const aiScene* scene, Model* model) {
+        AX_CORE_INFO(LogChannel::Renderer,
+                     "Node {:p} meshes={} children={}",
+                     static_cast<void*>(node),
+                     node->mNumMeshes,
+                     node->mNumChildren);
         // Process node's meshes
         for (u32 i = 0; i < node->mNumMeshes; ++i) {
             aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-            model->m_Meshes.push_back(ProcessMesh(mesh, scene));
+            model->m_Meshes.push_back(ProcessMesh(mesh, scene, model));
         }
 
         // Recursion
@@ -66,7 +68,7 @@ namespace Axle {
         }
     }
 
-    Mesh Model::InternalMethods::ProcessMesh(aiMesh* mesh, const aiScene* scene) {
+    Mesh Model::InternalMethods::ProcessMesh(aiMesh* mesh, const aiScene* scene, Model* model) {
         std::vector<Vertex> vertices;
         std::vector<u32> indices;
         std::vector<Texture> textures;
@@ -95,30 +97,39 @@ namespace Axle {
         // Material
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-        std::vector<Texture> diffuseMaps = LoadMaterialTextures(material, aiTextureType_DIFFUSE, TextureType::Diffuse);
-        textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
+        std::vector<Texture> diffuseMaps =
+            LoadMaterialTextures(material, aiTextureType_DIFFUSE, TextureType::Diffuse, model->m_Directory);
+        textures.insert(
+            textures.end(), std::make_move_iterator(diffuseMaps.begin()), std::make_move_iterator(diffuseMaps.end()));
 
         std::vector<Texture> specularMaps =
-            LoadMaterialTextures(material, aiTextureType_SPECULAR, TextureType::Specular);
-        textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
+            LoadMaterialTextures(material, aiTextureType_SPECULAR, TextureType::Specular, model->m_Directory);
+        textures.insert(
+            textures.end(), std::make_move_iterator(specularMaps.begin()), std::make_move_iterator(specularMaps.end()));
 
-        return Mesh(vertices, indices, textures);
+        return Mesh(vertices, indices, std::move(textures));
     }
 
-    std::vector<Texture>
-    Model::InternalMethods::LoadMaterialTextures(aiMaterial* mat, aiTextureType aiType, TextureType type) {
+    std::vector<Texture> Model::InternalMethods::LoadMaterialTextures(aiMaterial* mat,
+                                                                      aiTextureType aiType,
+                                                                      TextureType type,
+                                                                      const std::string& directory) {
         std::vector<Texture> textures;
 
         for (u32 i = 0; i < mat->GetTextureCount(aiType); ++i) {
             aiString str;
             mat->GetTexture(aiType, i, &str);
 
-            Texture text(std::string(str.C_Str()), TextureType::Diffuse);
-            text.GenerateMipmaps();
+            std::string filename = directory + "/" + std::string(str.C_Str());
+
+            AX_CORE_INFO(LogChannel::Renderer, "{0}", filename);
+
+            Texture text(filename, type);
             text.SetWrapping(TextureWrapMode::Repeat, TextureWrapMode::Repeat);
             text.SetFiltering(TextureFilteringMode::LinearMipmapLinear, TextureFilteringMode::Linear);
+            text.GenerateMipmaps();
 
-            textures.push_back(text);
+            textures.push_back(std::move(text));
         }
 
         return textures;

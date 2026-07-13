@@ -44,9 +44,9 @@ namespace Axle {
     static u32 TextureFormatToOpenGL(TextureFormat format) {
         switch (format) {
             case TextureFormat::RGB:
-                return GL_RGB;
+                return GL_RGB8;
             case TextureFormat::RGBA:
-                return GL_RGBA;
+                return GL_RGBA8;
         }
         // TODO: Add all remaining formats
     }
@@ -58,7 +58,7 @@ namespace Axle {
           m_DataFormat(dataFormat),
           m_Type(type) {
         glCreateTextures(GL_TEXTURE_2D, 1, &m_ID);
-        glTextureStorage2D(m_ID, 0, TextureFormatToOpenGL(m_InternalFormat), m_Width, m_Height);
+        glTextureStorage2D(m_ID, 1, TextureFormatToOpenGL(m_InternalFormat), m_Width, m_Height);
     }
 
     Texture::Texture(const std::string& file, TextureType type, bool flipVertically)
@@ -89,20 +89,53 @@ namespace Axle {
         if (m_NrChannels == 1)
             format = GL_RED;
         else if (m_NrChannels == 3) {
-            format = GL_RGB;
+            format = GL_RGB8;
             m_InternalFormat = TextureFormat::RGB;
             m_DataFormat = TextureFormat::RGB;
         } else if (m_NrChannels == 4) {
-            format = GL_RGBA;
+            format = GL_RGBA8;
             m_InternalFormat = TextureFormat::RGBA;
             m_DataFormat = TextureFormat::RGBA;
         }
 
         glCreateTextures(GL_TEXTURE_2D, 1, &m_ID);
-        glTextureStorage2D(m_ID, 0, format, m_Width, m_Height);
+        glTextureStorage2D(m_ID, 1, format, m_Width, m_Height);
         glTextureSubImage2D(m_ID, 0, 0, 0, m_Width, m_Height, format, GL_UNSIGNED_BYTE, data);
 
         stbi_image_free(data);
+    }
+
+    Texture::Texture(Texture&& other) noexcept
+        : m_ID(other.m_ID),
+          m_Width(other.m_Width),
+          m_Height(other.m_Height),
+          m_NrChannels(other.m_NrChannels),
+          m_FileHandle(std::move(other.m_FileHandle)),
+          m_InternalFormat(other.m_InternalFormat),
+          m_DataFormat(other.m_DataFormat) {
+        other.m_ID = 0;
+    }
+
+    Texture& Texture::operator=(Texture&& other) noexcept {
+        if (this != &other) {
+            if (m_ID != 0)
+                glDeleteTextures(1, &m_ID);
+            m_ID = other.m_ID;
+            other.m_ID = 0;
+
+            m_Width = other.m_Width;
+            m_Height = other.m_Height;
+            m_NrChannels = other.m_NrChannels;
+            m_FileHandle = other.m_FileHandle;
+            m_InternalFormat = other.m_InternalFormat;
+            m_DataFormat = other.m_DataFormat;
+        }
+        return *this;
+    }
+
+    Texture::~Texture() {
+        if (m_ID != 0)
+            glDeleteTextures(1, &m_ID);
     }
 
     void Texture::SetSource(const std::string& file, bool flipVertically) {
@@ -156,7 +189,6 @@ namespace Axle {
 
         stbi_image_free(data);
     }
-
 
     void Texture::SetWrapping(TextureWrapMode s, TextureWrapMode t) {
         glTextureParameteri(m_ID, GL_TEXTURE_WRAP_S, TextureWrapModeToOpenGL(s));

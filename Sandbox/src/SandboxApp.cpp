@@ -1,6 +1,3 @@
-#include "glm/ext/matrix_clip_space.hpp"
-#include "glm/ext/matrix_float4x4.hpp"
-#include "glm/trigonometric.hpp"
 #include <AxleApp.hpp>
 
 #include "Core/Application.hpp"
@@ -8,10 +5,15 @@
 #include "Core/Events/Event.hpp"
 #include "Core/Input/InputManager.hpp"
 #include "Core/Input/InputState.hpp"
+#include "Core/Logger/Log.hpp"
 #include "Renderer/Shaders/ShaderProgram.hpp"
 #include "Renderer/Shaders/Shader.hpp"
 #include "Renderer/Camera/Camera.hpp"
 #include "Renderer/Meshes/Model.hpp"
+
+#include "glm/ext/matrix_clip_space.hpp"
+#include "glm/ext/matrix_float4x4.hpp"
+#include "glm/trigonometric.hpp"
 
 using namespace Axle;
 
