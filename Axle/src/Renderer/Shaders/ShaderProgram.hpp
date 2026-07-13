@@ -7,6 +7,8 @@
 #include "Core/Types.hpp"
 #include "Shader.hpp"
 
+#include "glm/ext/matrix_float4x4.hpp"
+
 namespace Axle {
     class AXLE_API ShaderProgram {
     public:
@@ -26,6 +28,8 @@ namespace Axle {
             other.m_ID = 0;
         }
         ShaderProgram& operator=(ShaderProgram&& other) noexcept;
+
+        void SetMat4(const std::string& name, const glm::mat4& mat) const;
 
         /**
          * Tells OpenGL to use the program.

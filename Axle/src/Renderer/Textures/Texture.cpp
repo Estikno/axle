@@ -1,10 +1,17 @@
 #include "axpch.hpp"
 
 #include <glad/gl.h>
+#include <stb_image.h>
+#include "glm/gtc/type_ptr.hpp"
+
 #include "Texture.hpp"
+#include "Core/Error/Panic.hpp"
+#include "Core/Logger/Log.hpp"
+#include "Core/Resource/ResourceManager.hpp"
+#include "Other/CustomTypes/Expected.hpp"
 
 namespace Axle {
-    static u32 WrapModeToOpenGL(TextureWrapMode mode) {
+    static u32 TextureWrapModeToOpenGL(TextureWrapMode mode) {
         switch (mode) {
             case TextureWrapMode::Repeat:
                 return GL_REPEAT;
@@ -34,5 +41,142 @@ namespace Axle {
         }
     }
 
+    static u32 TextureFormatToOpenGL(TextureFormat format) {
+        switch (format) {
+            case TextureFormat::RGB:
+                return GL_RGB;
+            case TextureFormat::RGBA:
+                return GL_RGBA;
+        }
+        // TODO: Add all remaining formats
+    }
 
+    Texture::Texture(i32 width, i32 height, TextureFormat internalFormat, TextureFormat dataFormat, TextureType type)
+        : m_Width(width),
+          m_Height(height),
+          m_InternalFormat(internalFormat),
+          m_DataFormat(dataFormat),
+          m_Type(type) {
+        glCreateTextures(GL_TEXTURE_2D, 1, &m_ID);
+        glTextureStorage2D(m_ID, 0, TextureFormatToOpenGL(m_InternalFormat), m_Width, m_Height);
+    }
+
+    Texture::Texture(const std::string& file, TextureType type, bool flipVertically)
+        : m_Type(type) {
+        Expected<ResourceManager::ManagedFileHandle> exp = ResourceManager::GetInstance().Load(file);
+
+        // Load data
+        AX_ENSURE(exp.IsValid(), LogChannel::Renderer, "Couldn't load texture: {0}", file);
+        // TODO: Default to an ugly texture if it couldn't load it
+
+        m_FileHandle = exp.Unwrap();
+        ResourceManager::ReadGuard readGuard = ResourceManager::GetInstance().DataConst(m_FileHandle).Unwrap();
+
+        // Intepret loaded data
+        stbi_set_flip_vertically_on_load(flipVertically);
+        u8* data = stbi_load_from_memory(reinterpret_cast<const u8*>(readGuard.Data()),
+                                         static_cast<i32>(readGuard.Size()),
+                                         &m_Width,
+                                         &m_Height,
+                                         &m_NrChannels,
+                                         0);
+        stbi_set_flip_vertically_on_load(false);
+
+        AX_ENSURE(data != nullptr, LogChannel::Renderer, "Error interpreting image of file: {0}", file);
+        // TODO: Default to an ugly texture if it couldn't load it
+
+        GLenum format;
+        if (m_NrChannels == 1)
+            format = GL_RED;
+        else if (m_NrChannels == 3) {
+            format = GL_RGB;
+            m_InternalFormat = TextureFormat::RGB;
+            m_DataFormat = TextureFormat::RGB;
+        } else if (m_NrChannels == 4) {
+            format = GL_RGBA;
+            m_InternalFormat = TextureFormat::RGBA;
+            m_DataFormat = TextureFormat::RGBA;
+        }
+
+        glCreateTextures(GL_TEXTURE_2D, 1, &m_ID);
+        glTextureStorage2D(m_ID, 0, format, m_Width, m_Height);
+        glTextureSubImage2D(m_ID, 0, 0, 0, m_Width, m_Height, format, GL_UNSIGNED_BYTE, data);
+
+        stbi_image_free(data);
+    }
+
+    void Texture::SetSource(const std::string& file, bool flipVertically) {
+        Expected<ResourceManager::ManagedFileHandle> exp = ResourceManager::GetInstance().Load(file);
+
+        // Load data
+        AX_ENSURE(exp.IsValid(), LogChannel::Renderer, "Couldn't load texture: {0}", file);
+        // TODO: Default to an ugly texture if it couldn't load it
+
+        m_FileHandle = exp.Unwrap();
+        ResourceManager::ReadGuard readGuard = ResourceManager::GetInstance().DataConst(m_FileHandle).Unwrap();
+
+        // Intepret loaded data
+        stbi_set_flip_vertically_on_load(flipVertically);
+        u8* data = stbi_load_from_memory(reinterpret_cast<const u8*>(readGuard.Data()),
+                                         static_cast<i32>(readGuard.Size()),
+                                         &m_Width,
+                                         &m_Height,
+                                         &m_NrChannels,
+                                         0);
+        stbi_set_flip_vertically_on_load(false);
+
+        AX_ENSURE(data != nullptr, LogChannel::Renderer, "Error interpreting image of file: {0}", file);
+        // TODO: Default to an ugly texture if it couldn't load it
+
+        glTextureSubImage2D(
+            m_ID, 0, 0, 0, m_Width, m_Height, TextureFormatToOpenGL(m_DataFormat), GL_UNSIGNED_BYTE, data);
+
+        stbi_image_free(data);
+    }
+
+    void Texture::SetSource(ResourceManager::ManagedFileHandle& handle, bool flipVertically) {
+        m_FileHandle = handle;
+        ResourceManager::ReadGuard readGuard = ResourceManager::GetInstance().DataConst(m_FileHandle).Unwrap();
+
+        // Intepret loaded data
+        stbi_set_flip_vertically_on_load(flipVertically);
+        u8* data = stbi_load_from_memory(reinterpret_cast<const u8*>(readGuard.Data()),
+                                         static_cast<i32>(readGuard.Size()),
+                                         &m_Width,
+                                         &m_Height,
+                                         &m_NrChannels,
+                                         0);
+        stbi_set_flip_vertically_on_load(false);
+
+        AX_ENSURE(data != nullptr, LogChannel::Renderer, "Error interpreting image");
+        // TODO: Default to an ugly texture if it couldn't load it
+
+        glTextureSubImage2D(
+            m_ID, 0, 0, 0, m_Width, m_Height, TextureFormatToOpenGL(m_DataFormat), GL_UNSIGNED_BYTE, data);
+
+        stbi_image_free(data);
+    }
+
+
+    void Texture::SetWrapping(TextureWrapMode s, TextureWrapMode t) {
+        glTextureParameteri(m_ID, GL_TEXTURE_WRAP_S, TextureWrapModeToOpenGL(s));
+        glTextureParameteri(m_ID, GL_TEXTURE_WRAP_T, TextureWrapModeToOpenGL(t));
+    }
+
+    void Texture::SetFiltering(TextureFilteringMode min, TextureFilteringMode mag) {
+        glTextureParameteri(m_ID, GL_TEXTURE_MIN_FILTER, TextureFilterToOpenGL(min));
+        glTextureParameteri(m_ID, GL_TEXTURE_MAG_FILTER, TextureFilterToOpenGL(mag));
+    }
+
+    void Texture::GenerateMipmaps() {
+        glGenerateTextureMipmap(m_ID);
+    }
+
+    void Texture::SetBorderColor(const glm::vec4& color) {
+        glTextureParameterfv(m_ID, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(color));
+    }
+
+    void Texture::Bind(u32 textureUnit) {
+        glBindTextureUnit(textureUnit, m_ID);
+    }
 } // namespace Axle

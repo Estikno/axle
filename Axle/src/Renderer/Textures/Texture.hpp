@@ -17,17 +17,20 @@ namespace Axle {
         NearestMipmapLinear,
         LinearMipmapLinear
     };
+    enum class TextureFormat { RGB = 0, RGBA };
+    enum class TextureType { Diffuse = 0, Specular, Unknown };
 
     class Texture {
     public:
-        explicit Texture(u32 width, u32 height);
-        explicit Texture(u32 width, u32 height, const std::string& file);
-        explicit Texture(u32 width, u32 height, ResourceManager::ManagedFileHandle& handle);
+        Texture(i32 width, i32 height, TextureFormat internalFormat, TextureFormat dataFormat, TextureType type);
+        Texture(const std::string& file, TextureType type, bool flipVertically = true);
+        ~Texture() = default;
 
-        ~Texture();
+        void SetSource(const std::string& file, bool flipVertically = true);
+        void SetSource(ResourceManager::ManagedFileHandle& handle, bool flipVertically = true);
 
-        void SetTextureWrapping(TextureWrapMode s, TextureWrapMode t);
-        void SetTextureFiltering(TextureFilteringMode min, TextureFilteringMode mag);
+        void SetWrapping(TextureWrapMode s, TextureWrapMode t);
+        void SetFiltering(TextureFilteringMode min, TextureFilteringMode mag);
         void GenerateMipmaps();
         void SetBorderColor(const glm::vec4& color);
 
@@ -37,9 +40,17 @@ namespace Axle {
             return m_ID;
         }
 
+        inline TextureType GetType() const {
+            return m_Type;
+        }
+
     private:
-        u32 m_ID;
-        u32 m_Width, m_Height, m_NrChannels;
+        u32 m_ID = 0;
+        i32 m_Width, m_Height, m_NrChannels;
+
         ResourceManager::ManagedFileHandle m_FileHandle;
+
+        TextureFormat m_InternalFormat, m_DataFormat;
+        TextureType m_Type;
     };
 } // namespace Axle
