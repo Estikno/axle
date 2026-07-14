@@ -33,7 +33,8 @@ namespace Axle {
     }
 
     ShaderProgram::~ShaderProgram() {
-        glDeleteProgram(m_ID);
+        if (m_ID != 0)
+            glDeleteProgram(m_ID);
     }
 
     void ShaderProgram::CheckLinkErrors() const {

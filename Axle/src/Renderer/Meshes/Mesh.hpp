@@ -17,7 +17,9 @@ namespace Axle {
 
     class Mesh {
     public:
-        Mesh(const std::vector<Vertex>& vertices, const std::vector<u32>& indices, std::vector<Texture>&& textures);
+        Mesh(const std::vector<Vertex>& vertices,
+             const std::vector<u32>& indices,
+             std::vector<std::pair<u32, TextureType>>&& textures);
         ~Mesh();
 
         Mesh(const Mesh&) = delete;
@@ -36,6 +38,6 @@ namespace Axle {
         // Data
         std::vector<Vertex> m_Vertices;
         std::vector<u32> m_Indices;
-        std::vector<Texture> m_Textures;
+        std::vector<std::pair<u32, TextureType>> m_Textures;
     };
 } // namespace Axle

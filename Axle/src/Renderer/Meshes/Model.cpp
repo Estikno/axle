@@ -6,6 +6,7 @@
 #include "Other/CustomTypes/Expected.hpp"
 #include "Core/Logger/Log.hpp"
 #include "Core/Resource/ResourceManager.hpp"
+#include "Renderer/Textures/TextureManager.hpp"
 
 #include "assimp/Importer.hpp"
 #include "assimp/scene.h"
@@ -18,7 +19,7 @@ namespace Axle {
     struct Model::InternalMethods {
         static void ProcessNode(aiNode* node, const aiScene* scene, Model* model);
         static Mesh ProcessMesh(aiMesh* mesh, const aiScene* scene, Model* model);
-        static std::vector<Texture>
+        static std::vector<std::pair<u32, TextureType>>
         LoadMaterialTextures(aiMaterial* mat, aiTextureType aiType, TextureType type, const std::string& directory);
     };
 
@@ -51,11 +52,6 @@ namespace Axle {
     }
 
     void Model::InternalMethods::ProcessNode(aiNode* node, const aiScene* scene, Model* model) {
-        AX_CORE_INFO(LogChannel::Renderer,
-                     "Node {:p} meshes={} children={}",
-                     static_cast<void*>(node),
-                     node->mNumMeshes,
-                     node->mNumChildren);
         // Process node's meshes
         for (u32 i = 0; i < node->mNumMeshes; ++i) {
             aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
@@ -71,7 +67,7 @@ namespace Axle {
     Mesh Model::InternalMethods::ProcessMesh(aiMesh* mesh, const aiScene* scene, Model* model) {
         std::vector<Vertex> vertices;
         std::vector<u32> indices;
-        std::vector<Texture> textures;
+        std::vector<std::pair<u32, TextureType>> textures;
 
         // Vertex data
         for (u32 i = 0; i < mesh->mNumVertices; ++i) {
@@ -97,12 +93,12 @@ namespace Axle {
         // Material
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-        std::vector<Texture> diffuseMaps =
+        std::vector<std::pair<u32, TextureType>> diffuseMaps =
             LoadMaterialTextures(material, aiTextureType_DIFFUSE, TextureType::Diffuse, model->m_Directory);
         textures.insert(
             textures.end(), std::make_move_iterator(diffuseMaps.begin()), std::make_move_iterator(diffuseMaps.end()));
 
-        std::vector<Texture> specularMaps =
+        std::vector<std::pair<u32, TextureType>> specularMaps =
             LoadMaterialTextures(material, aiTextureType_SPECULAR, TextureType::Specular, model->m_Directory);
         textures.insert(
             textures.end(), std::make_move_iterator(specularMaps.begin()), std::make_move_iterator(specularMaps.end()));
@@ -110,11 +106,12 @@ namespace Axle {
         return Mesh(vertices, indices, std::move(textures));
     }
 
-    std::vector<Texture> Model::InternalMethods::LoadMaterialTextures(aiMaterial* mat,
-                                                                      aiTextureType aiType,
-                                                                      TextureType type,
-                                                                      const std::string& directory) {
-        std::vector<Texture> textures;
+    std::vector<std::pair<u32, TextureType>>
+    Model::InternalMethods::LoadMaterialTextures(aiMaterial* mat,
+                                                 aiTextureType aiType,
+                                                 TextureType type,
+                                                 const std::string& directory) {
+        std::vector<std::pair<u32, TextureType>> textures;
 
         for (u32 i = 0; i < mat->GetTextureCount(aiType); ++i) {
             aiString str;
@@ -122,14 +119,11 @@ namespace Axle {
 
             std::string filename = directory + "/" + std::string(str.C_Str());
 
-            AX_CORE_INFO(LogChannel::Renderer, "{0}", filename);
-
-            Texture text(filename, type);
-            text.SetWrapping(TextureWrapMode::Repeat, TextureWrapMode::Repeat);
-            text.SetFiltering(TextureFilteringMode::LinearMipmapLinear, TextureFilteringMode::Linear);
-            text.GenerateMipmaps();
-
-            textures.push_back(std::move(text));
+            u32 textId = TextureManager::GetInstance().CreateTexture(filename, TextureFormat::RGB);
+            TextureManager::GetInstance().SetWrapping(textId, TextureWrapMode::Repeat, TextureWrapMode::Repeat);
+            TextureManager::GetInstance().SetFiltering(
+                textId, TextureFilteringMode::Linear, TextureFilteringMode::Linear);
+            textures.push_back(std::make_pair(textId, type));
         }
 
         return textures;

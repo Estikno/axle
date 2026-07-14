@@ -41,10 +41,16 @@ public:
         model = Model("assets/tests/backpack/backpack.obj");
 
         Application::GetInstance().GetCamera().ChangePositioner(&positioner);
+        Application::GetInstance().GetCamera().SetDeletePolicy(false);
+
         InputManager::SetCursorMode(CursorMode::CursorDisabled);
     }
 
-    void OnDettachRender() override {}
+    void OnDettachRender() override {
+        Application::GetInstance().GetCamera().ChangePositioner(nullptr);
+        model = Model();
+        program = ShaderProgram();
+    }
 
     void OnRender(f64 deltaTime) override {
         positioner.Update(deltaTime);

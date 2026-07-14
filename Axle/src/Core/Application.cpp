@@ -13,6 +13,7 @@
 #include "Core/Layer/Layer.hpp"
 #include "Window/Window.hpp"
 #include "Types.hpp"
+#include "Renderer/Textures/TextureManager.hpp"
 
 #include "ImGui/ImGuiLayer.hpp"
 
@@ -88,6 +89,7 @@ namespace Axle {
         cw::JobSystem::GetInstance().DeregisterWorkerThread();
 
         // We shut down the system here so everything gets deleted correctly (GLFW, OpenGL, ...)
+        TextureManager::Shutdown();
         cw::JobSystem::Shutdown();
     }
 

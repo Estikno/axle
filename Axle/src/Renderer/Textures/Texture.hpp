@@ -20,11 +20,15 @@ namespace Axle {
     enum class TextureFormat { RGB = 0, RGBA };
     enum class TextureType { Diffuse = 0, Specular, Unknown };
 
-    struct Texture {
-        u32 m_ID = 0;
-        i32 m_Width, m_Height, m_NrChannels;
+    u32 TextureWrapModeToOpenGL(TextureWrapMode mode);
+    u32 TextureFilterToOpenGL(TextureFilteringMode mode);
+    u32 TextureFormatToOpenGL(TextureFormat format);
 
-        TextureFormat m_InternalFormat, m_DataFormat;
-        TextureType m_Type;
-    };
+    // struct Texture {
+    //     u32 m_ID = 0;
+    //     i32 m_Width, m_Height, m_NrChannels;
+    //
+    //     TextureFormat m_InternalFormat, m_DataFormat;
+    //     TextureType m_Type;
+    // };
 } // namespace Axle

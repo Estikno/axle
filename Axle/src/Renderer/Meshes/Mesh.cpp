@@ -7,10 +7,12 @@
 #include "Core/Error/Panic.hpp"
 #include "Core/Logger/Log.hpp"
 #include "Renderer/Textures/Texture.hpp"
-
+#include "Renderer/Textures/TextureManager.hpp"
 
 namespace Axle {
-    Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<u32>& indices, std::vector<Texture>&& textures)
+    Mesh::Mesh(const std::vector<Vertex>& vertices,
+               const std::vector<u32>& indices,
+               std::vector<std::pair<u32, TextureType>>&& textures)
         : m_Vertices(vertices),
           m_Indices(indices),
           m_Textures(std::move(textures)) {
@@ -99,13 +101,15 @@ namespace Axle {
 
         // Texture binding
         for (u32 i = 0; i < m_Textures.size(); ++i) {
-            switch (m_Textures[i].GetType()) {
+            switch (m_Textures[i].second) {
                 case TextureType::Diffuse:
                     // TODO: Instead of panicking simply log a warn message
                     AX_ENSURE(DiffuseTextureNr < TextureUnitOffset,
                               LogChannel::Renderer,
                               "Reached maximum number of diffuse textures. Can't bind more");
-                    m_Textures[i].Bind(DiffuseTextureNr + static_cast<u8>(TextureType::Diffuse) * TextureUnitOffset);
+                    TextureManager::GetInstance().Bind(m_Textures[i].first,
+                                                       DiffuseTextureNr +
+                                                           static_cast<u8>(TextureType::Diffuse) * TextureUnitOffset);
                     DiffuseTextureNr++;
                     break;
                 case TextureType::Specular:
@@ -113,7 +117,9 @@ namespace Axle {
                     AX_ENSURE(SpecularTextureNr < TextureUnitOffset,
                               LogChannel::Renderer,
                               "Reached maximum number of specular textures. Can't bind more");
-                    m_Textures[i].Bind(SpecularTextureNr + static_cast<u8>(TextureType::Specular) * TextureUnitOffset);
+                    TextureManager::GetInstance().Bind(m_Textures[i].first,
+                                                       SpecularTextureNr +
+                                                           static_cast<u8>(TextureType::Specular) * TextureUnitOffset);
                     SpecularTextureNr++;
                     break;
                 case TextureType::Unknown:
