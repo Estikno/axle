@@ -18,15 +18,16 @@ namespace Axle {
     public:
         virtual ~ICameraPositioner() = default;
         virtual glm::mat4 GetViewMatrix() const = 0;
+        virtual f32 GetFOV() const = 0;
         virtual glm::vec3 GetPosition() const = 0;
         virtual void Update(f32 deltaTime) = 0;
     };
 
     class AXLE_API Camera final {
     public:
-        explicit Camera()
+        Camera()
             : m_Positioner(nullptr),
-              m_DeletePositioner(true) {}
+              m_DeletePositioner(false) {}
 
         explicit Camera(ICameraPositioner& positioner, bool deletePositioner)
             : m_Positioner(&positioner),
@@ -90,9 +91,8 @@ namespace Axle {
         static_assert(std::atomic<ICameraPositioner*>::is_always_lock_free,
                       "Positioner pointer is not always lock free");
         std::atomic<ICameraPositioner*> m_Positioner = nullptr;
-        std::atomic_bool m_DeletePositioner = true;
+        std::atomic_bool m_DeletePositioner = false;
     };
-
 
     class AXLE_API CameraPositionerDebug final : public ICameraPositioner {
     public:
@@ -125,7 +125,7 @@ namespace Axle {
             return glm::lookAt(m_Position, m_Position + m_Forward, m_Up);
         }
 
-        inline f32 GetFOV() const {
+        inline f32 GetFOV() const override {
             return m_FOV;
         }
 
@@ -194,6 +194,9 @@ namespace Axle {
         inline virtual glm::mat4 GetViewMatrix() const override {
             return m_CurrentTransform;
         }
+        inline virtual f32 GetFOV() const override {
+            return m_FOV;
+        }
 
         f32 p_DampingLinear;
         glm::vec3 p_DampingEulerAngles;
@@ -233,5 +236,7 @@ namespace Axle {
         glm::vec3 m_AnglesDesired = glm::vec3(0.0f);
 
         glm::mat4 m_CurrentTransform = glm::mat4(0.0f);
+
+        f32 m_FOV = 45.0f;
     };
 } // namespace Axle

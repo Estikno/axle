@@ -5,8 +5,6 @@
 #include "Core/Types.hpp"
 #include "Core/Resource/ResourceManager.hpp"
 
-#include <glm/glm.hpp>
-
 namespace Axle {
     enum class TextureWrapMode { Repeat = 0, MirroredRepeat, ClampToEdge, ClampToBorder };
     enum class TextureFilteringMode {
@@ -17,18 +15,25 @@ namespace Axle {
         NearestMipmapLinear,
         LinearMipmapLinear
     };
-    enum class TextureFormat { RGB = 0, RGBA };
+    enum class TextureFormat {
+        RGB = 0,
+        RGBA,
+        RGB8,
+        RGBA8,
+        RGB16F,
+        RGBA16F,
+        RGB32F,
+        RGBA32F,
+        R8,
+        RG8,
+        SRGB8,
+        SRGB8Alpha8,
+        Depth24Stencil8,
+        Depth32F
+    };
     enum class TextureType { Diffuse = 0, Specular, Unknown };
 
     u32 TextureWrapModeToOpenGL(TextureWrapMode mode);
     u32 TextureFilterToOpenGL(TextureFilteringMode mode);
     u32 TextureFormatToOpenGL(TextureFormat format);
-
-    // struct Texture {
-    //     u32 m_ID = 0;
-    //     i32 m_Width, m_Height, m_NrChannels;
-    //
-    //     TextureFormat m_InternalFormat, m_DataFormat;
-    //     TextureType m_Type;
-    // };
 } // namespace Axle

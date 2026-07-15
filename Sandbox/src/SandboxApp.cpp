@@ -40,24 +40,22 @@ public:
         // Model
         model = Model("assets/tests/backpack/backpack.obj");
 
-        Application::GetInstance().GetCamera().ChangePositioner(&positioner);
-        Application::GetInstance().GetCamera().SetDeletePolicy(false);
-
         InputManager::SetCursorMode(CursorMode::CursorDisabled);
     }
 
     void OnDettachRender() override {
-        Application::GetInstance().GetCamera().ChangePositioner(nullptr);
         model = Model();
         program = ShaderProgram();
     }
 
     void OnRender(f64 deltaTime) override {
-        positioner.Update(deltaTime);
+        Camera& cam = Application::GetInstance().GetCamera();
+        cam.GetPositioner()->Update(deltaTime);
 
         program.Use();
-        glm::mat4 projection = glm::perspective(glm::radians(positioner.GetFOV()), width / height, 0.1f, 1000.0f);
-        glm::mat4 view = positioner.GetViewMatrix();
+        glm::mat4 projection =
+            glm::perspective(glm::radians(cam.GetPositioner()->GetFOV()), width / height, 0.1f, 1000.0f);
+        glm::mat4 view = cam.GetPositioner()->GetViewMatrix();
         program.SetMat4("projection", projection);
         program.SetMat4("view", view);
 
@@ -83,7 +81,6 @@ public:
 
 private:
     ShaderProgram program;
-    CameraPositionerDebug positioner;
     Model model;
 
     f32 width = 1280.0f, height = 720.0f;

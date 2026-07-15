@@ -37,7 +37,7 @@ namespace Axle {
         m_Directory = path.substr(0, path.find_last_of('/'));
 
         AX_CORE_INFO(LogChannel::Renderer,
-                     "Scene: meshes={} materials={} nodes={}",
+                     "Loading model with: meshes={0} materials={1} nodes={2}",
                      scene->mNumMeshes,
                      scene->mNumMaterials,
                      scene->mRootNode->mNumChildren);
