@@ -11,8 +11,8 @@ namespace Axle {
     /**
      * Manages the textures of the renderer
      *
-     * ALL the functionality of this class is NOT THREAD SAFE and must only be called from the renderer thread. Efforst
-     * are being made to pararelize the loadings but it's currently not in effect
+     * ALL the functionality of this class is NOT THREAD SAFE and must only be called from the renderer thread. Loadings
+     * are planned to be pararelized but it's currently not in effect
      * */
     class TextureManager {
     public:
@@ -48,7 +48,7 @@ namespace Axle {
          * @param width The width of the texture
          * @param width The height of the texture
          * @þaram mipmaps Desired number of mipmaps. Set to -1 to be calculated automatically.
-         * @param internalFormat The internal format of the texture, this has to be sized
+         * @param internalFormat The internal OpenGL format of the texture, this has to be sized
          *
          * @returns The id returned by OpenGL
          * */
@@ -72,7 +72,7 @@ namespace Axle {
          *
          * @param path The path to the texture
          * @þaram mipmaps Desired number of mipmaps. Set to -1 to be calculated automatically.
-         * @param internalFormat The internal OpenGL format of the texture
+         * @param internalFormat The internal OpenGL format of the texture, this has to be sized
          * @param flipVertically Do you want the texture data to be flipped vertically when imported
          *
          * @returns The id returned by OpenGL
@@ -86,7 +86,7 @@ namespace Axle {
          *
          * @param path The path to the texture
          * @þaram mipmaps Desired number of mipmaps. Set to -1 to be calculated automatically.
-         * @param internalFormat The internal OpenGL format of the texture
+         * @param internalFormat The internal OpenGL format of the texture, this has to be sized
          * @param dataFormat The data format of the texture
          * @param flipVertically Do you want the texture data to be flipped vertically when imported
          *
