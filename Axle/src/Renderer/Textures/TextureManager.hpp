@@ -33,15 +33,6 @@ namespace Axle {
         static void Shutdown();
 
         /**
-         * Returns a reference to the current instance. This is only valid after initializing the manager.
-         *
-         * @returns A reference to the manager instance
-         * */
-        inline static TextureManager& GetInstance() {
-            return *s_Instance;
-        }
-
-        /**
          * Creates a texture with the given width, height and internalFormat.
          * This method does not populate the data, it simply reserves the needed space. Usefull for texture rendering.
          *
@@ -52,7 +43,9 @@ namespace Axle {
          *
          * @returns The id returned by OpenGL
          * */
-        u32 CreateTexture(i32 width, i32 height, i32 mipmaps, TextureFormat internalFormat);
+        inline static u32 CreateTexture(i32 width, i32 height, i32 mipmaps, TextureFormat internalFormat) {
+            return s_Instance->CreateTextureImpl(width, height, mipmaps, internalFormat);
+        }
 
         /**
          * Creates a texture and populates the data from the given file path. This method automatically detects and
@@ -64,7 +57,9 @@ namespace Axle {
          *
          * @returns The id returned by OpenGL
          * */
-        u32 CreateTexture(const std::string& path, i32 mipmaps, bool flipVertically = true);
+        inline static u32 CreateTexture(const std::string& path, i32 mipmaps, bool flipVertically = true) {
+            return s_Instance->CreateTextureImpl(path, mipmaps, flipVertically);
+        }
 
         /**
          * Creates a texture and populates the data from the given file path. This method automatically detects and
@@ -77,8 +72,10 @@ namespace Axle {
          *
          * @returns The id returned by OpenGL
          * */
-        u32
-        CreateTexture(const std::string& path, i32 mipmaps, TextureFormat internalFormat, bool flipVertically = true);
+        inline static u32
+        CreateTexture(const std::string& path, i32 mipmaps, TextureFormat internalFormat, bool flipVertically = true) {
+            return s_Instance->CreateTextureImpl(path, mipmaps, internalFormat, flipVertically);
+        }
 
         /**
          * Creates a texture and populates the data from the given file path. This method does not automatically set
@@ -92,11 +89,13 @@ namespace Axle {
          *
          * @returns The id returned by OpenGL
          * */
-        u32 CreateTexture(const std::string& path,
-                          i32 mipmaps,
-                          TextureFormat internalFormat,
-                          TextureFormat dataFormat,
-                          bool flipVertically = true);
+        inline static u32 CreateTexture(const std::string& path,
+                                        i32 mipmaps,
+                                        TextureFormat internalFormat,
+                                        TextureFormat dataFormat,
+                                        bool flipVertically = true) {
+            return s_Instance->CreateTextureImpl(path, mipmaps, internalFormat, dataFormat, flipVertically);
+        }
 
         /**
          * Sets the wrapping mode for the s and t coordinate
@@ -105,7 +104,9 @@ namespace Axle {
          * @param s Texture wrapping mode for the s coordinate
          * @param t Texture wrapping mode for the t coordinate
          * */
-        void SetWrapping(u32 ID, TextureWrapMode s, TextureWrapMode t);
+        inline static void SetWrapping(u32 ID, TextureWrapMode s, TextureWrapMode t) {
+            s_Instance->SetWrappingImpl(ID, s, t);
+        }
 
         /**
          * Sets the texture filtering mode
@@ -114,14 +115,18 @@ namespace Axle {
          * @param min Texture filtering mode when minifying
          * @param mag Texture filtering mode when magnifying
          * */
-        void SetFiltering(u32 ID, TextureFilteringMode min, TextureFilteringMode mag);
+        inline static void SetFiltering(u32 ID, TextureFilteringMode min, TextureFilteringMode mag) {
+            s_Instance->SetFilteringImpl(ID, min, mag);
+        }
 
         /**
          * Generates mipmaps for the wanted texture. The number of minmaps is set when creating the texture.
          *
          * @param ID Texture id
          * */
-        void GenerateMipmaps(u32 ID);
+        inline static void GenerateMipmaps(u32 ID) {
+            s_Instance->GenerateMipmapsImpl(ID);
+        }
 
         /**
          * Sets a border color. Usefull if for example you choose clamp to border as a wrapping mode.
@@ -129,7 +134,9 @@ namespace Axle {
          * @param ID Texture id
          * @param color The desired color for the border (RGBA, 0.0-1.0)
          * */
-        void SetBorderColor(u32 ID, const glm::vec4& color);
+        inline static void SetBorderColor(u32 ID, const glm::vec4& color) {
+            s_Instance->SetBorderColorImpl(ID, color);
+        }
 
         /**
          * Binds a texture to the desired texture unit.
@@ -137,14 +144,34 @@ namespace Axle {
          * @param ID Texture id
          * @param textureUnit Texture unit to bind to
          * */
-        void Bind(u32 ID, u32 textureUnit);
+        inline static void Bind(u32 ID, u32 textureUnit) {
+            s_Instance->BindImpl(ID, textureUnit);
+        }
 
         /**
          * Deallocates all texture related memory. Created textures won't be usable anymore.
          * */
-        void Clear();
+        inline static void Clear() {
+            s_Instance->ClearImpl();
+        }
 
     private:
+        // Static methods implementations
+        u32 CreateTextureImpl(i32 width, i32 height, i32 mipmaps, TextureFormat internalFormat);
+        u32 CreateTextureImpl(const std::string& path, i32 mipmaps, bool flipVertically);
+        u32 CreateTextureImpl(const std::string& path, i32 mipmaps, TextureFormat internalFormat, bool flipVertically);
+        u32 CreateTextureImpl(const std::string& path,
+                              i32 mipmaps,
+                              TextureFormat internalFormat,
+                              TextureFormat dataFormat,
+                              bool flipVertically);
+        void SetWrappingImpl(u32 ID, TextureWrapMode s, TextureWrapMode t);
+        void SetFilteringImpl(u32 ID, TextureFilteringMode min, TextureFilteringMode mag);
+        void GenerateMipmapsImpl(u32 ID);
+        void SetBorderColorImpl(u32 ID, const glm::vec4& color);
+        void BindImpl(u32 ID, u32 textureUnit);
+        void ClearImpl();
+
         /**
          * Handles the creation of the internal file handle and returns a pointer to the data interpreted by
          * stb_image.
@@ -169,7 +196,7 @@ namespace Axle {
          *
          * @returns The necessary mipmaps for the texture
          * */
-        inline u32 CalculateMipmaps(i32 width, i32 height) {
+        inline static u32 CalculateMipmaps(i32 width, i32 height) {
             return floor(log2(std::max(width, height)));
         }
 

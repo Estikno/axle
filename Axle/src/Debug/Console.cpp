@@ -236,7 +236,7 @@ namespace Axle::Debug {
             } else {
                 const std::string& verbosityStr = tokens[1];
                 LogVerbosity verbosity = VerbosityFromStr(verbosityStr);
-                Log::GetInstance().SetVerbosity(verbosity);
+                Log::SetVerbosity(verbosity);
 
                 AddLog("All channels verbosity set to %s",
                        std::string(VERBOSITY_NAMES[static_cast<u8>(verbosity)]).c_str());
@@ -248,7 +248,7 @@ namespace Axle::Debug {
             } else {
                 const std::string& channelStr = tokens[1];
                 LogChannel channel = ChannelFromStr(channelStr);
-                Log::GetInstance().EnableChannel(channel);
+                Log::EnableChannel(channel);
 
                 AddLog("Enabled channel %s", std::string(CHANNEL_NAMES[static_cast<u8>(channel)]).c_str());
             }
@@ -259,7 +259,7 @@ namespace Axle::Debug {
             } else {
                 const std::string& channelStr = tokens[1];
                 LogChannel channel = ChannelFromStr(channelStr);
-                Log::GetInstance().DisableChannel(channel);
+                Log::DisableChannel(channel);
 
                 AddLog("Disabled channel %s", std::string(CHANNEL_NAMES[static_cast<u8>(channel)]).c_str());
             }

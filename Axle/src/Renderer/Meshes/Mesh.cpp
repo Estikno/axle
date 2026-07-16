@@ -94,7 +94,7 @@ namespace Axle {
     // This basically means how many texture of a specific type can we have
     static constexpr u8 TextureUnitOffset = 3;
 
-    void Mesh::Draw(ShaderProgram& program) {
+    void Mesh::Draw(u32 program) {
         // These variables can't be larger than TextureUnitOffset
         u8 DiffuseTextureNr = 0;
         u8 SpecularTextureNr = 0;
@@ -107,9 +107,8 @@ namespace Axle {
                     AX_ENSURE(DiffuseTextureNr < TextureUnitOffset,
                               LogChannel::Renderer,
                               "Reached maximum number of diffuse textures. Can't bind more");
-                    TextureManager::GetInstance().Bind(m_Textures[i].first,
-                                                       DiffuseTextureNr +
-                                                           static_cast<u8>(TextureType::Diffuse) * TextureUnitOffset);
+                    TextureManager::Bind(m_Textures[i].first,
+                                         DiffuseTextureNr + static_cast<u8>(TextureType::Diffuse) * TextureUnitOffset);
                     DiffuseTextureNr++;
                     break;
                 case TextureType::Specular:
@@ -117,9 +116,9 @@ namespace Axle {
                     AX_ENSURE(SpecularTextureNr < TextureUnitOffset,
                               LogChannel::Renderer,
                               "Reached maximum number of specular textures. Can't bind more");
-                    TextureManager::GetInstance().Bind(m_Textures[i].first,
-                                                       SpecularTextureNr +
-                                                           static_cast<u8>(TextureType::Specular) * TextureUnitOffset);
+                    TextureManager::Bind(m_Textures[i].first,
+                                         SpecularTextureNr +
+                                             static_cast<u8>(TextureType::Specular) * TextureUnitOffset);
                     SpecularTextureNr++;
                     break;
                 case TextureType::Unknown:

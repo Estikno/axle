@@ -18,49 +18,6 @@ namespace Axle {
         }
     };
 
-    /**
-     * Simple RAII wrapper of an OpenGL shader
-     * */
-    // class AXLE_API Shader {
-    // public:
-    //     Shader()
-    //         : m_ID(0),
-    //           m_Type(ShaderType::Unknown) {}
-    //     Shader(const std::string& filename, ShaderType type);
-    //     ~Shader();
-    //
-    //     // Delete copy and asignment operator
-    //     Shader(const Shader&) = delete;
-    //     Shader& operator=(const Shader&) = delete;
-    //
-    //     Shader(Shader&& other) noexcept
-    //         : m_ID(other.m_ID),
-    //           m_Type(other.m_Type) {
-    //         other.m_ID = 0;
-    //         other.m_Type = ShaderType::Unknown;
-    //     }
-    //
-    //     Shader& operator=(Shader&& other) noexcept;
-    //
-    //     /**
-    //      * Gets the underlying OpenGL identifier.
-    //      * */
-    //     inline u32 GetID() const {
-    //         return m_ID;
-    //     }
-    //
-    //     /**
-    //      * Whats the shader's type?
-    //      * */
-    //     inline ShaderType GetType() const {
-    //         return m_Type;
-    //     }
-    //
-    // private:
-    //     ResourceManager::ManagedFileHandle m_FileHandle;
-    //     ShaderType m_Type;
-    //     u32 m_ID;
-    // };
 } // namespace Axle
 
 namespace std {

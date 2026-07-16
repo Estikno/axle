@@ -6,10 +6,10 @@
 #include "Core/Input/InputManager.hpp"
 #include "Core/Input/InputState.hpp"
 #include "Core/Logger/Log.hpp"
-#include "Renderer/Shaders/ShaderProgram.hpp"
 #include "Renderer/Shaders/Shader.hpp"
 #include "Renderer/Camera/Camera.hpp"
 #include "Renderer/Meshes/Model.hpp"
+#include "Renderer/Shaders/ShaderManager.hpp"
 
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
@@ -32,10 +32,10 @@ public:
 
     void OnAttachRender() override {
         // Shaders
-        Shader vertexShader("Sandbox/src/Shaders/default.bin", ShaderType::Vertex);
-        Shader fragmentShader("Sandbox/src/Shaders/default.bin", ShaderType::Fragment);
-        program = ShaderProgram(vertexShader, fragmentShader);
-        program.Use();
+        u32 vertexShader = ShaderManager::CreateShader("Sandbox/src/Shaders/default.bin", ShaderType::Vertex);
+        u32 fragmentShader = ShaderManager::CreateShader("Sandbox/src/Shaders/default.bin", ShaderType::Fragment);
+        program = ShaderManager::CreateShaderProgram(vertexShader, fragmentShader);
+        ShaderManager::UseProgram(program);
 
         // Model
         model = Model("assets/tests/backpack/backpack.obj");
@@ -45,26 +45,25 @@ public:
 
     void OnDettachRender() override {
         model = Model();
-        program = ShaderProgram();
     }
 
     void OnRender(f64 deltaTime) override {
         Camera& cam = Application::GetInstance().GetCamera();
         cam.GetPositioner()->Update(deltaTime);
 
-        program.Use();
+        ShaderManager::UseProgram(program);
         glm::mat4 projection =
             glm::perspective(glm::radians(cam.GetPositioner()->GetFOV()), width / height, 0.1f, 1000.0f);
         glm::mat4 view = cam.GetPositioner()->GetViewMatrix();
-        program.SetMat4("projection", projection);
-        program.SetMat4("view", view);
+        ShaderManager::SetMat4(program, "projection", projection);
+        ShaderManager::SetMat4(program, "view", view);
 
         glm::mat4 modelMatrix = glm::mat4(1.0f);
         modelMatrix = glm::translate(
             modelMatrix, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
         modelMatrix =
             glm::scale(modelMatrix, glm::vec3(1.0f, 1.0f, 1.0f)); // it's a bit too big for our scene, so scale it down
-        program.SetMat4("model", modelMatrix);
+        ShaderManager::SetMat4(program, "model", modelMatrix);
         model.Draw(program);
     }
 
@@ -80,7 +79,7 @@ public:
     }
 
 private:
-    ShaderProgram program;
+    u32 program;
     Model model;
 
     f32 width = 1280.0f, height = 720.0f;

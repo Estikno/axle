@@ -104,7 +104,7 @@ namespace Axle::Debug {
     void Inspector::LogHeader() {
         if (ImGui::CollapsingHeader("Logger")) {
             // Select verbosity
-            static i32 currentVerbosity = static_cast<i32>(Log::GetInstance().GetCurrentVerbosity());
+            static i32 currentVerbosity = static_cast<i32>(Log::GetCurrentVerbosity());
             static i32 selectedIndex = currentVerbosity;
             static u8 size = static_cast<u8>(LogVerbosity::MaxVerbosities);
 
@@ -124,7 +124,7 @@ namespace Axle::Debug {
                 currentVerbosity = selectedIndex;
                 if (selectedIndex < 3)
                     AX_CORE_INFO(LogChannel::Debug, "Set log verbosity to: {0}", VERBOSITY_NAMES[selectedIndex]);
-                Log::GetInstance().SetVerbosity(VerbosityFromStr(std::string(VERBOSITY_NAMES[selectedIndex])));
+                Log::SetVerbosity(VerbosityFromStr(std::string(VERBOSITY_NAMES[selectedIndex])));
                 if (selectedIndex >= 3)
                     AX_CORE_INFO(LogChannel::Debug, "Set log verbosity to: {0}", VERBOSITY_NAMES[selectedIndex]);
             }
@@ -135,8 +135,8 @@ namespace Axle::Debug {
                 std::array<bool, static_cast<u8>(LogChannel::MaxChannels)> selectEnables;
 
                 for (u8 i = 0; i < currentEnables.size(); ++i) {
-                    currentEnables[i] = Log::GetInstance().IsChannelEnabled(static_cast<LogChannel>(i));
-                    selectEnables[i] = Log::GetInstance().IsChannelEnabled(static_cast<LogChannel>(i));
+                    currentEnables[i] = Log::IsChannelEnabled(static_cast<LogChannel>(i));
+                    selectEnables[i] = Log::IsChannelEnabled(static_cast<LogChannel>(i));
 
                     ImGui::Checkbox(std::string(CHANNEL_NAMES[i]).c_str(), &selectEnables[i]);
                 }
@@ -144,11 +144,11 @@ namespace Axle::Debug {
                 for (u8 i = 0; i < currentEnables.size(); ++i) {
                     if (selectEnables[i] != currentEnables[i]) {
                         if (selectEnables[i]) {
-                            Log::GetInstance().EnableChannel(static_cast<LogChannel>(i));
+                            Log::EnableChannel(static_cast<LogChannel>(i));
                             AX_CORE_INFO(LogChannel::Debug, "Channel {0} got enabled", CHANNEL_NAMES[i]);
                         } else {
                             AX_CORE_INFO(LogChannel::Debug, "Channel {0} got disabled.", CHANNEL_NAMES[i]);
-                            Log::GetInstance().DisableChannel(static_cast<LogChannel>(i));
+                            Log::DisableChannel(static_cast<LogChannel>(i));
                         }
                     }
                 }

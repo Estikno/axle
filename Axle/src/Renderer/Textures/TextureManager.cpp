@@ -24,7 +24,7 @@ namespace Axle {
         AX_CORE_INFO(LogChannel::Renderer, "Texture manager deleted");
     }
 
-    u32 TextureManager::CreateTexture(i32 width, i32 height, i32 mipmaps, TextureFormat internalFormat) {
+    u32 TextureManager::CreateTextureImpl(i32 width, i32 height, i32 mipmaps, TextureFormat internalFormat) {
         u32 id;
 
         glCreateTextures(GL_TEXTURE_2D, 1, &id);
@@ -38,7 +38,7 @@ namespace Axle {
         return id;
     }
 
-    u32 TextureManager::CreateTexture(const std::string& path, i32 mipmaps, bool flipVertically) {
+    u32 TextureManager::CreateTextureImpl(const std::string& path, i32 mipmaps, bool flipVertically) {
         // Check if it has already been loaded
         auto find = m_PathsToIDs.find(path);
         if (find != m_PathsToIDs.end())
@@ -80,10 +80,10 @@ namespace Axle {
         return id;
     }
 
-    u32 TextureManager::CreateTexture(const std::string& path,
-                                      i32 mipmaps,
-                                      TextureFormat internalFormat,
-                                      bool flipVertically) {
+    u32 TextureManager::CreateTextureImpl(const std::string& path,
+                                          i32 mipmaps,
+                                          TextureFormat internalFormat,
+                                          bool flipVertically) {
         // Check if it has already been loaded
         auto find = m_PathsToIDs.find(path);
         if (find != m_PathsToIDs.end())
@@ -124,11 +124,11 @@ namespace Axle {
         return id;
     }
 
-    u32 TextureManager::CreateTexture(const std::string& path,
-                                      i32 mipmaps,
-                                      TextureFormat internalFormat,
-                                      TextureFormat dataFormat,
-                                      bool flipVertically) {
+    u32 TextureManager::CreateTextureImpl(const std::string& path,
+                                          i32 mipmaps,
+                                          TextureFormat internalFormat,
+                                          TextureFormat dataFormat,
+                                          bool flipVertically) {
         // Check if it has already been loaded
         auto find = m_PathsToIDs.find(path);
         if (find != m_PathsToIDs.end())
@@ -160,29 +160,29 @@ namespace Axle {
         return id;
     }
 
-    void TextureManager::SetWrapping(u32 ID, TextureWrapMode s, TextureWrapMode t) {
+    void TextureManager::SetWrappingImpl(u32 ID, TextureWrapMode s, TextureWrapMode t) {
         glTextureParameteri(ID, GL_TEXTURE_WRAP_S, TextureWrapModeToOpenGL(s));
         glTextureParameteri(ID, GL_TEXTURE_WRAP_T, TextureWrapModeToOpenGL(t));
     }
 
-    void TextureManager::SetFiltering(u32 ID, TextureFilteringMode min, TextureFilteringMode mag) {
+    void TextureManager::SetFilteringImpl(u32 ID, TextureFilteringMode min, TextureFilteringMode mag) {
         glTextureParameteri(ID, GL_TEXTURE_MIN_FILTER, TextureFilterToOpenGL(min));
         glTextureParameteri(ID, GL_TEXTURE_MAG_FILTER, TextureFilterToOpenGL(mag));
     }
 
-    void TextureManager::GenerateMipmaps(u32 ID) {
+    void TextureManager::GenerateMipmapsImpl(u32 ID) {
         glGenerateTextureMipmap(ID);
     }
 
-    void TextureManager::SetBorderColor(u32 ID, const glm::vec4& color) {
+    void TextureManager::SetBorderColorImpl(u32 ID, const glm::vec4& color) {
         glTextureParameterfv(ID, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(color));
     }
 
-    void TextureManager::Bind(u32 ID, u32 textureUnit) {
+    void TextureManager::BindImpl(u32 ID, u32 textureUnit) {
         glBindTextureUnit(textureUnit, ID);
     }
 
-    void TextureManager::Clear() {
+    void TextureManager::ClearImpl() {
         for (auto it = m_NoFileTextures.begin(); it != m_NoFileTextures.end(); it++) {
             u32 id = *it;
             glDeleteTextures(1, &id);
@@ -191,6 +191,11 @@ namespace Axle {
             u32 id = it->first;
             glDeleteTextures(1, &id);
         }
+
+        m_PathsToIDs.clear();
+        m_IDToPaths.clear();
+        m_IDToHandle.clear();
+        m_NoFileTextures.clear();
     }
 
     std::pair<u8*, ResourceManager::ManagedFileHandle> TextureManager::LoadTextureFromFile(const std::string& path,
@@ -199,13 +204,13 @@ namespace Axle {
                                                                                            i32& nrChannels,
                                                                                            bool flipVertically) {
         // Load data
-        Expected<ResourceManager::ManagedFileHandle> exp = ResourceManager::GetInstance().Load(path);
+        Expected<ResourceManager::ManagedFileHandle> exp = ResourceManager::Load(path);
 
         AX_ENSURE(exp.IsValid(), LogChannel::Renderer, "Couldn't load texture: {0}", path);
         // TODO: Default to an ugly texture if it couldn't load it
 
         ResourceManager::ManagedFileHandle tmpHandle = exp.Unwrap();
-        ResourceManager::ReadGuard readGuard = ResourceManager::GetInstance().DataConst(tmpHandle).Unwrap();
+        ResourceManager::ReadGuard readGuard = ResourceManager::DataConst(tmpHandle).Unwrap();
 
         // Inerpret loaded data
         stbi_set_flip_vertically_on_load(flipVertically);

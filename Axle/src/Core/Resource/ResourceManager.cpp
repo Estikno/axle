@@ -10,7 +10,7 @@
 #include "Core/Error/Panic.hpp"
 
 namespace Axle {
-    std::unique_ptr<ResourceManager> ResourceManager::s_ResourceManager;
+    std::unique_ptr<ResourceManager> ResourceManager::s_Instance = nullptr;
 
     struct ResourceManager::Resource {
         std::variant<mio::mmap_source, mio::mmap_sink> mmap;
@@ -26,26 +26,26 @@ namespace Axle {
     ResourceManager::~ResourceManager() = default;
 
     void ResourceManager::Init() {
-        if (s_ResourceManager != nullptr) {
+        if (s_Instance != nullptr) {
             AX_CORE_WARN(LogChannel::Resources,
                          "Init method of the Resource Manager has been called a second time. IGNORING");
             return;
         }
 
-        s_ResourceManager = std::make_unique<ResourceManager>();
+        s_Instance = std::make_unique<ResourceManager>();
 
         AX_CORE_INFO(LogChannel::Resources, "Resource Manager initialized...");
     }
 
     void ResourceManager::ShutDown() {
         // Close all remaining files
-        const std::vector<size_t> AvailableFilesIdx = s_ResourceManager->m_Resources->GetList();
+        const std::vector<size_t> AvailableFilesIdx = s_Instance->m_Resources->GetList();
 
         for (u64 i = 0; i < AvailableFilesIdx.size(); ++i) {
-            auto got = s_ResourceManager->m_Resources->Get(AvailableFilesIdx[i]);
+            auto got = s_Instance->m_Resources->Get(AvailableFilesIdx[i]);
             if (got.IsValid()) {
                 Resource& resource = got.Unwrap().get();
-                FileHandle h = s_ResourceManager->MakeHandle((u32) AvailableFilesIdx[i], resource.magic);
+                FileHandle h = s_Instance->MakeHandle((u32) AvailableFilesIdx[i], resource.magic);
 
                 if (std::holds_alternative<mio::mmap_source>(resource.mmap))
                     std::get<mio::mmap_source>(resource.mmap).unmap();
@@ -62,16 +62,16 @@ namespace Axle {
                 }
 
                 AX_CORE_TRACE(LogChannel::Resources, "Closed file: {0}", resource.path.string());
-                s_ResourceManager->m_Resources->Remove(AvailableFilesIdx[i]);
+                s_Instance->m_Resources->Remove(AvailableFilesIdx[i]);
             }
         }
 
-        s_ResourceManager.reset();
+        s_Instance.reset();
         AX_CORE_INFO(LogChannel::Resources, "Resource Manager deleted...");
     }
 
-    Expected<ResourceManager::ManagedFileHandle> ResourceManager::Load(const std::filesystem::path& path,
-                                                                       bool readOnly) {
+    Expected<ResourceManager::ManagedFileHandle> ResourceManager::LoadImpl(const std::filesystem::path& path,
+                                                                           bool readOnly) {
         if (!DoesFileExist(path)) {
             AX_CORE_ERROR(LogChannel::Resources, "Trying to load a non-existing file: {0}", path.string());
             return Expected<ResourceManager::ManagedFileHandle>::FromException(
@@ -172,12 +172,12 @@ namespace Axle {
         return true;
     }
 
-    bool ResourceManager::Sync(FileHandle handle) {
+    bool ResourceManager::SyncImpl(FileHandle handle) {
         std::unique_lock lock(m_Mutex);
         return SyncUnsafe(handle);
     }
 
-    bool ResourceManager::Sync(const ResourceManager::ManagedFileHandle& handle) {
+    bool ResourceManager::SyncImpl(const ResourceManager::ManagedFileHandle& handle) {
         std::unique_lock lock(m_Mutex);
         return SyncUnsafe(handle.Get());
     }
@@ -206,11 +206,11 @@ namespace Axle {
         return true;
     }
 
-    Expected<ResourceManager::WriteGuard> ResourceManager::Data(const ResourceManager::ManagedFileHandle& handle) {
+    Expected<ResourceManager::WriteGuard> ResourceManager::DataImpl(const ResourceManager::ManagedFileHandle& handle) {
         return Data(handle.Get());
     }
 
-    Expected<ResourceManager::WriteGuard> ResourceManager::Data(FileHandle handle) {
+    Expected<ResourceManager::WriteGuard> ResourceManager::DataImpl(FileHandle handle) {
         std::unique_lock lock(m_Mutex);
 
         if (!IsHandleValidUnsafe(handle)) {
@@ -232,11 +232,11 @@ namespace Axle {
         return WriteGuard(map.data(), map.size(), *resource.m_Mutex);
     }
 
-    Expected<ResourceManager::ReadGuard> ResourceManager::DataConst(const ManagedFileHandle& handle) const {
+    Expected<ResourceManager::ReadGuard> ResourceManager::DataConstImpl(const ManagedFileHandle& handle) const {
         return DataConst(handle.Get());
     }
 
-    Expected<ResourceManager::ReadGuard> ResourceManager::DataConst(FileHandle handle) const {
+    Expected<ResourceManager::ReadGuard> ResourceManager::DataConstImpl(FileHandle handle) const {
         std::shared_lock lock(m_Mutex);
 
         if (!IsHandleValidUnsafe(handle)) {
@@ -256,11 +256,11 @@ namespace Axle {
         }
     }
 
-    Expected<u64> ResourceManager::Size(const ResourceManager::ManagedFileHandle& handle) const {
+    Expected<u64> ResourceManager::SizeImpl(const ResourceManager::ManagedFileHandle& handle) const {
         return Size(handle.Get());
     }
 
-    Expected<u64> ResourceManager::Size(FileHandle handle) const {
+    Expected<u64> ResourceManager::SizeImpl(FileHandle handle) const {
         std::shared_lock lock(m_Mutex);
 
         if (!IsHandleValidUnsafe(handle)) {
@@ -277,7 +277,7 @@ namespace Axle {
             return std::get<mio::mmap_sink>(resource.mmap).size();
     }
 
-    bool ResourceManager::Create(const std::filesystem::path& path, u64 size) {
+    bool ResourceManager::CreateImpl(const std::filesystem::path& path, u64 size) {
         if (DoesFileExist(path)) {
             AX_CORE_ERROR(LogChannel::Resources, "Trying to create a new file that already exists: {0}", path.string());
             return false;
@@ -306,11 +306,11 @@ namespace Axle {
         return true;
     }
 
-    Expected<bool> ResourceManager::IsReadOnly(const ResourceManager::ManagedFileHandle& handle) const {
+    Expected<bool> ResourceManager::IsReadOnlyImpl(const ResourceManager::ManagedFileHandle& handle) const {
         return IsReadOnly(handle.Get());
     }
 
-    Expected<bool> ResourceManager::IsReadOnly(FileHandle handle) const {
+    Expected<bool> ResourceManager::IsReadOnlyImpl(FileHandle handle) const {
         std::shared_lock lock(m_Mutex);
 
         if (!IsHandleValidUnsafe(handle)) {
@@ -324,11 +324,12 @@ namespace Axle {
         return std::holds_alternative<mio::mmap_source>(resource.mmap);
     }
 
-    Expected<std::filesystem::path> ResourceManager::GetPath(const ResourceManager::ManagedFileHandle& handle) const {
+    Expected<std::filesystem::path>
+    ResourceManager::GetPathImpl(const ResourceManager::ManagedFileHandle& handle) const {
         return GetPath(handle.Get());
     }
 
-    Expected<std::filesystem::path> ResourceManager::GetPath(FileHandle handle) const {
+    Expected<std::filesystem::path> ResourceManager::GetPathImpl(FileHandle handle) const {
         std::shared_lock lock(m_Mutex);
 
         if (!IsHandleValidUnsafe(handle)) {
@@ -342,12 +343,12 @@ namespace Axle {
     }
 
     void ResourceManager::ManagedFileHandle::AddRef() {
-        if (IsValid() && ResourceManager::s_ResourceManager != nullptr)
+        if (IsValid() && ResourceManager::s_Instance != nullptr)
             ResourceManager::GetInstance().AddRef(m_Handle);
     }
 
     void ResourceManager::ManagedFileHandle::ReleaseRef() {
-        if (IsValid() && ResourceManager::s_ResourceManager != nullptr)
+        if (IsValid() && ResourceManager::s_Instance != nullptr)
             ResourceManager::GetInstance().ReleaseRef(m_Handle);
     }
 
@@ -412,11 +413,11 @@ namespace Axle {
         return true;
     }
 
-    bool ResourceManager::Resize(const ResourceManager::ManagedFileHandle& handle, u64 newSize) {
+    bool ResourceManager::ResizeImpl(const ResourceManager::ManagedFileHandle& handle, u64 newSize) {
         return Resize(handle.Get(), newSize);
     }
 
-    bool ResourceManager::Resize(FileHandle handle, u64 newSize) {
+    bool ResourceManager::ResizeImpl(FileHandle handle, u64 newSize) {
         std::unique_lock lock(m_Mutex);
 
         if (!IsHandleValidUnsafe(handle)) {

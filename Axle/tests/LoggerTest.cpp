@@ -6,8 +6,8 @@ TEST_CASE("Logger initializes correctly") {
     Axle::Log::Init();
 
     // If the core logger works we assume everything is ok as all loggers are threaded equally
-    auto coreLogger = Axle::Log::GetInstance().GetCoreLogger(Axle::LogChannel::Core);
-    auto clientLogger = Axle::Log::GetInstance().GetClientLogger();
+    auto coreLogger = Axle::Log::GetCoreLogger(Axle::LogChannel::Core);
+    auto clientLogger = Axle::Log::GetClientLogger();
 
     CHECK(coreLogger != nullptr);
     CHECK(clientLogger != nullptr);

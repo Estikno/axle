@@ -12,7 +12,7 @@
 #include <glm/vec2.hpp>
 
 namespace Axle {
-    std::unique_ptr<InputManager> InputManager::s_Instance;
+    std::unique_ptr<InputManager> InputManager::s_Instance = nullptr;
 
     void InputManager::Init() {
         if (s_Instance != nullptr) {
@@ -30,7 +30,7 @@ namespace Axle {
         AX_CORE_INFO(LogChannel::Input, "Input Manager deleted...");
     }
 
-    void InputManager::Update() {
+    void InputManager::UpdateImpl() {
         std::unique_lock lock(m_Mutex);
 
         for (u16 i = 0; i < static_cast<u16>(Keys::MaxKeys); ++i) {
@@ -53,7 +53,7 @@ namespace Axle {
         m_InputState.m_MousePrevious = m_InputState.m_MouseCurrent;
     }
 
-    void InputManager::SetKey(Keys key, bool pressed) {
+    void InputManager::SetKeyImpl(Keys key, bool pressed) {
         std::unique_lock lock(m_Mutex);
 
         // Only handles if the state of the key has changed
@@ -125,7 +125,7 @@ namespace Axle {
         }
     }
 
-    void InputManager::SetMouseButton(MouseButtons button, bool pressed) {
+    void InputManager::SetMouseButtonImpl(MouseButtons button, bool pressed) {
         std::unique_lock lock(m_Mutex);
 
         // Only handles if the state of the key has changed
@@ -198,7 +198,7 @@ namespace Axle {
         }
     }
 
-    void InputManager::SetMousePosition(const glm::vec2& position) {
+    void InputManager::SetMousePositionImpl(const glm::vec2& position) {
         std::unique_lock lock(m_Mutex);
 
         // Only handles if the state of the key has changed
@@ -213,7 +213,7 @@ namespace Axle {
         AX_SUBMIT_EVENT(std::move(event));
     }
 
-    void InputManager::SetMouseWheel(f64 xOffset, f64 yOffset) {
+    void InputManager::SetMouseWheelImpl(f64 xOffset, f64 yOffset) {
         std::unique_lock lock(m_Mutex);
 
         // Fire off an event informing of the change in state
@@ -320,22 +320,22 @@ namespace Axle {
     }
 
 #ifdef AXLE_TESTING
-    void InputManager::SimulateKeyState(Keys key, bool pressed) {
+    void InputManager::SimulateKeyStateImpl(Keys key, bool pressed) {
         SetKey(key, pressed);
     }
-    void InputManager::SimulateMouseButtonState(MouseButtons button, bool pressed) {
+    void InputManager::SimulateMouseButtonStateImpl(MouseButtons button, bool pressed) {
         SetMouseButton(button, pressed);
     }
-    void InputManager::SimulateMousePosition(const glm::vec2& position) {
+    void InputManager::SimulateMousePositionImpl(const glm::vec2& position) {
         SetMousePosition(position);
     }
-    void InputManager::SimulateMouseWheel(f32 deltax, f32 deltay) {
+    void InputManager::SimulateMouseWheelImpl(f32 deltax, f32 deltay) {
         SetMouseWheel(deltax, deltay);
     }
-    void InputManager::SimulateUpdate() {
+    void InputManager::SimulateUpdateImpl() {
         Update();
     }
-    void InputManager::SimulateReset() {
+    void InputManager::SimulateResetImpl() {
         std::unique_lock lock(m_Mutex);
         m_InputState = InputState();
     }

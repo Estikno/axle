@@ -4,7 +4,6 @@
 
 #include "Core/Types.hpp"
 #include "../Textures/Texture.hpp"
-#include "../Shaders/ShaderProgram.hpp"
 
 #include <glm/glm.hpp>
 
@@ -28,7 +27,7 @@ namespace Axle {
         Mesh(Mesh&& other) noexcept;
         Mesh& operator=(Mesh&& other) noexcept;
 
-        void Draw(ShaderProgram& program);
+        void Draw(u32 program);
 
     private:
         void SetupMesh();

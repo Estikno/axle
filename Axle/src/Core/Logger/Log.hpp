@@ -59,6 +59,9 @@ namespace Axle {
         Log() {};
         ~Log() {};
 
+        Log(const Log&) = delete;
+        Log& operator=(const Log&) = delete;
+
         /**
          * Initializes the logger and its singletons
          * This function is NOT thread safe so it must be called from only one thread and only once to be safe.
@@ -76,17 +79,6 @@ namespace Axle {
         static void ShutDown();
 
         /**
-         * Gets the Logger singleton
-         *
-         * The manager has to have already been initilized before getting the instance.
-         *
-         * @returns Returns a reference to the Event Handler
-         */
-        inline static Log& GetInstance() noexcept {
-            return *s_Instance;
-        }
-
-        /**
          * Gets the core logger singleton
          * This function should only be used by the macro
          *
@@ -94,8 +86,8 @@ namespace Axle {
          *
          * Thread safe
          */
-        inline std::shared_ptr<spdlog::logger>& GetCoreLogger(LogChannel channel) {
-            return m_ChannelLoggers[static_cast<u8>(channel)];
+        inline static std::shared_ptr<spdlog::logger>& GetCoreLogger(LogChannel channel) {
+            return s_Instance->GetCoreLoggerImpl(channel);
         }
 
         /**
@@ -106,8 +98,8 @@ namespace Axle {
          *
          * Thread safe
          */
-        inline std::shared_ptr<spdlog::logger>& GetClientLogger() {
-            return m_ChannelLoggers[static_cast<u8>(LogChannel::Client)];
+        inline static std::shared_ptr<spdlog::logger>& GetClientLogger() {
+            return s_Instance->GetClientLoggerImpl();
         }
 
         /**
@@ -117,11 +109,8 @@ namespace Axle {
          *
          * Thread safe
          * */
-        void SetVerbosity(LogVerbosity verbosity) {
-            m_Verbosity.store(verbosity, std::memory_order_release);
-            for (u8 i = 0; i < static_cast<u8>(LogChannel::MaxChannels); ++i) {
-                m_ChannelLoggers[i]->set_level(ToSpdlogLevel(verbosity));
-            }
+        inline static void SetVerbosity(LogVerbosity verbosity) {
+            return s_Instance->SetVerbosityImpl(verbosity);
         }
 
         /**
@@ -131,8 +120,8 @@ namespace Axle {
          *
          * Thread safe
          * */
-        LogVerbosity GetCurrentVerbosity() const {
-            return m_Verbosity.load(std::memory_order_acquire);
+        inline static LogVerbosity GetCurrentVerbosity() {
+            return s_Instance->GetCurrentVerbosityImpl();
         }
 
         /**
@@ -142,10 +131,8 @@ namespace Axle {
          *
          * Thread safe
          * */
-        void EnableChannel(LogChannel channel) {
-            // Set channel to current verbosity
-            m_ChannelLoggers[static_cast<u8>(channel)]->set_level(
-                ToSpdlogLevel(m_Verbosity.load(std::memory_order_acquire)));
+        inline static void EnableChannel(LogChannel channel) {
+            s_Instance->EnableChannelImpl(channel);
         }
 
         /**
@@ -155,8 +142,8 @@ namespace Axle {
          *
          * Thread safe
          * */
-        void DisableChannel(LogChannel channel) {
-            m_ChannelLoggers[static_cast<u8>(channel)]->set_level(spdlog::level::off);
+        inline static void DisableChannel(LogChannel channel) {
+            s_Instance->DisableChannelImpl(channel);
         }
 
         /**
@@ -168,11 +155,34 @@ namespace Axle {
          *
          * Thread safe
          * */
-        bool IsChannelEnabled(LogChannel channel) {
-            return m_ChannelLoggers[static_cast<u8>(channel)]->level() != spdlog::level::off;
+        inline static bool IsChannelEnabled(LogChannel channel) {
+            return s_Instance->IsChannelEnabledImpl(channel);
         }
 
     private:
+        // Static methods implementations
+        inline std::shared_ptr<spdlog::logger>& GetCoreLoggerImpl(LogChannel channel) {
+            return m_ChannelLoggers[static_cast<u8>(channel)];
+        }
+        inline std::shared_ptr<spdlog::logger>& GetClientLoggerImpl() {
+            return m_ChannelLoggers[static_cast<u8>(LogChannel::Client)];
+        }
+        void SetVerbosityImpl(LogVerbosity verbosity);
+        LogVerbosity GetCurrentVerbosityImpl() const {
+            return m_Verbosity.load(std::memory_order_acquire);
+        }
+        inline void EnableChannelImpl(LogChannel channel) {
+            // Set channel to current verbosity
+            m_ChannelLoggers[static_cast<u8>(channel)]->set_level(
+                ToSpdlogLevel(m_Verbosity.load(std::memory_order_acquire)));
+        }
+        inline void DisableChannelImpl(LogChannel channel) {
+            m_ChannelLoggers[static_cast<u8>(channel)]->set_level(spdlog::level::off);
+        }
+        inline bool IsChannelEnabledImpl(LogChannel channel) {
+            return m_ChannelLoggers[static_cast<u8>(channel)]->level() != spdlog::level::off;
+        }
+
         /// Maps LogVerbosity to spdlog level
         inline spdlog::level::level_enum ToSpdlogLevel(LogVerbosity v) {
             switch (v) {
@@ -207,15 +217,15 @@ namespace Axle {
 } // namespace Axle
 
 // Core log macros
-#define AX_CORE_TRACE(channel, ...) ::Axle::Log::GetInstance().GetCoreLogger(channel)->trace(__VA_ARGS__)
-#define AX_CORE_INFO(channel, ...) ::Axle::Log::GetInstance().GetCoreLogger(channel)->info(__VA_ARGS__)
-#define AX_CORE_WARN(channel, ...) ::Axle::Log::GetInstance().GetCoreLogger(channel)->warn(__VA_ARGS__)
-#define AX_CORE_ERROR(channel, ...) ::Axle::Log::GetInstance().GetCoreLogger(channel)->error(__VA_ARGS__)
-#define AX_CORE_CRITICAL(channel, ...) ::Axle::Log::GetInstance().GetCoreLogger(channel)->critical(__VA_ARGS__)
+#define AX_CORE_TRACE(channel, ...) ::Axle::Log::GetCoreLogger(channel)->trace(__VA_ARGS__)
+#define AX_CORE_INFO(channel, ...) ::Axle::Log::GetCoreLogger(channel)->info(__VA_ARGS__)
+#define AX_CORE_WARN(channel, ...) ::Axle::Log::GetCoreLogger(channel)->warn(__VA_ARGS__)
+#define AX_CORE_ERROR(channel, ...) ::Axle::Log::GetCoreLogger(channel)->error(__VA_ARGS__)
+#define AX_CORE_CRITICAL(channel, ...) ::Axle::Log::GetCoreLogger(channel)->critical(__VA_ARGS__)
 
 // Client log macros
-#define AX_TRACE(...) ::Axle::Log::GetInstance().GetClientLogger()->trace(__VA_ARGS__)
-#define AX_INFO(...) ::Axle::Log::GetInstance().GetClientLogger()->info(__VA_ARGS__)
-#define AX_WARN(...) ::Axle::Log::GetInstance().GetClientLogger()->warn(__VA_ARGS__)
-#define AX_ERROR(...) ::Axle::Log::GetInstance().GetClientLogger()->error(__VA_ARGS__)
-#define AX_CRITICAL(...) ::Axle::Log::GetInstance().GetClientLogger()->critical(__VA_ARGS__)
+#define AX_TRACE(...) ::Axle::Log::GetClientLogger()->trace(__VA_ARGS__)
+#define AX_INFO(...) ::Axle::Log::GetClientLogger()->info(__VA_ARGS__)
+#define AX_WARN(...) ::Axle::Log::GetClientLogger()->warn(__VA_ARGS__)
+#define AX_ERROR(...) ::Axle::Log::GetClientLogger()->error(__VA_ARGS__)
+#define AX_CRITICAL(...) ::Axle::Log::GetClientLogger()->critical(__VA_ARGS__)

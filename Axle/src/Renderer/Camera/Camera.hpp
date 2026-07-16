@@ -11,7 +11,6 @@
 #include "glm/ext/matrix_transform.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include "glm/fwd.hpp"
-#include <glm/glm.hpp>
 
 namespace Axle {
     class ICameraPositioner {

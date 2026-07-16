@@ -51,4 +51,11 @@ namespace Axle {
         // s_Instance->m_ClientLogger.reset();
         s_Instance.reset();
     }
+
+    void Log::SetVerbosityImpl(LogVerbosity verbosity) {
+        m_Verbosity.store(verbosity, std::memory_order_release);
+        for (u8 i = 0; i < static_cast<u8>(LogChannel::MaxChannels); ++i) {
+            m_ChannelLoggers[i]->set_level(ToSpdlogLevel(verbosity));
+        }
+    }
 } // namespace Axle

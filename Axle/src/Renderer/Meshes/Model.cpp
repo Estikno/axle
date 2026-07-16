@@ -45,7 +45,7 @@ namespace Axle {
         InternalMethods::ProcessNode(scene->mRootNode, scene, this);
     }
 
-    void Model::Draw(ShaderProgram& program) {
+    void Model::Draw(u32 program) {
         for (u32 i = 0; i < m_Meshes.size(); ++i) {
             m_Meshes[i].Draw(program);
         }
@@ -119,10 +119,9 @@ namespace Axle {
 
             std::string filename = directory + "/" + std::string(str.C_Str());
 
-            u32 textId = TextureManager::GetInstance().CreateTexture(filename, TextureFormat::RGB);
-            TextureManager::GetInstance().SetWrapping(textId, TextureWrapMode::Repeat, TextureWrapMode::Repeat);
-            TextureManager::GetInstance().SetFiltering(
-                textId, TextureFilteringMode::Linear, TextureFilteringMode::Linear);
+            u32 textId = TextureManager::CreateTexture(filename, -1, TextureFormat::RGB);
+            TextureManager::SetWrapping(textId, TextureWrapMode::Repeat, TextureWrapMode::Repeat);
+            TextureManager::SetFiltering(textId, TextureFilteringMode::Linear, TextureFilteringMode::Linear);
             textures.push_back(std::make_pair(textId, type));
         }
 

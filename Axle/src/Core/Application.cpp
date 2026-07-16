@@ -1,4 +1,5 @@
 #include "Renderer/Camera/Camera.hpp"
+#include "Renderer/Shaders/ShaderManager.hpp"
 #include "axpch.hpp"
 
 #include "Application.hpp"
@@ -14,6 +15,7 @@
 #include "Window/Window.hpp"
 #include "Types.hpp"
 #include "Renderer/Textures/TextureManager.hpp"
+#include "Renderer/Shaders/ShaderManager.hpp"
 
 #include "ImGui/ImGuiLayer.hpp"
 
@@ -90,6 +92,7 @@ namespace Axle {
 
         // We shut down the system here so everything gets deleted correctly (GLFW, OpenGL, ...)
         TextureManager::Shutdown();
+        ShaderManager::Shutdown();
         cw::JobSystem::Shutdown();
     }
 
@@ -134,18 +137,13 @@ namespace Axle {
                 // Update logic
                 // --------------------------
                 cw::JobSystem::GetInstance().Schedule(
-                    [app]() {
-                        EventHandler::GetInstance().ProcessEvents(app->m_LayerStack->rbegin(),
-                                                                  app->m_LayerStack->rend());
-                    },
+                    [app]() { EventHandler::ProcessEvents(app->m_LayerStack->rbegin(), app->m_LayerStack->rend()); },
                     cw::JobPriority::Medium,
                     cw::InvalidThreadIndex,
                     EVENT_INPUT_TAG);
 
-                cw::JobSystem::GetInstance().Schedule([]() { InputManager::GetInstance().Update(); },
-                                                      cw::JobPriority::Medium,
-                                                      cw::InvalidThreadIndex,
-                                                      EVENT_INPUT_TAG);
+                cw::JobSystem::GetInstance().Schedule(
+                    []() { InputManager::Update(); }, cw::JobPriority::Medium, cw::InvalidThreadIndex, EVENT_INPUT_TAG);
 
                 AX_SCHEDULE_TAG_AND_WAIT(EVENT_INPUT_TAG);
 

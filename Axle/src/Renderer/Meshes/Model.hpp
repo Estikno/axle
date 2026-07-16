@@ -5,7 +5,6 @@
 #include "Core/Types.hpp"
 #include "Core/Resource/ResourceManager.hpp"
 #include "Mesh.hpp"
-#include "../Shaders/ShaderProgram.hpp"
 
 namespace Axle {
     class Model {
@@ -13,7 +12,7 @@ namespace Axle {
         Model() = default;
         Model(const std::string& path);
 
-        void Draw(ShaderProgram& program);
+        void Draw(u32 program);
 
     private:
         struct InternalMethods;

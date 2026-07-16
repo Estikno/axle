@@ -200,10 +200,6 @@ namespace Axle {
          */
         static void ShutDown();
 
-        inline static ResourceManager& GetInstance() {
-            return *s_ResourceManager;
-        }
-
         /**
          * Loads the given file into memory and returns a handle to it.
          *
@@ -214,7 +210,9 @@ namespace Axle {
          *
          * @returns A handle to the loaded file.
          * */
-        Expected<ManagedFileHandle> Load(const std::filesystem::path& path, bool readOnly = true);
+        inline static Expected<ManagedFileHandle> Load(const std::filesystem::path& path, bool readOnly = true) {
+            return s_Instance->LoadImpl(path, readOnly);
+        }
 
         /**
          * Syncs current changes made to the map to disk. Flushing changes of a read-only file does nothing.
@@ -225,7 +223,9 @@ namespace Axle {
          *
          * @returns true if the operation was successful, false otherwise
          * */
-        bool Sync(const ManagedFileHandle& handle);
+        inline static bool Sync(const ManagedFileHandle& handle) {
+            return s_Instance->SyncImpl(handle);
+        }
 
         /**
          * Syncs current changes made to the map to disk. Flushing changes of a read-only file does nothing.
@@ -237,7 +237,9 @@ namespace Axle {
          *
          * @returns true if the operation was successful, false otherwise
          * */
-        bool Sync(FileHandle handle);
+        inline static bool Sync(FileHandle handle) {
+            return s_Instance->SyncImpl(handle);
+        }
 
         /**
          * Gets a Guard that protects thread safety to the retrieved data.
@@ -247,7 +249,9 @@ namespace Axle {
          *
          * @returns A ReadGuard used for reading/writting safely the contents
          * */
-        Expected<WriteGuard> Data(const ManagedFileHandle& handle);
+        inline static Expected<WriteGuard> Data(const ManagedFileHandle& handle) {
+            return s_Instance->DataImpl(handle);
+        }
 
         /**
          * Gets a Guard that protects thread safety to the retrieved data.
@@ -259,7 +263,9 @@ namespace Axle {
          *
          * @returns A ReadGuard used for reading/writting safely the contents
          * */
-        Expected<WriteGuard> Data(FileHandle handle);
+        inline static Expected<WriteGuard> Data(FileHandle handle) {
+            return s_Instance->DataImpl(handle);
+        }
 
         /**
          * Gets a Guard that protects thread safety to the retrieved data.
@@ -270,7 +276,9 @@ namespace Axle {
          *
          * @returns A ReadGuard used for reading safely the contents
          * */
-        Expected<ReadGuard> DataConst(const ManagedFileHandle& handle) const;
+        inline static Expected<ReadGuard> DataConst(const ManagedFileHandle& handle) {
+            return s_Instance->DataConstImpl(handle);
+        }
 
         /**
          * Gets a Guard that protects thread safety to the retrieved data.
@@ -282,7 +290,9 @@ namespace Axle {
          *
          * @returns A ReadGuard used for reading safely the contents
          * */
-        Expected<ReadGuard> DataConst(FileHandle handle) const;
+        inline static Expected<ReadGuard> DataConst(FileHandle handle) {
+            return s_Instance->DataConstImpl(handle);
+        }
 
         /**
          * Gets the size of the given resource.
@@ -292,7 +302,9 @@ namespace Axle {
          *
          * @returns An Expected type with a valid size if the handle was valid
          * */
-        Expected<u64> Size(const ManagedFileHandle& handle) const;
+        inline static Expected<u64> Size(const ManagedFileHandle& handle) {
+            return s_Instance->SizeImpl(handle);
+        }
 
         /**
          * Gets the size of the given resource.
@@ -303,7 +315,9 @@ namespace Axle {
          *
          * @returns An Expected type with a valid size if the handle was valid
          * */
-        Expected<u64> Size(FileHandle handle) const;
+        inline static Expected<u64> Size(FileHandle handle) {
+            return s_Instance->SizeImpl(handle);
+        }
 
         /**
          * Creates a new file with the given size in Bytes.
@@ -314,7 +328,9 @@ namespace Axle {
          *
          * @returns true if the operation was successful, false otherwise
          * */
-        bool Create(const std::filesystem::path& path, u64 size);
+        inline static bool Create(const std::filesystem::path& path, u64 size) {
+            return s_Instance->CreateImpl(path, size);
+        }
 
         /**
          * Checks wether or not the given handle is valid.
@@ -324,9 +340,8 @@ namespace Axle {
          *
          * @returns true if the handle is valid, false otherwise
          * */
-        bool IsHandleValid(FileHandle handle) const {
-            std::shared_lock lock(m_Mutex);
-            return IsHandleValidUnsafe(handle);
+        inline static bool IsHandleValid(FileHandle handle) {
+            return s_Instance->IsHandleValidImpl(handle);
         }
 
         /**
@@ -337,7 +352,9 @@ namespace Axle {
          *
          * @returns An Expected that contains the result if valid
          * */
-        Expected<bool> IsReadOnly(const ManagedFileHandle& handle) const;
+        inline static Expected<bool> IsReadOnly(const ManagedFileHandle& handle) {
+            return s_Instance->IsReadOnlyImpl(handle);
+        }
 
         /**
          * Checks if the file is read-only or not.
@@ -348,7 +365,9 @@ namespace Axle {
          *
          * @returns An Expected that contains the result if valid
          * */
-        Expected<bool> IsReadOnly(FileHandle handle) const;
+        inline static Expected<bool> IsReadOnly(FileHandle handle) {
+            return s_Instance->IsReadOnlyImpl(handle);
+        }
 
         /**
          * Returns the path of a file.
@@ -358,7 +377,9 @@ namespace Axle {
          *
          * @returns An Expected that contains the path if valid
          * */
-        Expected<std::filesystem::path> GetPath(const ManagedFileHandle& handle) const;
+        inline static Expected<std::filesystem::path> GetPath(const ManagedFileHandle& handle) {
+            return s_Instance->GetPathImpl(handle);
+        }
 
         /**
          * Returns the path of a file.
@@ -369,7 +390,9 @@ namespace Axle {
          *
          * @returns An Expected that contains the path if valid
          * */
-        Expected<std::filesystem::path> GetPath(FileHandle handle) const;
+        inline static Expected<std::filesystem::path> GetPath(FileHandle handle) {
+            return s_Instance->GetPathImpl(handle);
+        }
 
         /**
          * Resizes a file to the new given size. If the file size was previously larger than newSize, the remainder of
@@ -389,7 +412,9 @@ namespace Axle {
          *
          * @retruns true if the operation was successful, false otherwise
          * */
-        bool Resize(const ManagedFileHandle& handle, u64 newSize);
+        inline static bool Resize(const ManagedFileHandle& handle, u64 newSize) {
+            return s_Instance->ResizeImpl(handle, newSize);
+        }
 
         /**
          * Resizes a file to the new given size. If the file size was previously larger than newSize, the remainder of
@@ -412,26 +437,60 @@ namespace Axle {
          *
          * @retruns true if the operation was successful, false otherwise
          * */
-        bool Resize(FileHandle handle, u64 newSize);
+        inline static bool Resize(FileHandle handle, u64 newSize) {
+            return s_Instance->ResizeImpl(handle, newSize);
+        }
 
 #ifdef AXLE_TESTING
-        u16 LargestAvailableIndex() {
-            std::shared_lock lock(m_Mutex);
-            return m_LargestAvailableIndex;
+        inline static u16 LargestAvailableIndex() {
+            return s_Instance->LargestAvailableIndexImpl();
         }
-        std::priority_queue<u32, std::vector<u32>, std::greater<u32>> AvailableIndexes() {
-            std::shared_lock lock(m_Mutex);
-            return m_AvailableIndexes;
+        inline static std::priority_queue<u32, std::vector<u32>, std::greater<u32>> AvailableIndexes() {
+            return s_Instance->AvailableIndexesImpl();
         }
-        u16 MagicNumberCounter() {
-            std::shared_lock lock(m_Mutex);
-            return m_MagicNumberCounter;
+        inline static u16 MagicNumberCounter() {
+            return s_Instance->MagicNumberCounterImpl();
         }
 #endif // AXLE_TESTING
 
     private:
         // Let ManagedFileHandle access the AddRef and ReleaseRef methods
         friend class ManagedFileHandle;
+
+        Expected<ManagedFileHandle> LoadImpl(const std::filesystem::path& path, bool readOnly);
+        bool SyncImpl(const ManagedFileHandle& handle);
+        bool SyncImpl(FileHandle handle);
+        Expected<WriteGuard> DataImpl(const ManagedFileHandle& handle);
+        Expected<WriteGuard> DataImpl(FileHandle handle);
+        Expected<ReadGuard> DataConstImpl(const ManagedFileHandle& handle) const;
+        Expected<ReadGuard> DataConstImpl(FileHandle handle) const;
+        Expected<u64> SizeImpl(const ManagedFileHandle& handle) const;
+        Expected<u64> SizeImpl(FileHandle handle) const;
+        bool CreateImpl(const std::filesystem::path& path, u64 size);
+        bool IsHandleValidImpl(FileHandle handle) const {
+            std::shared_lock lock(m_Mutex);
+            return IsHandleValidUnsafe(handle);
+        }
+        Expected<bool> IsReadOnlyImpl(const ManagedFileHandle& handle) const;
+        Expected<bool> IsReadOnlyImpl(FileHandle handle) const;
+        Expected<std::filesystem::path> GetPathImpl(const ManagedFileHandle& handle) const;
+        Expected<std::filesystem::path> GetPathImpl(FileHandle handle) const;
+        bool ResizeImpl(const ManagedFileHandle& handle, u64 newSize);
+        bool ResizeImpl(FileHandle handle, u64 newSize);
+#ifdef AXLE_TESTING
+        inline u16 LargestAvailableIndexImpl() {
+            std::shared_lock lock(m_Mutex);
+            return m_LargestAvailableIndex;
+        }
+        inline std::priority_queue<u32, std::vector<u32>, std::greater<u32>> AvailableIndexesImpl() {
+            std::shared_lock lock(m_Mutex);
+            return m_AvailableIndexes;
+        }
+        inline u16 MagicNumberCounterImpl() {
+            std::shared_lock lock(m_Mutex);
+            return m_MagicNumberCounter;
+        }
+#endif // AXLE_TESTING
 
         /// A zero-overhead wrapper to make std::atomic movable so std::swap works in SparseSet
         struct MovableAtomic {
@@ -459,6 +518,10 @@ namespace Axle {
 
         /// Small struct designed to keep resources organized
         struct Resource;
+
+        inline static ResourceManager& GetInstance() noexcept {
+            return *s_Instance;
+        }
 
         /**
          * Incremets the reference count associated with the given handle.
@@ -547,7 +610,7 @@ namespace Axle {
          *
          * @return The index value of the given handle
          * */
-        inline u32 GetIndexFromHandle(FileHandle h) const noexcept {
+        inline static u32 GetIndexFromHandle(FileHandle h) noexcept {
             constexpr u64 indexMask = (u64(1) << 32) - 1;
             return h & indexMask;
         }
@@ -560,7 +623,7 @@ namespace Axle {
          *
          * @return The magic value of the given handle
          * */
-        inline u32 GetMagicFromHandle(FileHandle h) const noexcept {
+        inline static u32 GetMagicFromHandle(FileHandle h) noexcept {
             constexpr u64 magicMask = ~((u64(1) << 32) - 1);
             return (h & magicMask) >> 32;
         }
@@ -572,7 +635,7 @@ namespace Axle {
          * @param h A reference to the handle
          * @param magic The magic value to insert
          * */
-        inline void SetMagicToHandle(FileHandle& h, u32 magic) const noexcept {
+        inline static void SetMagicToHandle(FileHandle& h, u32 magic) noexcept {
             constexpr u64 indexMask = (u64(1) << 32) - 1;
             h = (h & indexMask) | (u64(magic) << 32);
         }
@@ -584,7 +647,7 @@ namespace Axle {
          * @param h A reference to the handle
          * @param index The index value to insert
          * */
-        inline void SetIndexToHandle(FileHandle& h, u32 index) const noexcept {
+        inline static void SetIndexToHandle(FileHandle& h, u32 index) noexcept {
             constexpr u64 magicMask = ~((u64(1) << 32) - 1);
             h = (h & magicMask) | u64(index);
         }
@@ -597,7 +660,7 @@ namespace Axle {
          *
          * @returns The constructed handle
          * */
-        inline FileHandle MakeHandle(u32 index, u32 magic) const noexcept {
+        inline static FileHandle MakeHandle(u32 index, u32 magic) noexcept {
             FileHandle h = u64(index);
             SetMagicToHandle(h, magic);
             return h;
@@ -607,7 +670,7 @@ namespace Axle {
     private:
 #endif // AXLE_TESTING
 
-        static std::unique_ptr<ResourceManager> s_ResourceManager;
+        static std::unique_ptr<ResourceManager> s_Instance;
 
         /// A counter that stores the largest available index
         u32 m_LargestAvailableIndex = 0;

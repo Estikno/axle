@@ -28,22 +28,22 @@ namespace Axle {
         }
 
         // Sends the status to the input system
-        InputManager::GetInstance().SetKey(key_enum, !(action == GLFW_RELEASE));
+        InputManager::SetKey(key_enum, !(action == GLFW_RELEASE));
     }
 
     void CursorPositionCallback(GLFWwindow* window, double xpos, double ypos) {
         glm::vec2 position(static_cast<f32>(xpos), -static_cast<f32>(ypos));
-        InputManager::GetInstance().SetMousePosition(position);
+        InputManager::SetMousePosition(position);
     }
 
     void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
         // The conversion is direct since I use the same mouse codes
         MouseButtons button_enum = static_cast<MouseButtons>(button);
 
-        InputManager::GetInstance().SetMouseButton(button_enum, action == GLFW_PRESS);
+        InputManager::SetMouseButton(button_enum, action == GLFW_PRESS);
     }
 
     void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
-        InputManager::GetInstance().SetMouseWheel(xoffset, yoffset);
+        InputManager::SetMouseWheel(xoffset, yoffset);
     }
 } // namespace Axle

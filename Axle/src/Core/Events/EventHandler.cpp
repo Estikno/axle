@@ -7,26 +7,26 @@
 #include "Event.hpp"
 
 namespace Axle {
-    std::unique_ptr<EventHandler> EventHandler::m_EventHandler;
+    std::unique_ptr<EventHandler> EventHandler::s_Instance;
 
     void EventHandler::Init() {
-        if (m_EventHandler != nullptr) {
+        if (s_Instance != nullptr) {
             AX_CORE_WARN(LogChannel::Events,
                          "Init method of the event handler has been called a second time. IGNORING");
             return;
         }
 
-        m_EventHandler = std::make_unique<EventHandler>();
+        s_Instance = std::make_unique<EventHandler>();
 
         AX_CORE_INFO(LogChannel::Events, "Event handler initialized...");
     }
 
     void EventHandler::ShutDown() {
-        m_EventHandler.reset();
+        s_Instance.reset();
         AX_CORE_INFO(LogChannel::Events, "Event handler deleted...");
     }
 
-    void EventHandler::SubmitEvent(std::unique_ptr<Event> event) {
+    void EventHandler::SubmitEventImpl(std::unique_ptr<Event> event) {
         std::scoped_lock lock(m_Mutex);
         m_EventQueue.emplace_back(std::move(event));
     }
@@ -46,8 +46,8 @@ namespace Axle {
         }
     }
 
-    void EventHandler::ProcessEvents(std::vector<Layer*>::reverse_iterator begin,
-                                     std::vector<Layer*>::reverse_iterator end) {
+    void EventHandler::ProcessEventsImpl(std::vector<Layer*>::reverse_iterator begin,
+                                         std::vector<Layer*>::reverse_iterator end) {
         std::vector<std::unique_ptr<Event>> eventsToProcess;
 
         // Swap the event queue with a local vector to minimize lock time and to also clear the queue for new events

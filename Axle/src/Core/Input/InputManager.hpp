@@ -33,17 +33,6 @@ namespace Axle {
         static void ShutDown();
 
         /**
-         * Gets the Input Manager singleton
-         *
-         * The manager has to have already been initilized before getting the instance.
-         *
-         * @returns Returns a reference to the Input manager
-         */
-        inline static InputManager& GetInstance() noexcept {
-            return *s_Instance;
-        }
-
-        /**
          * Returns true if the key was pressed down this frame.
          *
          * This will only return true once per key press.
@@ -238,7 +227,9 @@ namespace Axle {
          * @param key The key to set the state of.
          * @param pressed True if the key is pressed, false otherwise.
          */
-        void SetKey(Keys key, bool pressed);
+        inline static void SetKey(Keys key, bool pressed) {
+            s_Instance->SetKeyImpl(key, pressed);
+        }
 
         /**
          * Sets the state of a mouse button.
@@ -248,36 +239,56 @@ namespace Axle {
          * @param button The mouse button to set the state of.
          * @param pressed True if the mouse button is pressed, false otherwise.
          */
-        void SetMouseButton(MouseButtons button, bool pressed);
+        inline static void SetMouseButton(MouseButtons button, bool pressed) {
+            s_Instance->SetMouseButtonImpl(button, pressed);
+        }
 
         /**
          * Sets the mouse position.
          *
          * @param position The new mouse position in screen coordinates.
          */
-        void SetMousePosition(const glm::vec2& position);
+        inline static void SetMousePosition(const glm::vec2& position) {
+            s_Instance->SetMousePositionImpl(position);
+        }
 
         /**
          * Sets the mouse wheel delta.
          *
          * @param delta The amount the mouse wheel has been scrolled.
          */
-        void SetMouseWheel(f64 xOffset, f64 yOffset);
+        inline static void SetMouseWheel(f64 xOffset, f64 yOffset) {
+            s_Instance->SetMouseWheelImpl(xOffset, yOffset);
+        }
 
         /**
          * Updates the input state.
          */
-        void Update();
+        inline static void Update() {
+            s_Instance->UpdateImpl();
+        }
 
 
         // For testing purposes only
 #ifdef AXLE_TESTING
-        void SimulateKeyState(Keys key, bool pressed);
-        void SimulateMouseButtonState(MouseButtons button, bool pressed);
-        void SimulateMousePosition(const glm::vec2& position);
-        void SimulateMouseWheel(f32 deltax, f32 deltay);
-        void SimulateUpdate();
-        void SimulateReset();
+        inline static void SimulateKeyState(Keys key, bool pressed) {
+            s_Instance->SimulateKeyStateImpl(key, pressed);
+        }
+        inline static void SimulateMouseButtonState(MouseButtons button, bool pressed) {
+            s_Instance->SimulateMouseButtonStateImpl(button, pressed);
+        }
+        inline static void SimulateMousePosition(const glm::vec2& position) {
+            s_Instance->SimulateMousePositionImpl(position);
+        }
+        inline static void SimulateMouseWheel(f32 deltax, f32 deltay) {
+            s_Instance->SimulateMouseWheelImpl(deltax, deltay);
+        }
+        inline static void SimulateUpdate() {
+            s_Instance->SimulateUpdateImpl();
+        }
+        inline static void SimulateReset() {
+            s_Instance->SimulateResetImpl();
+        }
 #endif // AXLE_TESTING
 
     private:
@@ -297,6 +308,19 @@ namespace Axle {
         u32 DefineMouseButtonSequenceImpl(const std::vector<MouseButtons>& sec, f32 dtMax);
         glm::vec2 GetMousePositionOffsetImpl() const;
         void SetCursorModeImpl(CursorMode mode) const;
+        void SetKeyImpl(Keys key, bool pressed);
+        void SetMouseButtonImpl(MouseButtons button, bool pressed);
+        void SetMousePositionImpl(const glm::vec2& position);
+        void SetMouseWheelImpl(f64 xOffset, f64 yOffset);
+        void UpdateImpl();
+#ifdef AXLE_TESTING
+        void SimulateKeyStateImpl(Keys key, bool pressed);
+        void SimulateMouseButtonStateImpl(MouseButtons button, bool pressed);
+        void SimulateMousePositionImpl(const glm::vec2& position);
+        void SimulateMouseWheelImpl(f32 deltax, f32 deltay);
+        void SimulateUpdateImpl();
+        void SimulateResetImpl();
+#endif // AXLE_TESTING
 
         // Unsafe Implementations
         bool GetKeyUnsafe(Keys key) const;

@@ -117,7 +117,7 @@ struct EHFixture {
         EventHandler::ShutDown();
     }
     void process(LayerStack& stack) {
-        EventHandler::GetInstance().ProcessEvents(stack.rbegin(), stack.rend());
+        EventHandler::ProcessEvents(stack.rbegin(), stack.rend());
     }
 };
 
@@ -416,22 +416,6 @@ TEST_CASE("No events dispatched does not crash") {
 
     CHECK_NOTHROW(f.process(stack));
     CHECK(layer->eventCount == 0);
-}
-
-// ─── Singleton lifecycle ──────────────────────────────────────────────────────
-
-TEST_CASE("EventHandler singleton lifecycle") {
-    Log::Init();
-    EventHandler::Init();
-    EventHandler& first = EventHandler::GetInstance();
-    EventHandler::Init(); // second call — must warn and keep same instance
-    EventHandler& second = EventHandler::GetInstance();
-    CHECK(&first == &second);
-    EventHandler::ShutDown();
-
-    EventHandler::Init();
-    CHECK_NOTHROW(EventHandler::GetInstance());
-    EventHandler::ShutDown();
 }
 
 // ─── Overlay ordering ─────────────────────────────────────────────────────────

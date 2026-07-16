@@ -38,23 +38,14 @@ namespace Axle {
         static void ShutDown();
 
         /**
-         * Gets the event handler singleton
-         *
-         * The manager has to have already been initilized before getting the instance.
-         *
-         * @returns Returns a reference to the Event Handler
-         */
-        inline static EventHandler& GetInstance() noexcept {
-            return *m_EventHandler;
-        }
-
-        /**
          * Add an event to the event handler and it will be notified automatically.
          * This function is not recommended to be called manually, you should use the macro: AX_SUBMIT_EVENT
          *
          * @param event An event wrapped in a unique_ptr
          */
-        void SubmitEvent(std::unique_ptr<Event> event);
+        inline static void SubmitEvent(std::unique_ptr<Event> event) {
+            s_Instance->SubmitEventImpl(std::move(event));
+        }
 
         /**
          * Processes all the events in the queue and notifies the subscribers.
@@ -65,9 +56,16 @@ namespace Axle {
          * @param begin The begining iterator of the layer you want to push events to
          * @param end The end iterator of the layers
          */
-        void ProcessEvents(std::vector<Layer*>::reverse_iterator begin, std::vector<Layer*>::reverse_iterator end);
+        inline static void ProcessEvents(std::vector<Layer*>::reverse_iterator begin,
+                                         std::vector<Layer*>::reverse_iterator end) {
+            s_Instance->ProcessEventsImpl(begin, end);
+        }
 
     private:
+        // Static methods implementations
+        void SubmitEventImpl(std::unique_ptr<Event> event);
+        void ProcessEventsImpl(std::vector<Layer*>::reverse_iterator begin, std::vector<Layer*>::reverse_iterator end);
+
         /**
          * The notify method is called internally and it notifies the suscribers about the new event that has arrived.
          *
@@ -78,7 +76,7 @@ namespace Axle {
         Notify(Event& event, std::vector<Layer*>::reverse_iterator begin, std::vector<Layer*>::reverse_iterator end);
 
         /// The singleton of the event handler class
-        static std::unique_ptr<EventHandler> m_EventHandler;
+        static std::unique_ptr<EventHandler> s_Instance;
 
         // We need to store via pointers to keep the vtable intact
         std::vector<std::unique_ptr<Event>> m_EventQueue;
@@ -90,5 +88,4 @@ namespace Axle {
 /**
  * Macro that simplifies the addition of new events to the event handler
  */
-#define AX_SUBMIT_EVENT(e) \
-    ::Axle::EventHandler::GetInstance().SubmitEvent(std::make_unique<std::decay_t<decltype(e)>>(e))
+#define AX_SUBMIT_EVENT(e) ::Axle::EventHandler::SubmitEvent(std::make_unique<std::decay_t<decltype(e)>>(e))
