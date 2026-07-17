@@ -119,7 +119,7 @@ namespace Axle {
 
             std::string filename = directory + "/" + std::string(str.C_Str());
 
-            u32 textId = TextureManager::CreateTexture(filename, -1, TextureFormat::RGB);
+            u32 textId = TextureManager::CreateTexture(filename, -1);
             TextureManager::SetWrapping(textId, TextureWrapMode::Repeat, TextureWrapMode::Repeat);
             TextureManager::SetFiltering(textId, TextureFilteringMode::Linear, TextureFilteringMode::Linear);
             textures.push_back(std::make_pair(textId, type));
