@@ -3,7 +3,8 @@
 #include "axpch.hpp"
 
 #include "Core/Core.hpp"
-#include "Other/CustomTypes/Expected.hpp"
+#include "Core/Error/Error.hpp"
+#include "Core/Error/Result.hpp"
 #include "Core/Logger/Log.hpp"
 #include "Core/Types.hpp"
 
@@ -64,7 +65,7 @@ namespace Axle {
          * Thread safe
          * */
         template <ConfigType T>
-        inline static Expected<T> Get(const std::string& section, const std::string& name) {
+        inline static Result<T> Get(const std::string& section, const std::string& name) {
             std::scoped_lock lock(s_Instance->m_Mutex);
             return s_Instance->GetUnsafe<T>(section, name);
         }
@@ -141,7 +142,7 @@ namespace Axle {
         // Unsafe functions
         bool DoesKeyExistUnsafe(const std::string& section, const std::string& name);
         template <ConfigType T>
-        Expected<T> GetUnsafe(const std::string& section, const std::string& name);
+        Result<T> GetUnsafe(const std::string& section, const std::string& name);
         template <ConfigType T>
         bool SetUnsafe(const std::string& section, const std::string& name, const T& value);
 
@@ -166,9 +167,9 @@ namespace Axle {
 
 
     template <ConfigType T>
-    Expected<T> Config::GetUnsafe(const std::string& section, const std::string& name) {
+    Result<T> Config::GetUnsafe(const std::string& section, const std::string& name) {
         if (!DoesKeyExistUnsafe(section, name))
-            return Expected<T>::FromException(std::invalid_argument("Can't access a non-existing element"));
+            return Result<T>::Err(Error(ErrorCode::InvalidArgument, "Can't access a non-existing element"));
 
         if constexpr (std::same_as<T, bool>) {
             return GetBoolValueUnsafe(section, name);
@@ -199,10 +200,10 @@ namespace Axle {
     T Config::GetOrSet(const std::string& section, const std::string& name, const T& defaultValue) {
         std::scoped_lock lock(s_Instance->m_Mutex);
 
-        Expected<T> exp = s_Instance->GetUnsafe<T>(section, name);
+        Result<T> exp = s_Instance->GetUnsafe<T>(section, name);
 
         // Key found
-        if (exp.IsValid())
+        if (exp.IsOk())
             return exp.Unwrap();
 
         // Key missing — write the default under the same lock

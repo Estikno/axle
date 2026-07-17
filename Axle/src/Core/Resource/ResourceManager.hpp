@@ -2,7 +2,7 @@
 
 #include "axpch.hpp"
 
-#include "Other/CustomTypes/Expected.hpp"
+#include "Core/Error/Result.hpp"
 #include "Core/Core.hpp"
 #include "Core/Types.hpp"
 #include "Other/CustomTypes/SparseSet.hpp"
@@ -210,7 +210,7 @@ namespace Axle {
          *
          * @returns A handle to the loaded file.
          * */
-        inline static Expected<ManagedFileHandle> Load(const std::filesystem::path& path, bool readOnly = true) {
+        inline static Result<ManagedFileHandle> Load(const std::filesystem::path& path, bool readOnly = true) {
             return s_Instance->LoadImpl(path, readOnly);
         }
 
@@ -249,7 +249,7 @@ namespace Axle {
          *
          * @returns A ReadGuard used for reading/writting safely the contents
          * */
-        inline static Expected<WriteGuard> Data(const ManagedFileHandle& handle) {
+        inline static Result<WriteGuard> Data(const ManagedFileHandle& handle) {
             return s_Instance->DataImpl(handle);
         }
 
@@ -263,7 +263,7 @@ namespace Axle {
          *
          * @returns A ReadGuard used for reading/writting safely the contents
          * */
-        inline static Expected<WriteGuard> Data(FileHandle handle) {
+        inline static Result<WriteGuard> Data(FileHandle handle) {
             return s_Instance->DataImpl(handle);
         }
 
@@ -276,7 +276,7 @@ namespace Axle {
          *
          * @returns A ReadGuard used for reading safely the contents
          * */
-        inline static Expected<ReadGuard> DataConst(const ManagedFileHandle& handle) {
+        inline static Result<ReadGuard> DataConst(const ManagedFileHandle& handle) {
             return s_Instance->DataConstImpl(handle);
         }
 
@@ -290,7 +290,7 @@ namespace Axle {
          *
          * @returns A ReadGuard used for reading safely the contents
          * */
-        inline static Expected<ReadGuard> DataConst(FileHandle handle) {
+        inline static Result<ReadGuard> DataConst(FileHandle handle) {
             return s_Instance->DataConstImpl(handle);
         }
 
@@ -302,7 +302,7 @@ namespace Axle {
          *
          * @returns An Expected type with a valid size if the handle was valid
          * */
-        inline static Expected<u64> Size(const ManagedFileHandle& handle) {
+        inline static Result<u64> Size(const ManagedFileHandle& handle) {
             return s_Instance->SizeImpl(handle);
         }
 
@@ -315,7 +315,7 @@ namespace Axle {
          *
          * @returns An Expected type with a valid size if the handle was valid
          * */
-        inline static Expected<u64> Size(FileHandle handle) {
+        inline static Result<u64> Size(FileHandle handle) {
             return s_Instance->SizeImpl(handle);
         }
 
@@ -352,7 +352,7 @@ namespace Axle {
          *
          * @returns An Expected that contains the result if valid
          * */
-        inline static Expected<bool> IsReadOnly(const ManagedFileHandle& handle) {
+        inline static Result<bool> IsReadOnly(const ManagedFileHandle& handle) {
             return s_Instance->IsReadOnlyImpl(handle);
         }
 
@@ -365,7 +365,7 @@ namespace Axle {
          *
          * @returns An Expected that contains the result if valid
          * */
-        inline static Expected<bool> IsReadOnly(FileHandle handle) {
+        inline static Result<bool> IsReadOnly(FileHandle handle) {
             return s_Instance->IsReadOnlyImpl(handle);
         }
 
@@ -377,7 +377,7 @@ namespace Axle {
          *
          * @returns An Expected that contains the path if valid
          * */
-        inline static Expected<std::filesystem::path> GetPath(const ManagedFileHandle& handle) {
+        inline static Result<std::filesystem::path> GetPath(const ManagedFileHandle& handle) {
             return s_Instance->GetPathImpl(handle);
         }
 
@@ -390,7 +390,7 @@ namespace Axle {
          *
          * @returns An Expected that contains the path if valid
          * */
-        inline static Expected<std::filesystem::path> GetPath(FileHandle handle) {
+        inline static Result<std::filesystem::path> GetPath(FileHandle handle) {
             return s_Instance->GetPathImpl(handle);
         }
 
@@ -457,24 +457,24 @@ namespace Axle {
         // Let ManagedFileHandle access the AddRef and ReleaseRef methods
         friend class ManagedFileHandle;
 
-        Expected<ManagedFileHandle> LoadImpl(const std::filesystem::path& path, bool readOnly);
+        Result<ManagedFileHandle> LoadImpl(const std::filesystem::path& path, bool readOnly);
         bool SyncImpl(const ManagedFileHandle& handle);
         bool SyncImpl(FileHandle handle);
-        Expected<WriteGuard> DataImpl(const ManagedFileHandle& handle);
-        Expected<WriteGuard> DataImpl(FileHandle handle);
-        Expected<ReadGuard> DataConstImpl(const ManagedFileHandle& handle) const;
-        Expected<ReadGuard> DataConstImpl(FileHandle handle) const;
-        Expected<u64> SizeImpl(const ManagedFileHandle& handle) const;
-        Expected<u64> SizeImpl(FileHandle handle) const;
+        Result<WriteGuard> DataImpl(const ManagedFileHandle& handle);
+        Result<WriteGuard> DataImpl(FileHandle handle);
+        Result<ReadGuard> DataConstImpl(const ManagedFileHandle& handle) const;
+        Result<ReadGuard> DataConstImpl(FileHandle handle) const;
+        Result<u64> SizeImpl(const ManagedFileHandle& handle) const;
+        Result<u64> SizeImpl(FileHandle handle) const;
         bool CreateImpl(const std::filesystem::path& path, u64 size);
         bool IsHandleValidImpl(FileHandle handle) const {
             std::shared_lock lock(m_Mutex);
             return IsHandleValidUnsafe(handle);
         }
-        Expected<bool> IsReadOnlyImpl(const ManagedFileHandle& handle) const;
-        Expected<bool> IsReadOnlyImpl(FileHandle handle) const;
-        Expected<std::filesystem::path> GetPathImpl(const ManagedFileHandle& handle) const;
-        Expected<std::filesystem::path> GetPathImpl(FileHandle handle) const;
+        Result<bool> IsReadOnlyImpl(const ManagedFileHandle& handle) const;
+        Result<bool> IsReadOnlyImpl(FileHandle handle) const;
+        Result<std::filesystem::path> GetPathImpl(const ManagedFileHandle& handle) const;
+        Result<std::filesystem::path> GetPathImpl(FileHandle handle) const;
         bool ResizeImpl(const ManagedFileHandle& handle, u64 newSize);
         bool ResizeImpl(FileHandle handle, u64 newSize);
 #ifdef AXLE_TESTING
@@ -563,7 +563,7 @@ namespace Axle {
          *
          * @return An Expected handle value, valid if it has been already opened, otherwise not.
          * */
-        Expected<FileHandle> IsAlreadyOpenedUnsafe(const std::filesystem::path& path) const;
+        Result<FileHandle> IsAlreadyOpenedUnsafe(const std::filesystem::path& path) const;
 
         /**
          * Syncs current changes made to the map to disk.

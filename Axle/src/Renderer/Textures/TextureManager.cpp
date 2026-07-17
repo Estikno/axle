@@ -204,9 +204,9 @@ namespace Axle {
                                                                                            i32& nrChannels,
                                                                                            bool flipVertically) {
         // Load data
-        Expected<ResourceManager::ManagedFileHandle> exp = ResourceManager::Load(path);
+        Result<ResourceManager::ManagedFileHandle> exp = ResourceManager::Load(path);
 
-        AX_ENSURE(exp.IsValid(), LogChannel::Renderer, "Couldn't load texture: {0}", path);
+        AX_ENSURE(exp.IsOk(), LogChannel::Renderer, "Couldn't load texture: {0}", path);
         // TODO: Default to an ugly texture if it couldn't load it
 
         ResourceManager::ManagedFileHandle tmpHandle = exp.Unwrap();

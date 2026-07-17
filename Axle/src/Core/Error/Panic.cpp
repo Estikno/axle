@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-namespace Axle::Error {
+namespace Axle::PanicDetails {
     [[noreturn]] void PanicImpl(const char* s) noexcept {
         std::fputs(s, stderr);
 
@@ -18,4 +18,15 @@ namespace Axle::Error {
 
         std::abort();
     }
-} // namespace Axle::Error
+} // namespace Axle::PanicDetails
+
+namespace Axle {
+    [[noreturn]] void TerminateHandler() noexcept {
+        std::fputs("std::terminate() invoked — \n", stderr);
+
+        // same manual cleanup path as PanicImpl
+        ShutdownSystems();
+
+        std::abort();
+    }
+} // namespace Axle

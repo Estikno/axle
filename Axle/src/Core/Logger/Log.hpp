@@ -4,6 +4,7 @@
 
 #include "../Core.hpp"
 #include "../Types.hpp"
+
 #include "spdlog/common.h"
 #include "spdlog/logger.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
@@ -34,11 +35,11 @@ namespace Axle {
     inline constexpr std::string_view CHANNEL_NAMES[] =
         {"Core", "Client", "Config", "Events", "Input", "Resources", "Window", "Debug", "Renderer", "Other"};
 
-    inline constexpr std::string_view ChannelName(LogChannel ch) {
+    inline constexpr std::string_view ChannelName(LogChannel ch) noexcept {
         return CHANNEL_NAMES[static_cast<u8>(ch)];
     }
 
-    inline LogVerbosity VerbosityFromStr(const std::string& name) {
+    inline LogVerbosity VerbosityFromStr(const std::string& name) noexcept {
         auto it = std::find(std::begin(VERBOSITY_NAMES), std::end(VERBOSITY_NAMES), name);
         if (it != std::end(VERBOSITY_NAMES))
             return static_cast<LogVerbosity>(std::distance(std::begin(VERBOSITY_NAMES), it));
@@ -46,7 +47,7 @@ namespace Axle {
         return LogVerbosity::All;
     }
 
-    inline LogChannel ChannelFromStr(const std::string& name) {
+    inline LogChannel ChannelFromStr(const std::string& name) noexcept {
         auto it = std::find(std::begin(CHANNEL_NAMES), std::end(CHANNEL_NAMES), name);
         if (it != std::end(CHANNEL_NAMES))
             return static_cast<LogChannel>(std::distance(std::begin(CHANNEL_NAMES), it));

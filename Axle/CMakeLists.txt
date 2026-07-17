@@ -87,7 +87,6 @@ set(ASSIMP_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
 set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
 set(ASSIMP_INJECT_DEBUG_POSTFIX OFF CACHE BOOL "" FORCE)
 
-# Assimp defaults to building both shared and static; pick one to match Axle's conventions
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
 add_subdirectory("${VENDOR}/assimp")
@@ -201,6 +200,8 @@ target_include_directories(Axle
 )
 
 target_compile_definitions(Axle
+    PUBLIC
+        SPDLOG_NO_EXCEPTIONS
     PRIVATE
         GLFW_INCLUDE_NONE
         AX_BUILD_DLL
@@ -273,4 +274,5 @@ add_custom_command(TARGET Axle POST_BUILD
 target_compile_options(Axle PRIVATE
     $<$<AND:$<CXX_COMPILER_ID:GNU,Clang>,$<CONFIG:Release,Dist>>:-O2>
     $<$<AND:$<CXX_COMPILER_ID:MSVC>,$<CONFIG:Release,Dist>>:/O2>
+    -fno-exceptions
 )

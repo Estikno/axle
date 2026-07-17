@@ -35,3 +35,7 @@ target_link_libraries(Sandbox PRIVATE Axle)
 set_target_properties(Sandbox PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_BASE}/$<CONFIG>/${CMAKE_SYSTEM_NAME}-x64/Sandbox"
 )
+
+target_compile_options(Sandbox PRIVATE
+    -fno-exceptions
+)

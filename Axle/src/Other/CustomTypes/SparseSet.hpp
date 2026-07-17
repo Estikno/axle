@@ -1,12 +1,14 @@
 #pragma once
 
 #include "axpch.hpp"
+#include <functional>
 
 #include "Core/Core.hpp"
+#include "Core/Error/Error.hpp"
 #include "Core/Logger/Log.hpp"
 #include "Core/Types.hpp"
 #include "Core/Error/Panic.hpp"
-#include "Other/CustomTypes/Expected.hpp"
+#include "Core/Error/Result.hpp"
 
 namespace Axle {
     class ISparseSet {
@@ -80,7 +82,7 @@ namespace Axle {
          *
          * @returns A reference to the element of type T
          */
-        Expected<std::reference_wrapper<T>> Get(size_t id);
+        Result<std::reference_wrapper<T>> Get(size_t id);
 
         /**
          * Gets an inmutable element of type T from the given index. The returned reference is guaranted to be valid
@@ -90,7 +92,7 @@ namespace Axle {
          *
          * @returns A const reference to the element of type T
          */
-        Expected<std::reference_wrapper<const T>> Get(size_t id) const;
+        Result<std::reference_wrapper<const T>> Get(size_t id) const;
 
         /**
          * Same as Remove but it doesn't panic. If the request is erroneous it simply
@@ -211,7 +213,7 @@ namespace Axle {
     }
 
     template <typename T>
-    Expected<std::reference_wrapper<T>> SparseSet<T>::Get(size_t id) {
+    Result<std::reference_wrapper<T>> SparseSet<T>::Get(size_t id) {
         AX_ASSERT(Has(id),
                   LogChannel::Other,
                   "SparseSet: Trying to retrieve a non-existent element of type: {0} from index {1}",
@@ -219,16 +221,17 @@ namespace Axle {
                   id);
 
         if (!Has(id)) {
-            return Expected<std::reference_wrapper<T>>::FromException(std::invalid_argument(
-                "Trying to retrieve a non-existent element of type: " + std::string(typeid(T).name()) + " from index" +
-                std::to_string(id)));
+            return Result<std::reference_wrapper<T>>::Err(Error(
+                ErrorCode::InvalidArgument,
+                "[SparseSet] Trying to retrieve a non-existent element of type: " + std::string(typeid(T).name()) +
+                    " from index" + std::to_string(id)));
         }
 
         return std::ref(m_Dense.at(m_Sparse.at(id)));
     }
 
     template <typename T>
-    Expected<std::reference_wrapper<const T>> SparseSet<T>::Get(size_t id) const {
+    Result<std::reference_wrapper<const T>> SparseSet<T>::Get(size_t id) const {
         AX_ASSERT(Has(id),
                   LogChannel::Other,
                   "SparseSet: Trying to retrieve a non-existent element of type: {0} from index {1}",
@@ -236,9 +239,10 @@ namespace Axle {
                   id);
 
         if (!Has(id)) {
-            return Expected<std::reference_wrapper<const T>>::FromException(std::invalid_argument(
-                "Trying to retrieve a non-existent element of type: " + std::string(typeid(T).name()) + " from index" +
-                std::to_string(id)));
+            return Result<std::reference_wrapper<T>>::Err(Error(
+                ErrorCode::InvalidArgument,
+                "[SparseSet] Trying to retrieve a non-existent element of type: " + std::string(typeid(T).name()) +
+                    " from index" + std::to_string(id)));
         }
 
         return std::ref(m_Dense.at(m_Sparse.at(id)));

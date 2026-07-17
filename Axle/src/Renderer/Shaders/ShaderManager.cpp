@@ -33,7 +33,7 @@ namespace Axle {
 
         auto exp = ResourceManager::Load(filename);
 
-        AX_ENSURE(exp.IsValid(), LogChannel::Renderer, "Couldn't open {0} shader file", filename);
+        AX_ENSURE(exp.IsOk(), LogChannel::Renderer, "Couldn't open {0} shader file", filename);
         // TODO: Put an ugly default shader if it couldn't load the file
 
         ResourceManager::ManagedFileHandle tmpHandle = exp.Unwrap();

@@ -4,6 +4,7 @@
 
 #include "Application.hpp"
 #include "Core/Systems.hpp"
+#include "Core/Error/Panic.hpp"
 
 #ifdef AX_PLATFORM_WINDOWS
 
@@ -17,6 +18,7 @@ extern Axle::Application* Axle::CreateApplication();
 of focusing on making the main loop.
 */
 int main(int argc, char** argv) {
+    std::set_terminate(&Axle::TerminateHandler);
     Axle::InitSystems();
 
     // Main application loop
@@ -43,6 +45,7 @@ extern Axle::Application* Axle::CreateApplication();
 of focusing on making the main loop.
 */
 int main(int argc, char** argv) {
+    std::set_terminate(&Axle::TerminateHandler);
     Axle::InitSystems();
 
     // Main application loop

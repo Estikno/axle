@@ -46,3 +46,7 @@ set_target_properties(Tests PROPERTIES
 set_target_properties(Tests PROPERTIES
     EXCLUDE_FROM_ALL $<OR:$<CONFIG:Release>,$<CONFIG:Dist>>
 )
+
+# target_compile_options(Tests PRIVATE
+#     -fno-exceptions
+# )

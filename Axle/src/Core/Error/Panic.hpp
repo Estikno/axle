@@ -2,15 +2,12 @@
 
 #include "axpch.hpp"
 
-#include <concepts>
-#include <format>
-#include <source_location>
-#include <string_view>
-#include <type_traits>
-
 #include "Core/Logger/Log.hpp"
 
-namespace Axle::Error {
+#include <format>
+#include <source_location>
+
+namespace Axle::PanicDetails {
     struct PanicDynamicStringView {
         template <class T>
             requires std::constructible_from<std::string_view, T>
@@ -34,24 +31,26 @@ namespace Axle::Error {
     };
 
     [[noreturn]] void PanicImpl(const char* s) noexcept;
-} // namespace Axle::Error
+} // namespace Axle::PanicDetails
 
 namespace Axle {
-    [[noreturn]] inline void Panic(Error::PanicDynamicStringView s) noexcept {
+    [[noreturn]] inline void Panic(PanicDetails::PanicDynamicStringView s) noexcept {
         auto msg = std::format("{}:{} Panic: {}\n", s.loc.file_name(), s.loc.line(), s.s);
-        Error::PanicImpl(msg.c_str());
+        PanicDetails::PanicImpl(msg.c_str());
     }
 
     template <class... Args>
-    [[noreturn]] void Panic(Error::PanicFormat<std::type_identity_t<Args>...> fmt, Args&&... args) noexcept
+    [[noreturn]] void Panic(PanicDetails::PanicFormat<std::type_identity_t<Args>...> fmt, Args&&... args) noexcept
         requires(sizeof...(Args) > 0)
     {
         auto msg = std::format("{}:{} Panic: {}\n",
                                fmt.loc.file_name(),
                                fmt.loc.line(),
                                std::format(fmt.fmt, std::forward<Args>(args)...));
-        Error::PanicImpl(msg.c_str());
+        PanicDetails::PanicImpl(msg.c_str());
     }
+
+    [[noreturn]] void TerminateHandler() noexcept;
 } // namespace Axle
 
 // TODO: Make a specific AX_CORE_PANIC so that when clients use AX_PANIC they dont have to set the channel as it will be
