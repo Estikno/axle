@@ -1,5 +1,3 @@
-#include "Renderer/Camera/Camera.hpp"
-#include "Renderer/Shaders/ShaderManager.hpp"
 #include "axpch.hpp"
 
 #include "Application.hpp"
@@ -16,6 +14,7 @@
 #include "Types.hpp"
 #include "Renderer/Textures/TextureManager.hpp"
 #include "Renderer/Shaders/ShaderManager.hpp"
+#include "Renderer/Camera/Camera.hpp"
 
 #include "ImGui/ImGuiLayer.hpp"
 
