@@ -96,6 +96,25 @@ if(UNIX)
 endif()
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  Tracy (official submodule, uses its own CMakeLists.txt)
+# ══════════════════════════════════════════════════════════════════════════════
+
+option(TRACY_ENABLE "Enable Tracy profiler" ON)
+option(TRACY_ON_DEMAND "Enable Tracy on-demand mode" ON)
+
+if(UNIX)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL "" FORCE)
+    add_subdirectory("${VENDOR}/tracy")
+    set(CMAKE_POSITION_INDEPENDENT_CODE OFF CACHE BOOL "" FORCE)
+else()
+    add_subdirectory("${VENDOR}/tracy")
+endif()
+
+if(UNIX)
+    set_target_properties(TracyClient PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
+endif()
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  GLFW  (official submodule, uses its own CMakeLists.txt)
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -191,6 +210,8 @@ target_compile_definitions(Axle
         $<$<CONFIG:Debug>:AXLE_TESTING>
         $<$<CONFIG:Release>:AX_RELEASE>
         $<$<CONFIG:Dist>:AX_DIST>
+        # Tracy: enabled in Debug and Release, disabled in Dist
+        $<$<NOT:$<CONFIG:Dist>>:TRACY_ENABLE>
 )
 
 # Platform defines
@@ -207,7 +228,7 @@ if(UNIX)
     # sit outside the --whole-archive block.
     target_link_libraries(Axle PRIVATE
         -Wl,--whole-archive Glad ImGui stb_image -Wl,--no-whole-archive
-        glfw assimp
+        glfw Tracy::TracyClient assimp
     )
 else()
     target_link_libraries(Axle PRIVATE glfw Glad ImGui stb_image Tracy::TracyClient assimp)
