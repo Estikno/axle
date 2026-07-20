@@ -95,11 +95,26 @@ if(UNIX)
     set_target_properties(assimp PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
 endif()
 
+# GCC13 false positive: -O3 (auto-applied by CMake for the "Release" config)
+# enables interprocedural analysis that incorrectly flags an uninitialized
+# read in pugixml's placement-new + pointer-arithmetic macro pattern.
+# Same class of false positive as the -Wdangling-reference and
+# -Warray-bounds/-Wstringop-overflow workarounds above.
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13)
+    set_source_files_properties(
+        "${VENDOR}/assimp/contrib/pugixml/src/pugixml.cpp"
+        TARGET_DIRECTORY assimp
+        PROPERTIES COMPILE_OPTIONS "-Wno-error=uninitialized"
+    )
+endif()
+
 # ══════════════════════════════════════════════════════════════════════════════
 #  Tracy (official submodule, uses its own CMakeLists.txt)
 # ══════════════════════════════════════════════════════════════════════════════
 
-option(TRACY_ENABLE "Enable Tracy profiler" ON)
+if(CMAKE_BUILD_TYPE STREQUAL "Dist")
+    set(TRACY_ENABLE OFF CACHE BOOL "" FORCE)
+endif()
 option(TRACY_ON_DEMAND "Enable Tracy on-demand mode" ON)
 
 if(UNIX)
@@ -113,6 +128,14 @@ endif()
 if(UNIX)
     set_target_properties(TracyClient PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
 endif()
+
+target_compile_options(TracyClient PRIVATE
+    $<$<CONFIG:Dist>:-UTRACY_ENABLE>
+)
+
+target_compile_definitions(TracyClient PUBLIC
+    $<$<NOT:$<CONFIG:Dist>>:TRACY_FIBERS>
+)
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  GLFW  (official submodule, uses its own CMakeLists.txt)
@@ -212,6 +235,7 @@ target_compile_definitions(Axle
         $<$<CONFIG:Dist>:AX_DIST>
         # Tracy: enabled in Debug and Release, disabled in Dist
         $<$<NOT:$<CONFIG:Dist>>:TRACY_ENABLE>
+        $<$<NOT:$<CONFIG:Dist>>:TRACY_FIBERS>
 )
 
 # Platform defines
@@ -274,5 +298,6 @@ add_custom_command(TARGET Axle POST_BUILD
 target_compile_options(Axle PRIVATE
     $<$<AND:$<CXX_COMPILER_ID:GNU,Clang>,$<CONFIG:Release,Dist>>:-O2>
     $<$<AND:$<CXX_COMPILER_ID:MSVC>,$<CONFIG:Release,Dist>>:/O2>
+    $<$<CONFIG:Dist>:-UTRACY_ENABLE>
     -fno-exceptions
 )

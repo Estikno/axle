@@ -1,5 +1,3 @@
-#include "Renderer/Camera/Camera.hpp"
-#include "Renderer/Shaders/ShaderManager.hpp"
 #include "axpch.hpp"
 
 #include "Application.hpp"
@@ -16,12 +14,14 @@
 #include "Types.hpp"
 #include "Renderer/Textures/TextureManager.hpp"
 #include "Renderer/Shaders/ShaderManager.hpp"
+#include "Renderer/Camera/Camera.hpp"
 
 #include "ImGui/ImGuiLayer.hpp"
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 #include <CoroWeaver.hpp>
+#include <tracy/Tracy.hpp>
 
 namespace Axle {
     static std::stop_source source;
@@ -79,11 +79,15 @@ namespace Axle {
     void Application::Run() {
         m_Running.store(true, std::memory_order_release);
 
+#ifdef TRACY_ENABLE
+        mainId = cw::JobSystem::GetInstance().ConvertToWorkerThread("Main/Update");
+#else
         mainId = cw::JobSystem::GetInstance().ConvertToWorkerThread();
+#endif // TRACY_ENABLE
 
         // Schedule the main loop to the main thread's id
         cw::JobCoroutine<void> updateCor = AppInternalManagement::UpdateLoop(this);
-        cw::JobSystem::GetInstance().Schedule(updateCor, mainId);
+        cw::JobSystem::GetInstance().Schedule(updateCor, mainId, cw::JobPriority::Medium, cw::InvalidTag);
 
         // The main thread will now be a worker
         cw::JobSystem::GetInstance().RunWorkerUntil(source.get_token());
@@ -96,7 +100,6 @@ namespace Axle {
         cw::JobSystem::Shutdown();
     }
 
-
     cw::JobCoroutine<void> Application::AppInternalManagement::CreateMainWindow(Application* app) {
         app->m_Window = std::unique_ptr<Window>(Window::Create()); // GLFW + GLAD init
         co_return;
@@ -108,7 +111,7 @@ namespace Axle {
 
         // Schedule the render loop
         cw::JobCoroutine<void> renderCor = AppInternalManagement::RenderLoop(app);
-        cw::JobSystem::GetInstance().Schedule(renderCor, RENDER_THREAD_ID);
+        cw::JobSystem::GetInstance().Schedule(renderCor, RENDER_THREAD_ID, cw::JobPriority::Medium, cw::InvalidTag);
 
         // Main loop logic
         // ---------------
@@ -137,7 +140,10 @@ namespace Axle {
                 // Update logic
                 // --------------------------
                 cw::JobSystem::GetInstance().Schedule(
-                    [app]() { EventHandler::ProcessEvents(app->m_LayerStack->rbegin(), app->m_LayerStack->rend()); },
+                    [app]() {
+                        ZoneScopedN("Input/Events");
+                        EventHandler::ProcessEvents(app->m_LayerStack->rbegin(), app->m_LayerStack->rend());
+                    },
                     cw::JobPriority::Medium,
                     cw::InvalidThreadIndex,
                     EVENT_INPUT_TAG);
@@ -148,14 +154,19 @@ namespace Axle {
                 AX_SCHEDULE_TAG_AND_WAIT(EVENT_INPUT_TAG);
 
                 for (Layer* layer : *(app->m_LayerStack))
-                    cw::JobSystem::GetInstance().Schedule([layer, app]() { layer->OnUpdate(app->m_DeltaTime); },
-                                                          cw::JobPriority::Medium,
-                                                          cw::InvalidThreadIndex,
-                                                          LAYERS_TAG);
+                    cw::JobSystem::GetInstance().Schedule(
+                        [layer, app]() {
+                            ZoneScopedN("Layer update");
+                            layer->OnUpdate(app->m_DeltaTime);
+                        },
+                        cw::JobPriority::Medium,
+                        cw::InvalidThreadIndex,
+                        LAYERS_TAG);
 
                 AX_SCHEDULE_TAG_AND_WAIT(LAYERS_TAG);
                 // --------------------------
                 lag -= app->m_DeltaTime;
+                FrameMarkNamed("Update Tick");
             }
 
             const f64 alpha = lag / app->m_DeltaTime;
@@ -210,6 +221,7 @@ namespace Axle {
                 layer->OnRender(elapsed);
 
             app->m_Window->OnUpdate();
+            FrameMark;
             // --------------------------
         }
 

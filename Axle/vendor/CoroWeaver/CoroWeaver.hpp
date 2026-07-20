@@ -492,6 +492,10 @@ namespace cw {
         // How many children I'm waiting for (only on coroutines)
         std::atomic<u32> m_Children{0};
 
+#ifdef TRACY_ENABLE
+        const char* m_DebugName{nullptr};
+#endif // TRACY_ENABEL
+
         Job() = default;
         Job(JobPriority priority, ThreadAffinity threadIndex, bool isFunction, Tag tag)
             : m_Priority(priority),
@@ -512,12 +516,24 @@ namespace cw {
         std::function<void()> m_Function;
 
         JobFunction() = default;
+#ifndef TRACY_ENABLE
         JobFunction(std::function<void()> func,
                     JobPriority priority = JobPriority::Medium,
                     ThreadAffinity threadIndex = InvalidThreadIndex,
                     Tag tag = InvalidTag)
             : m_Function(func),
               Job(priority, threadIndex, true, tag) {}
+#else
+        JobFunction(std::function<void()> func,
+                    JobPriority priority = JobPriority::Medium,
+                    ThreadAffinity threadIndex = InvalidThreadIndex,
+                    Tag tag = InvalidTag,
+                    const char* name = nullptr)
+            : m_Function(func),
+              Job(priority, threadIndex, true, tag) {
+            m_DebugName = name;
+        }
+#endif // !TRACY_ENABLE
 
         void Resume() override {
             m_Function();
@@ -737,6 +753,10 @@ namespace cw {
     };
 } // namespace cw
 
+#ifdef TRACY_ENABLE
+#    include <tracy/Tracy.hpp>
+#endif // TRACY_ENABLE
+
 namespace cw {
     struct TagAux {
         TagBufferPtr<Job*> m_Jobs;
@@ -847,6 +867,7 @@ namespace cw {
             return *s_JobSystem;
         }
 
+#ifndef TRACY_ENABLE
         /**
          * Converts the calling thread into a worker one. If the calling thread is
          * already a worker panics.
@@ -896,6 +917,59 @@ namespace cw {
             SetupWorkerThread(newIndex);
             return newIndex;
         }
+#else
+        /**
+         * Converts the calling thread into a worker one. If the calling thread is
+         * already a worker panics.
+         *
+         * The converted thread will have to manually call the corresponding methods
+         * to work as because the system itslef doesn't own the thread it can't manage
+         * it.
+         *
+         * @param name Debug name of the thread
+         *
+         * @returns The thread ID of the newnly created worker
+         *
+         * Thread Safe
+         * */
+        ThreadAffinity ConvertToWorkerThread(const char* name) {
+            CW_ENSURE(m_Index == InvalidThreadIndex, "Trying to convert an already worker thread");
+
+            ThreadAffinity newIndex;
+            {
+                std::scoped_lock lock(m_ExternalWorkerMutex);
+
+                // Update thread count
+                ThreadAffinity threads = m_NumThreads.fetch_add(1, std::memory_order_acq_rel);
+                CW_ENSURE(threads <= MaxThreads, "Can't spawn more than {0} worker threads", MaxThreads);
+
+                // Get new thread ID
+                if (m_AvailableIndexes.empty()) {
+                    newIndex = m_LargestAvailableIndex.fetch_add(1, std::memory_order_acq_rel);
+                    // This check is technically not necessary because we alread have the
+                    // one above
+                    CW_ENSURE(newIndex < MaxThreads, "Can't spawn more than {0} worker threads", MaxThreads);
+
+                    // Create local buffer
+                    m_JobLocalBuffers[newIndex] = std::make_unique<RingBuffer<Job*, BufferCapacity>>();
+
+                    // Allocate mutex and condition
+                    m_CVsMutex[newIndex] = std::make_unique<std::mutex>();
+                    m_CVs[newIndex] = std::make_unique<std::condition_variable>();
+                } else {
+                    newIndex = m_AvailableIndexes.top();
+                    m_AvailableIndexes.pop();
+
+                    // Here the thread will use another's thread mutex, CV and local buffer
+                    // (it's guaranted that a deregistered thread will clean everything
+                    // before leaving)
+                }
+            }
+
+            SetupWorkerThread(newIndex, name);
+            return newIndex;
+        }
+#endif // !TARCY_ENABLE
 
         /**
          * Assumes the calling thread has already been converted to a worker, if not
@@ -928,6 +1002,7 @@ namespace cw {
             m_NumThreads.notify_all();
         }
 
+#ifndef TRACY_ENABLE
         /**
          * Schedules a simple function
          *
@@ -945,7 +1020,29 @@ namespace cw {
             // Functions shall never have a parent
             Schedule(new JobFunction(job, priority, threadId, tag), nullptr);
         }
+#else
+        /**
+         * Schedules a simple function
+         *
+         * @param job The function/lamda/... to schedule
+         * @param priority The priority the job will have (medium by default)
+         * @param threadId The thread you want this job to be executed on. If assigned
+         * then priotity is ignored.
+         * @param name Debug for the job
+         *
+         * Thread Safe
+         * */
+        void Schedule(std::function<void()> job,
+                      JobPriority priority = JobPriority::Medium,
+                      ThreadAffinity threadId = InvalidThreadIndex,
+                      Tag tag = InvalidTag,
+                      const char* name = nullptr) {
+            // Functions shall never have a parent
+            Schedule(new JobFunction(job, priority, threadId, tag, name), nullptr);
+        }
+#endif // !TRACY_ENABLE
 
+#ifndef TRACY_ENABLE
         /**
          * Schedules the given job coroutine
          *
@@ -983,6 +1080,48 @@ namespace cw {
             // Top level coroutines can't have a parent
             Schedule(jobProm, nullptr);
         }
+#else
+        /**
+         * Schedules the given job coroutine
+         *
+         * Important: Jobs scheduled with the same priority in a specify order are not
+         * necessarly going to mantain that order when executed. If
+         * order/synchronization is important then you can add coroutines as
+         * dependencies of a job by waiting on them with the co_await operator.
+         *
+         * @param job A reference to the job coroutine
+         * @param threadId The thread you want to job to run on. If set then priority
+         * is ignored (it doesn't matter by default)
+         * @param priority The priority of the given job (medium by default)
+         * @param name Debug name for the job
+         *
+         * Thread Safe
+         * */
+        template <typename T>
+        void Schedule(JobCoroutine<T>& job,
+                      ThreadAffinity threadId = InvalidThreadIndex,
+                      JobPriority priority = JobPriority::Medium,
+                      Tag tag = InvalidTag,
+                      const char* name = nullptr) {
+            // The underlying job promise
+            JobPromise<T>* jobProm = &job.GetHandle().promise();
+
+            // Assign given values to the promise
+            jobProm->m_Priority = priority;
+            jobProm->m_ThreadIndex = threadId;
+            jobProm->m_Tag = tag;
+            jobProm->m_DebugName = name;
+
+            // Notify the coroutine object that the job has been scheduled
+            job.Schedule();
+            // No parent will be set (top-level schedule), null the handle
+            // so the destructor can't touch the freed frame after FinalAwaiter runs
+            job.ReleaseHandle();
+
+            // Top level coroutines can't have a parent
+            Schedule(jobProm, nullptr);
+        }
+#endif // !TRACY_ENABLE
 
         /**
          * Schedules all the jobs assigned to the specified tag. The jobs are scheduled according to the parameters
@@ -1300,6 +1439,7 @@ namespace cw {
             }
         }
 
+#ifndef TRACY_ENABLE
         /**
          * Called within a thread to setup the worker's thread related config.
          *
@@ -1308,6 +1448,25 @@ namespace cw {
         void SetupWorkerThread(ThreadAffinity threadId) {
             m_Index = threadId;
         }
+#else
+        /**
+         * Called within a thread to setup the worker's thread related config.
+         *
+         * @param threadId Which id will the thread have?
+         * @param name Debug name for the thread
+         * */
+        void SetupWorkerThread(ThreadAffinity threadId, const char* name = nullptr) {
+            m_Index = threadId;
+
+            if (name) {
+                tracy::SetThreadName(name);
+            } else {
+                char buf[32];
+                std::snprintf(buf, sizeof(buf), "CW Worker %u", threadId);
+                tracy::SetThreadName(buf);
+            }
+        }
+#endif // !TRACY_ENABLE
 
         /**
          * Function that contains the loop that every worker thread has to run
@@ -1375,8 +1534,21 @@ namespace cw {
          * */
         void RunJob(Job* job) {
             bool isFunction = job->m_IsFunction;
-            // virtual call
+
+#ifdef TRACY_ENABLE
+            if (!isFunction && job->m_DebugName) {
+                TracyFiberEnter(job->m_DebugName);
+                job->Resume();
+                TracyFiberLeave;
+            } else if (isFunction) {
+                ZoneScoped;
+                job->Resume();
+            } else {
+                job->Resume();
+            }
+#else
             job->Resume();
+#endif // TRACY_ENABLE
 
             // Delete the function job since it can't possibly be rescheduled
             if (isFunction) {
@@ -1495,9 +1667,8 @@ namespace cw {
         WaitOnTagAwaiter<T>(Tag tag)
             : m_Tag(tag) {}
 
-        // Only suspend if there are jobs on the tag
         bool await_ready() noexcept {
-            return false; // always go through await_suspend to avoid the race
+            return false; // always go through await_suspend to avoid a race condition
         }
 
         bool await_suspend(std::coroutine_handle<JobPromise<T>> h) noexcept {
