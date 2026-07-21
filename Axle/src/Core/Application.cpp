@@ -22,6 +22,7 @@
 #include <GLFW/glfw3.h>
 #include <CoroWeaver.hpp>
 #include <tracy/Tracy.hpp>
+#include <tracy/TracyOpenGL.hpp>
 
 namespace Axle {
     static std::stop_source source;
@@ -80,28 +81,36 @@ namespace Axle {
         m_Running.store(true, std::memory_order_release);
 
 #ifdef TRACY_ENABLE
-        mainId = cw::JobSystem::GetInstance().ConvertToWorkerThread("Main/Update");
+        mainId = cw::JobSystem::ConvertToWorkerThread("Main/Update");
 #else
         mainId = cw::JobSystem::GetInstance().ConvertToWorkerThread();
 #endif // TRACY_ENABLE
 
         // Schedule the main loop to the main thread's id
         cw::JobCoroutine<void> updateCor = AppInternalManagement::UpdateLoop(this);
-        cw::JobSystem::GetInstance().Schedule(updateCor, mainId, cw::JobPriority::Medium, cw::InvalidTag);
+        cw::JobSystem::Schedule(updateCor, mainId, cw::JobPriority::Medium, cw::InvalidTag, "Main/Update Loop");
 
         // The main thread will now be a worker
-        cw::JobSystem::GetInstance().RunWorkerUntil(source.get_token());
+        cw::JobSystem::RunWorkerUntil(source.get_token());
+        cw::JobSystem::DeregisterWorkerThread();
 
-        cw::JobSystem::GetInstance().DeregisterWorkerThread();
+        // We shut down the rendering related systems on the render thread here so everything gets deleted correctly
+        // (GLFW, OpenGL, ...)
+        cw::JobSystem::Schedule(
+            []() {
+                TextureManager::Shutdown();
+                ShaderManager::Shutdown();
+            },
+            cw::JobPriority::Medium,
+            RENDER_THREAD_ID,
+            cw::InvalidTag);
 
-        // We shut down the system here so everything gets deleted correctly (GLFW, OpenGL, ...)
-        TextureManager::Shutdown();
-        ShaderManager::Shutdown();
         cw::JobSystem::Shutdown();
     }
 
     cw::JobCoroutine<void> Application::AppInternalManagement::CreateMainWindow(Application* app) {
         app->m_Window = std::unique_ptr<Window>(Window::Create()); // GLFW + GLAD init
+        TracyGpuContext;
         co_return;
     }
 
@@ -111,13 +120,19 @@ namespace Axle {
 
         // Schedule the render loop
         cw::JobCoroutine<void> renderCor = AppInternalManagement::RenderLoop(app);
-        cw::JobSystem::GetInstance().Schedule(renderCor, RENDER_THREAD_ID, cw::JobPriority::Medium, cw::InvalidTag);
+        cw::JobSystem::Schedule(renderCor, RENDER_THREAD_ID, cw::JobPriority::Medium, cw::InvalidTag, "Render Loop");
 
         // Main loop logic
         // ---------------
         for (Layer* layer : *(app->m_LayerStack))
-            cw::JobSystem::GetInstance().Schedule(
-                [layer, app]() { layer->OnAttach(); }, cw::JobPriority::Medium, cw::InvalidThreadIndex, LAYERS_TAG);
+            cw::JobSystem::Schedule(
+                [layer, app]() {
+                    ZoneScopedN("Layer OnAttach");
+                    layer->OnAttach();
+                },
+                cw::JobPriority::Medium,
+                cw::InvalidThreadIndex,
+                LAYERS_TAG);
 
         AX_SCHEDULE_TAG_AND_WAIT(LAYERS_TAG);
 
@@ -139,22 +154,28 @@ namespace Axle {
             while (lag >= app->m_DeltaTime) {
                 // Update logic
                 // --------------------------
-                cw::JobSystem::GetInstance().Schedule(
+                cw::JobSystem::Schedule(
                     [app]() {
-                        ZoneScopedN("Input/Events");
+                        ZoneScopedN("Process Events");
                         EventHandler::ProcessEvents(app->m_LayerStack->rbegin(), app->m_LayerStack->rend());
                     },
                     cw::JobPriority::Medium,
                     cw::InvalidThreadIndex,
                     EVENT_INPUT_TAG);
 
-                cw::JobSystem::GetInstance().Schedule(
-                    []() { InputManager::Update(); }, cw::JobPriority::Medium, cw::InvalidThreadIndex, EVENT_INPUT_TAG);
+                cw::JobSystem::Schedule(
+                    []() {
+                        ZoneScopedN("Input update");
+                        InputManager::Update();
+                    },
+                    cw::JobPriority::Medium,
+                    cw::InvalidThreadIndex,
+                    EVENT_INPUT_TAG);
 
                 AX_SCHEDULE_TAG_AND_WAIT(EVENT_INPUT_TAG);
 
                 for (Layer* layer : *(app->m_LayerStack))
-                    cw::JobSystem::GetInstance().Schedule(
+                    cw::JobSystem::Schedule(
                         [layer, app]() {
                             ZoneScopedN("Layer update");
                             layer->OnUpdate(app->m_DeltaTime);
@@ -172,10 +193,14 @@ namespace Axle {
             const f64 alpha = lag / app->m_DeltaTime;
 
             for (Layer* layer : *(app->m_LayerStack))
-                cw::JobSystem::GetInstance().Schedule([layer, alpha]() { layer->CommitSnapshot(alpha); },
-                                                      cw::JobPriority::Medium,
-                                                      cw::InvalidThreadIndex,
-                                                      LAYERS_TAG);
+                cw::JobSystem::Schedule(
+                    [layer, alpha]() {
+                        ZoneScopedN("Layer CommitSnapshot");
+                        layer->CommitSnapshot(alpha);
+                    },
+                    cw::JobPriority::Medium,
+                    cw::InvalidThreadIndex,
+                    LAYERS_TAG);
 
             AX_SCHEDULE_TAG_AND_WAIT(LAYERS_TAG);
 
@@ -186,8 +211,14 @@ namespace Axle {
         }
 
         for (Layer* layer : *(app->m_LayerStack))
-            cw::JobSystem::GetInstance().Schedule(
-                [layer]() { layer->OnDettach(); }, cw::JobPriority::Medium, cw::InvalidThreadIndex, LAYERS_TAG);
+            cw::JobSystem::Schedule(
+                [layer]() {
+                    ZoneScopedN("Layer OnDettach");
+                    layer->OnDettach();
+                },
+                cw::JobPriority::Medium,
+                cw::InvalidThreadIndex,
+                LAYERS_TAG);
 
         AX_SCHEDULE_TAG_AND_WAIT(LAYERS_TAG);
 
@@ -199,8 +230,10 @@ namespace Axle {
         // Sets up imporant stuff (already done in CreateMainWindow)
         // m_Window = std::unique_ptr<Window>(Window::Create());
 
-        for (Layer* layer : *(app->m_LayerStack))
+        for (Layer* layer : *(app->m_LayerStack)) {
+            ZoneScopedN("Layer OnAttachRender");
             layer->OnAttachRender();
+        }
 
         f64 previous = glfwGetTime();
 
@@ -213,20 +246,30 @@ namespace Axle {
             // Render logic
             // --------------------------
 
-            // Temporary background color
-            glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            {
+                TracyGpuZone("Frame");
 
-            for (Layer* layer : *(app->m_LayerStack))
-                layer->OnRender(elapsed);
+                // Temporary background color
+                glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+                for (Layer* layer : *(app->m_LayerStack)) {
+                    ZoneScopedN("Layer OnRender");
+                    layer->OnRender(elapsed);
+                }
+            }
 
             app->m_Window->OnUpdate();
+            TracyGpuCollect;
+
             FrameMark;
             // --------------------------
         }
 
-        for (Layer* layer : *(app->m_LayerStack))
+        for (Layer* layer : *(app->m_LayerStack)) {
+            ZoneScopedN("Layer OnDettachRender");
             layer->OnDettachRender();
+        }
 
         // We delete the main window and termninate GLFW
         app->m_Window.reset();

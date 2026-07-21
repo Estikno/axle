@@ -787,7 +787,7 @@ namespace cw {
          * and only once to be safe.
          * */
         static void Init(ThreadAffinity threadCount) {
-            if (s_JobSystem != nullptr) {
+            if (s_Instance != nullptr) {
                 return;
             }
 
@@ -797,8 +797,8 @@ namespace cw {
             CW_ENSURE(totalThreads > 0, "There are not sufficient threads to initialize the job system");
             CW_ENSURE(threadCount <= MaxThreads, "Can't spawn more than {0} worker threads", MaxThreads);
 
-            s_JobSystem = std::make_unique<JobSystem>();
-            JobSystem& js = *s_JobSystem;
+            s_Instance = std::make_unique<JobSystem>();
+            JobSystem& js = *s_Instance;
 
             js.m_NumThreads.store(std::min(totalThreads, threadCount));
             js.m_LargestAvailableIndex.store(js.m_NumThreads.load());
@@ -830,41 +830,32 @@ namespace cw {
          * and only once to be safe.
          * */
         static void Shutdown() {
-            if (s_JobSystem == nullptr) {
+            if (s_Instance == nullptr) {
                 return;
             }
 
             // Signal all threads to execute everything that remains and exit
-            s_JobSystem->m_Running.store(false, std::memory_order_seq_cst);
-            for (ThreadAffinity i = 0; i < s_JobSystem->m_LargestAvailableIndex.load(); ++i) {
-                std::unique_lock lock(*(s_JobSystem->m_CVsMutex[i]));
-                s_JobSystem->m_CVs[i]->notify_all();
+            s_Instance->m_Running.store(false, std::memory_order_seq_cst);
+            for (ThreadAffinity i = 0; i < s_Instance->m_LargestAvailableIndex.load(); ++i) {
+                std::unique_lock lock(*(s_Instance->m_CVsMutex[i]));
+                s_Instance->m_CVs[i]->notify_all();
             }
 
             // Just join the threads the job system owns (it may not be as many as the
             // m_NumThreads variable's value)
-            for (std::thread& thread : s_JobSystem->m_Threads) {
+            for (std::thread& thread : s_Instance->m_Threads) {
                 if (thread.joinable())
                     thread.join();
             }
 
             // Wait until all non-owned workers have been unregistered
-            ThreadAffinity active = s_JobSystem->m_NumThreads.load(std::memory_order_acquire);
+            ThreadAffinity active = s_Instance->m_NumThreads.load(std::memory_order_acquire);
             while (active != 0) {
-                s_JobSystem->m_NumThreads.wait(active, std::memory_order_acquire);
-                active = s_JobSystem->m_NumThreads.load(std::memory_order_acquire);
+                s_Instance->m_NumThreads.wait(active, std::memory_order_acquire);
+                active = s_Instance->m_NumThreads.load(std::memory_order_acquire);
             }
 
-            s_JobSystem.reset();
-        }
-
-        /**
-         * Simply gets the singleton instance. Call after initialization.
-         *
-         * Thread Safe
-         * */
-        inline static JobSystem& GetInstance() noexcept {
-            return *s_JobSystem;
+            s_Instance.reset();
         }
 
 #ifndef TRACY_ENABLE
@@ -880,7 +871,233 @@ namespace cw {
          *
          * Thread Safe
          * */
-        ThreadAffinity ConvertToWorkerThread() {
+        static ThreadAffinity ConvertToWorkerThread() {
+            return s_Instance->ConvertToWorkerThreadImpl();
+        }
+#else
+        /**
+         * Converts the calling thread into a worker one. If the calling thread is
+         * already a worker panics.
+         *
+         * The converted thread will have to manually call the corresponding methods
+         * to work as because the system itslef doesn't own the thread it can't manage
+         * it.
+         *
+         * @param name Debug name of the thread
+         *
+         * @returns The thread ID of the newnly created worker
+         *
+         * Thread Safe
+         * */
+        static ThreadAffinity ConvertToWorkerThread(const char* name) {
+            return s_Instance->ConvertToWorkerThreadImpl(name);
+        }
+#endif // !TARCY_ENABLE
+
+        /**
+         * Assumes the calling thread has already been converted to a worker, if not
+         * it will panic. Deregisters the calling worker thread from being a worker.
+         * This action is necessary to be performed by all external workers so the
+         * system can shutdown correctly.
+         *
+         * Thread Safe
+         * */
+        static void DeregisterWorkerThread() {
+            s_Instance->DeregisterWorkerThreadImpl();
+        }
+
+#ifndef TRACY_ENABLE
+        /**
+         * Schedules a simple function
+         *
+         * @param job The function/lamda/... to schedule
+         * @param priority The priority the job will have (medium by default)
+         * @param threadId The thread you want this job to be executed on. If assigned
+         * then priotity is ignored.
+         *
+         * Thread Safe
+         * */
+        static void Schedule(std::function<void()> job,
+                             JobPriority priority = JobPriority::Medium,
+                             ThreadAffinity threadId = InvalidThreadIndex,
+                             Tag tag = InvalidTag) {
+            s_Instance->ScheduleImpl(job, priority, threadId, tag);
+        }
+#else
+        /**
+         * Schedules a simple function
+         *
+         * @param job The function/lamda/... to schedule
+         * @param priority The priority the job will have (medium by default)
+         * @param threadId The thread you want this job to be executed on. If assigned
+         * then priotity is ignored.
+         * @param name Debug for the job
+         *
+         * Thread Safe
+         * */
+        static void Schedule(std::function<void()> job,
+                             JobPriority priority = JobPriority::Medium,
+                             ThreadAffinity threadId = InvalidThreadIndex,
+                             Tag tag = InvalidTag,
+                             const char* name = nullptr) {
+            s_Instance->ScheduleImpl(job, priority, threadId, tag, name);
+        }
+#endif // !TRACY_ENABLE
+
+#ifndef TRACY_ENABLE
+        /**
+         * Schedules the given job coroutine
+         *
+         * Important: Jobs scheduled with the same priority in a specify order are not
+         * necessarly going to mantain that order when executed. If
+         * order/synchronization is important then you can add coroutines as
+         * dependencies of a job by waiting on them with the co_await operator.
+         *
+         * @param job A reference to the job coroutine
+         * @param threadId The thread you want to job to run on. If set then priority
+         * is ignored (it doesn't matter by default)
+         * @param priority The priority of the given job (medium by default)
+         *
+         * Thread Safe
+         * */
+        template <typename T>
+        static void Schedule(JobCoroutine<T>& job,
+                             ThreadAffinity threadId = InvalidThreadIndex,
+                             JobPriority priority = JobPriority::Medium,
+                             Tag tag = InvalidTag) {
+            s_Instance->ScheduleImpl(job, threadId, priority, tag);
+        }
+#else
+        /**
+         * Schedules the given job coroutine
+         *
+         * Important: Jobs scheduled with the same priority in a specify order are not
+         * necessarly going to mantain that order when executed. If
+         * order/synchronization is important then you can add coroutines as
+         * dependencies of a job by waiting on them with the co_await operator.
+         *
+         * @param job A reference to the job coroutine
+         * @param threadId The thread you want to job to run on. If set then priority
+         * is ignored (it doesn't matter by default)
+         * @param priority The priority of the given job (medium by default)
+         * @param name Debug name for the job
+         *
+         * Thread Safe
+         * */
+        template <typename T>
+        static void Schedule(JobCoroutine<T>& job,
+                             ThreadAffinity threadId = InvalidThreadIndex,
+                             JobPriority priority = JobPriority::Medium,
+                             Tag tag = InvalidTag,
+                             const char* name = nullptr) {
+            s_Instance->ScheduleImpl(job, threadId, priority, tag, name);
+        }
+#endif // !TRACY_ENABLE
+
+        /**
+         * Schedules all the jobs assigned to the specified tag. The jobs are scheduled according to the parameters
+         * passed when scheduling them (thread affinity, priority, etc).
+         *
+         * @param tag The tag to schedule
+         *
+         * Thread safe
+         * */
+        static void ScheduleTag(Tag tag) {
+            s_Instance->ScheduleTagImpl(tag);
+        }
+
+        /**
+         * Assumes the calling thread has already been converted to a worker, if not
+         * it will panic. The caller thread will work until the the stop_source
+         * requests a stop. Stopping may take some time as it may happen that the
+         * thread is currently executing a big job when the condition was set to
+         * false.
+         *
+         * This method doesn't deregister the worker thread automatically, this means
+         * that you can call it as many times as you want but it also means that you
+         * will have to call DeregisterWorkerThread manually before shutting down the
+         * system.
+         *
+         * @param stopToken The stop_token the thread will check in order to stop
+         * excecution
+         *
+         * Thread Safe
+         * */
+        static void RunWorkerUntil(std::stop_token stopToken) {
+            s_Instance->RunWorkerUntilImpl(stopToken);
+        }
+
+        /**
+         * Assumes the calling thread has already been converted to a worker, if not
+         * it will panic. The caller thread will work for the given time. It's not
+         * guaranted to return exactly after the specified amount of time becase it
+         * may happen that the thread is currently executing a big job when the
+         * condition was set to false.
+         *
+         * This method doesn't deregister the worker thread automatically, this means
+         * that you can call it as many times as you want but it also means that you
+         * will have to call DeregisterWorkerThread manually before shutting down the
+         * system.
+         *
+         * @param time The amount of time the thread will work for, in milliseconds
+         *
+         * Thread Safe
+         * */
+        static void RunWorkerFor(std::chrono::milliseconds time) {
+            s_Instance->RunWorkerForImpl(time);
+        }
+
+        /**
+         * Retrieves how many worker thread are there.
+         *
+         * @returns The number of worker threads currently working.
+         *
+         * Thread Safe
+         * */
+        static ThreadAffinity GetNumThreads() {
+            return s_Instance->m_NumThreads.load(std::memory_order_acquire);
+        }
+
+        /**
+         * Simple method for retreaving the index/id of the calling thread. If the calling thread is not a worker then
+         * it's undifined behavior.
+         *
+         * @returns The thread index/id of the calling thread
+         * */
+        static ThreadAffinity GetThreadIndex() {
+            return m_Index;
+        }
+
+#ifdef CW_TESTING
+        const std::vector<std::thread>& GetThreadsDEBUG() const {
+            return m_Threads;
+        }
+        u64 GetLocalBufferNumDEBUG() const {
+            return m_LargestAvailableIndex.load(std::memory_order_acquire);
+        }
+
+#endif // CW_TESTING
+
+    private:
+        template <typename T>
+        friend struct FinalAwaiter;
+
+        template <typename T, typename... Us>
+        friend struct JobAwaiterMultiple;
+
+        template <typename T>
+        friend struct MoveToThreadAwaiter;
+
+        template <typename T>
+        friend struct MoveToTagAwaiter;
+
+        template <typename T>
+        friend struct WaitOnTagAwaiter;
+
+        // Static methods implementations
+
+#ifndef TRACY_ENABLE
+        ThreadAffinity ConvertToWorkerThreadImpl() {
             CW_ENSURE(m_Index == InvalidThreadIndex, "Trying to convert an already worker thread");
 
             ThreadAffinity newIndex;
@@ -918,21 +1135,7 @@ namespace cw {
             return newIndex;
         }
 #else
-        /**
-         * Converts the calling thread into a worker one. If the calling thread is
-         * already a worker panics.
-         *
-         * The converted thread will have to manually call the corresponding methods
-         * to work as because the system itslef doesn't own the thread it can't manage
-         * it.
-         *
-         * @param name Debug name of the thread
-         *
-         * @returns The thread ID of the newnly created worker
-         *
-         * Thread Safe
-         * */
-        ThreadAffinity ConvertToWorkerThread(const char* name) {
+        ThreadAffinity ConvertToWorkerThreadImpl(const char* name) {
             CW_ENSURE(m_Index == InvalidThreadIndex, "Trying to convert an already worker thread");
 
             ThreadAffinity newIndex;
@@ -971,15 +1174,7 @@ namespace cw {
         }
 #endif // !TARCY_ENABLE
 
-        /**
-         * Assumes the calling thread has already been converted to a worker, if not
-         * it will panic. Deregisters the calling worker thread from being a worker.
-         * This action is necessary to be performed by all external workers so the
-         * system can shutdown correctly.
-         *
-         * Thread Safe
-         * */
-        void DeregisterWorkerThread() {
+        void DeregisterWorkerThreadImpl() {
             CW_ENSURE(m_Index != InvalidThreadIndex, "The calling thread is not a worker");
 
             // Finish everything that remains
@@ -1003,66 +1198,30 @@ namespace cw {
         }
 
 #ifndef TRACY_ENABLE
-        /**
-         * Schedules a simple function
-         *
-         * @param job The function/lamda/... to schedule
-         * @param priority The priority the job will have (medium by default)
-         * @param threadId The thread you want this job to be executed on. If assigned
-         * then priotity is ignored.
-         *
-         * Thread Safe
-         * */
-        void Schedule(std::function<void()> job,
-                      JobPriority priority = JobPriority::Medium,
-                      ThreadAffinity threadId = InvalidThreadIndex,
-                      Tag tag = InvalidTag) {
+        void ScheduleImpl(std::function<void()> job,
+                          JobPriority priority = JobPriority::Medium,
+                          ThreadAffinity threadId = InvalidThreadIndex,
+                          Tag tag = InvalidTag) {
             // Functions shall never have a parent
             Schedule(new JobFunction(job, priority, threadId, tag), nullptr);
         }
 #else
-        /**
-         * Schedules a simple function
-         *
-         * @param job The function/lamda/... to schedule
-         * @param priority The priority the job will have (medium by default)
-         * @param threadId The thread you want this job to be executed on. If assigned
-         * then priotity is ignored.
-         * @param name Debug for the job
-         *
-         * Thread Safe
-         * */
-        void Schedule(std::function<void()> job,
-                      JobPriority priority = JobPriority::Medium,
-                      ThreadAffinity threadId = InvalidThreadIndex,
-                      Tag tag = InvalidTag,
-                      const char* name = nullptr) {
+        void ScheduleImpl(std::function<void()> job,
+                          JobPriority priority = JobPriority::Medium,
+                          ThreadAffinity threadId = InvalidThreadIndex,
+                          Tag tag = InvalidTag,
+                          const char* name = nullptr) {
             // Functions shall never have a parent
             Schedule(new JobFunction(job, priority, threadId, tag, name), nullptr);
         }
 #endif // !TRACY_ENABLE
 
 #ifndef TRACY_ENABLE
-        /**
-         * Schedules the given job coroutine
-         *
-         * Important: Jobs scheduled with the same priority in a specify order are not
-         * necessarly going to mantain that order when executed. If
-         * order/synchronization is important then you can add coroutines as
-         * dependencies of a job by waiting on them with the co_await operator.
-         *
-         * @param job A reference to the job coroutine
-         * @param threadId The thread you want to job to run on. If set then priority
-         * is ignored (it doesn't matter by default)
-         * @param priority The priority of the given job (medium by default)
-         *
-         * Thread Safe
-         * */
         template <typename T>
-        void Schedule(JobCoroutine<T>& job,
-                      ThreadAffinity threadId = InvalidThreadIndex,
-                      JobPriority priority = JobPriority::Medium,
-                      Tag tag = InvalidTag) {
+        void ScheduleImpl(JobCoroutine<T>& job,
+                          ThreadAffinity threadId = InvalidThreadIndex,
+                          JobPriority priority = JobPriority::Medium,
+                          Tag tag = InvalidTag) {
             // The underlying job promise
             JobPromise<T>* jobProm = &job.GetHandle().promise();
 
@@ -1081,28 +1240,12 @@ namespace cw {
             Schedule(jobProm, nullptr);
         }
 #else
-        /**
-         * Schedules the given job coroutine
-         *
-         * Important: Jobs scheduled with the same priority in a specify order are not
-         * necessarly going to mantain that order when executed. If
-         * order/synchronization is important then you can add coroutines as
-         * dependencies of a job by waiting on them with the co_await operator.
-         *
-         * @param job A reference to the job coroutine
-         * @param threadId The thread you want to job to run on. If set then priority
-         * is ignored (it doesn't matter by default)
-         * @param priority The priority of the given job (medium by default)
-         * @param name Debug name for the job
-         *
-         * Thread Safe
-         * */
         template <typename T>
-        void Schedule(JobCoroutine<T>& job,
-                      ThreadAffinity threadId = InvalidThreadIndex,
-                      JobPriority priority = JobPriority::Medium,
-                      Tag tag = InvalidTag,
-                      const char* name = nullptr) {
+        void ScheduleImpl(JobCoroutine<T>& job,
+                          ThreadAffinity threadId = InvalidThreadIndex,
+                          JobPriority priority = JobPriority::Medium,
+                          Tag tag = InvalidTag,
+                          const char* name = nullptr) {
             // The underlying job promise
             JobPromise<T>* jobProm = &job.GetHandle().promise();
 
@@ -1123,15 +1266,7 @@ namespace cw {
         }
 #endif // !TRACY_ENABLE
 
-        /**
-         * Schedules all the jobs assigned to the specified tag. The jobs are scheduled according to the parameters
-         * passed when scheduling them (thread affinity, priority, etc).
-         *
-         * @param tag The tag to schedule
-         *
-         * Thread safe
-         * */
-        void ScheduleTag(Tag tag) {
+        void ScheduleTagImpl(Tag tag) {
             if (tag == InvalidTag)
                 return;
 
@@ -1153,24 +1288,7 @@ namespace cw {
                 Schedule(job, job->m_Parent);
         }
 
-        /**
-         * Assumes the calling thread has already been converted to a worker, if not
-         * it will panic. The caller thread will work until the the stop_source
-         * requests a stop. Stopping may take some time as it may happen that the
-         * thread is currently executing a big job when the condition was set to
-         * false.
-         *
-         * This method doesn't deregister the worker thread automatically, this means
-         * that you can call it as many times as you want but it also means that you
-         * will have to call DeregisterWorkerThread manually before shutting down the
-         * system.
-         *
-         * @param stopToken The stop_token the thread will check in order to stop
-         * excecution
-         *
-         * Thread Safe
-         * */
-        void RunWorkerUntil(std::stop_token stopToken) {
+        void RunWorkerUntilImpl(std::stop_token stopToken) {
             CW_ENSURE(m_Index != InvalidThreadIndex, "The calling thread is not a worker");
 
             // We lock here because:
@@ -1214,23 +1332,7 @@ namespace cw {
             m_IdleThreads.fetch_and(~(1ULL << m_Index), std::memory_order_release);
         }
 
-        /**
-         * Assumes the calling thread has already been converted to a worker, if not
-         * it will panic. The caller thread will work for the given time. It's not
-         * guaranted to return exactly after the specified amount of time becase it
-         * may happen that the thread is currently executing a big job when the
-         * condition was set to false.
-         *
-         * This method doesn't deregister the worker thread automatically, this means
-         * that you can call it as many times as you want but it also means that you
-         * will have to call DeregisterWorkerThread manually before shutting down the
-         * system.
-         *
-         * @param time The amount of time the thread will work for, in milliseconds
-         *
-         * Thread Safe
-         * */
-        void RunWorkerFor(std::chrono::milliseconds time) {
+        void RunWorkerForImpl(std::chrono::milliseconds time) {
             CW_ENSURE(m_Index != InvalidThreadIndex, "The calling thread is not a worker");
 
             auto start = std::chrono::steady_clock::now();
@@ -1274,51 +1376,13 @@ namespace cw {
         }
 
         /**
-         * Retrieves how many worker thread are there.
-         *
-         * @returns The number of worker threads currently working.
+         * Simply gets the singleton instance. Call after initialization.
          *
          * Thread Safe
          * */
-        ThreadAffinity GetNumThreads() const {
-            return m_NumThreads.load(std::memory_order_acquire);
+        inline static JobSystem& GetInstance() noexcept {
+            return *s_Instance;
         }
-
-        /**
-         * Simple method for retreaving the index/id of the calling thread. If the calling thread is not a worker then
-         * it's undifined behavior.
-         *
-         * @returns The thread index/id of the calling thread
-         * */
-        ThreadAffinity GetThreadIndex() const {
-            return m_Index;
-        }
-
-#ifdef CW_TESTING
-        const std::vector<std::thread>& GetThreadsDEBUG() const {
-            return m_Threads;
-        }
-        u64 GetLocalBufferNumDEBUG() const {
-            return m_LargestAvailableIndex.load(std::memory_order_acquire);
-        }
-
-#endif // CW_TESTING
-
-    private:
-        template <typename T>
-        friend struct FinalAwaiter;
-
-        template <typename T, typename... Us>
-        friend struct JobAwaiterMultiple;
-
-        template <typename T>
-        friend struct MoveToThreadAwaiter;
-
-        template <typename T>
-        friend struct MoveToTagAwaiter;
-
-        template <typename T>
-        friend struct WaitOnTagAwaiter;
 
         /**
          * Returns how many jobs does the tag have. Assumes the tag is already created, if not it's undifined behavior.
@@ -1594,7 +1658,7 @@ namespace cw {
         }
 
         /// The JobSystem singleton
-        inline static std::unique_ptr<JobSystem> s_JobSystem = nullptr;
+        inline static std::unique_ptr<JobSystem> s_Instance = nullptr;
 
         /// Indicates if the system is currently running or not
         std::atomic_bool m_Running{false};

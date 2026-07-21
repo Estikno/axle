@@ -43,6 +43,6 @@
 #define AX_BIND_EVENT_FN(fn) \
     [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
 
-#define AX_SCHEDULE_TAG_AND_WAIT(tag)              \
-    cw::JobSystem::GetInstance().ScheduleTag(tag); \
+#define AX_SCHEDULE_TAG_AND_WAIT(tag) \
+    cw::JobSystem::ScheduleTag(tag);  \
     co_await cw::WaitOnTag(tag);

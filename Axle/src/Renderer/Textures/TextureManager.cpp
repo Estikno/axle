@@ -10,6 +10,9 @@
 #include <stb_image.h>
 #include "glm/gtc/type_ptr.hpp"
 
+#include <tracy/Tracy.hpp>
+#include <tracy/TracyOpenGL.hpp>
+
 namespace Axle {
     std::unique_ptr<TextureManager> TextureManager::s_Instance = nullptr;
 
@@ -25,6 +28,7 @@ namespace Axle {
     }
 
     u32 TextureManager::CreateTextureImpl(i32 width, i32 height, i32 mipmaps, TextureFormat internalFormat) {
+        ZoneScopedN("Create Texture Without source");
         u32 id;
 
         glCreateTextures(GL_TEXTURE_2D, 1, &id);
@@ -39,6 +43,8 @@ namespace Axle {
     }
 
     u32 TextureManager::CreateTextureImpl(const std::string& path, i32 mipmaps, bool flipVertically) {
+        ZoneScopedN("Create Texture with source");
+
         // Check if it has already been loaded
         auto find = m_PathsToIDs.find(path);
         if (find != m_PathsToIDs.end())
@@ -84,6 +90,8 @@ namespace Axle {
                                           i32 mipmaps,
                                           TextureFormat internalFormat,
                                           bool flipVertically) {
+        ZoneScopedN("Create Texture with source");
+
         // Check if it has already been loaded
         auto find = m_PathsToIDs.find(path);
         if (find != m_PathsToIDs.end())
@@ -129,6 +137,8 @@ namespace Axle {
                                           TextureFormat internalFormat,
                                           TextureFormat dataFormat,
                                           bool flipVertically) {
+        ZoneScopedN("Create Texture with source");
+
         // Check if it has already been loaded
         auto find = m_PathsToIDs.find(path);
         if (find != m_PathsToIDs.end())
@@ -161,28 +171,34 @@ namespace Axle {
     }
 
     void TextureManager::SetWrappingImpl(u32 ID, TextureWrapMode s, TextureWrapMode t) {
+        TracyGpuZone("Set Texture Wrapping");
         glTextureParameteri(ID, GL_TEXTURE_WRAP_S, TextureWrapModeToOpenGL(s));
         glTextureParameteri(ID, GL_TEXTURE_WRAP_T, TextureWrapModeToOpenGL(t));
     }
 
     void TextureManager::SetFilteringImpl(u32 ID, TextureFilteringMode min, TextureFilteringMode mag) {
+        TracyGpuZone("Set Texture Filtering");
         glTextureParameteri(ID, GL_TEXTURE_MIN_FILTER, TextureFilterToOpenGL(min));
         glTextureParameteri(ID, GL_TEXTURE_MAG_FILTER, TextureFilterToOpenGL(mag));
     }
 
     void TextureManager::GenerateMipmapsImpl(u32 ID) {
+        TracyGpuZone("Generate Mipmaps");
         glGenerateTextureMipmap(ID);
     }
 
     void TextureManager::SetBorderColorImpl(u32 ID, const glm::vec4& color) {
+        TracyGpuZone("Set Texture Border Color");
         glTextureParameterfv(ID, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(color));
     }
 
     void TextureManager::BindImpl(u32 ID, u32 textureUnit) {
+        TracyGpuZone("Bind Texture");
         glBindTextureUnit(textureUnit, ID);
     }
 
     void TextureManager::ClearImpl() {
+        TracyGpuZone("Clear Textures");
         for (auto it = m_NoFileTextures.begin(); it != m_NoFileTextures.end(); it++) {
             u32 id = *it;
             glDeleteTextures(1, &id);
@@ -203,6 +219,7 @@ namespace Axle {
                                                                                            i32& height,
                                                                                            i32& nrChannels,
                                                                                            bool flipVertically) {
+        ZoneScopedN("Load texture from file");
         // Load data
         Result<ResourceManager::ManagedFileHandle> exp = ResourceManager::Load(path);
 
