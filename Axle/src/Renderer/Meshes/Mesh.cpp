@@ -9,6 +9,9 @@
 #include "Renderer/Textures/Texture.hpp"
 #include "Renderer/Textures/TextureManager.hpp"
 
+#include <tracy/Tracy.hpp>
+#include <tracy/TracyOpenGL.hpp>
+
 namespace Axle {
     Mesh::Mesh(const std::vector<Vertex>& vertices,
                const std::vector<u32>& indices,
@@ -20,6 +23,8 @@ namespace Axle {
     }
 
     Mesh::~Mesh() {
+        TracyGpuZone("Delete mesh");
+
         if (m_VAO != 0)
             glDeleteVertexArrays(1, &m_VAO);
         if (m_EBO != 0)
@@ -64,6 +69,9 @@ namespace Axle {
     }
 
     void Mesh::SetupMesh() {
+        ZoneScopedN("SetupMesh");
+        TracyGpuZone("SetupMesh");
+
         // Create buffers
         glCreateVertexArrays(1, &m_VAO);
         glCreateBuffers(1, &m_VBO);
@@ -95,6 +103,9 @@ namespace Axle {
     static constexpr u8 TextureUnitOffset = 3;
 
     void Mesh::Draw(u32 program) {
+        ZoneScopedN("Draw mesh");
+        TracyGpuZone("Draw mesh");
+
         // These variables can't be larger than TextureUnitOffset
         u8 DiffuseTextureNr = 0;
         u8 SpecularTextureNr = 0;

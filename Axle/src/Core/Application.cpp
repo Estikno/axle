@@ -94,17 +94,6 @@ namespace Axle {
         cw::JobSystem::RunWorkerUntil(source.get_token());
         cw::JobSystem::DeregisterWorkerThread();
 
-        // We shut down the rendering related systems on the render thread here so everything gets deleted correctly
-        // (GLFW, OpenGL, ...)
-        cw::JobSystem::Schedule(
-            []() {
-                TextureManager::Shutdown();
-                ShaderManager::Shutdown();
-            },
-            cw::JobPriority::Medium,
-            RENDER_THREAD_ID,
-            cw::InvalidTag);
-
         cw::JobSystem::Shutdown();
     }
 
@@ -227,9 +216,6 @@ namespace Axle {
     }
 
     cw::JobCoroutine<void> Application::AppInternalManagement::RenderLoop(Application* app) {
-        // Sets up imporant stuff (already done in CreateMainWindow)
-        // m_Window = std::unique_ptr<Window>(Window::Create());
-
         for (Layer* layer : *(app->m_LayerStack)) {
             ZoneScopedN("Layer OnAttachRender");
             layer->OnAttachRender();
@@ -271,11 +257,16 @@ namespace Axle {
             layer->OnDettachRender();
         }
 
-        // We delete the main window and termninate GLFW
-        app->m_Window.reset();
 
         renderDone.store(true, std::memory_order_release);
         renderDone.notify_all();
+
+        // We shut down the rendering related systems on the render thread here so everything gets deleted correctly
+        // (GLFW, OpenGL, ...)
+        TextureManager::Shutdown();
+        ShaderManager::Shutdown();
+        // We delete the main window and termninate GLFW
+        app->m_Window.reset();
 
         co_return;
     }

@@ -198,7 +198,9 @@ namespace Axle {
     }
 
     void TextureManager::ClearImpl() {
-        TracyGpuZone("Clear Textures");
+        ZoneScopedN("Clear all textures");
+        TracyGpuZone("Clear all textures");
+
         for (auto it = m_NoFileTextures.begin(); it != m_NoFileTextures.end(); it++) {
             u32 id = *it;
             glDeleteTextures(1, &id);

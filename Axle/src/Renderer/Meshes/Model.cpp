@@ -14,6 +14,8 @@
 #include "assimp/postprocess.h"
 #include "assimp/types.h"
 
+#include <tracy/Tracy.hpp>
+
 namespace Axle {
     struct Model::InternalMethods {
         static void ProcessNode(aiNode* node, const aiScene* scene, Model* model);
@@ -23,6 +25,8 @@ namespace Axle {
     };
 
     Model::Model(const std::string& path) {
+        ZoneScopedN("Create model");
+
         Assimp::Importer import;
         const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
 
@@ -45,12 +49,16 @@ namespace Axle {
     }
 
     void Model::Draw(u32 program) {
+        ZoneScopedN("Draw model");
+
         for (u32 i = 0; i < m_Meshes.size(); ++i) {
             m_Meshes[i].Draw(program);
         }
     }
 
     void Model::InternalMethods::ProcessNode(aiNode* node, const aiScene* scene, Model* model) {
+        ZoneScopedN("Process model node");
+
         // Process node's meshes
         for (u32 i = 0; i < node->mNumMeshes; ++i) {
             aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
@@ -64,6 +72,8 @@ namespace Axle {
     }
 
     Mesh Model::InternalMethods::ProcessMesh(aiMesh* mesh, const aiScene* scene, Model* model) {
+        ZoneScopedN("Process mesh model");
+
         std::vector<Vertex> vertices;
         std::vector<u32> indices;
         std::vector<std::pair<u32, TextureType>> textures;
@@ -110,6 +120,8 @@ namespace Axle {
                                                  aiTextureType aiType,
                                                  TextureType type,
                                                  const std::string& directory) {
+        ZoneScopedN("Load material textures");
+
         std::vector<std::pair<u32, TextureType>> textures;
 
         for (u32 i = 0; i < mat->GetTextureCount(aiType); ++i) {

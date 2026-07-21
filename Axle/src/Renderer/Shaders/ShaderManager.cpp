@@ -12,6 +12,9 @@
 #include <ShaderSource_generated.h>
 #include <flatbuffers/flatbuffers.h>
 
+#include <tracy/Tracy.hpp>
+#include <tracy/TracyOpenGL.hpp>
+
 namespace Axle {
     std::unique_ptr<ShaderManager> ShaderManager::s_Instance = nullptr;
 
@@ -26,6 +29,8 @@ namespace Axle {
     }
 
     u32 ShaderManager::CreateShaderImpl(const std::string& filename, ShaderType type) {
+        ZoneScopedN("Create shader from file");
+
         // Check if the shader has already been created
         auto find = m_ShaderToID.find(Shader{.type = type, .path = filename});
         if (find != m_ShaderToID.end())
@@ -47,6 +52,8 @@ namespace Axle {
         //           "The provided file {0} is not compatible with shaders",
         //           filename);
         // TODO: Put an ugly default shader if it couldn't load the file
+
+        TracyGpuZone("Create shader from file");
 
         Shader shader = {.type = type, .path = filename};
         u32 id;
@@ -114,6 +121,9 @@ namespace Axle {
     }
 
     u32 ShaderManager::CreateShaderProgramImpl(u32 shader1, u32 shader2) {
+        ZoneScopedN("Create shader program");
+        TracyGpuZone("Cretae shader program");
+
         u32 id = glCreateProgram();
 
         // Link shaders
@@ -128,6 +138,9 @@ namespace Axle {
         return id;
     }
     u32 ShaderManager::CreateShaderProgramImpl(u32 shader1, u32 shader2, u32 shader3) {
+        ZoneScopedN("Create shader program");
+        TracyGpuZone("Cretae shader program");
+
         u32 id = glCreateProgram();
 
         // Link shaders
@@ -143,6 +156,9 @@ namespace Axle {
         return id;
     }
     u32 ShaderManager::CreateShaderProgramImpl(u32 shader1, u32 shader2, u32 shader3, u32 shader4) {
+        ZoneScopedN("Create shader program");
+        TracyGpuZone("Cretae shader program");
+
         u32 id = glCreateProgram();
 
         // Link shaders
@@ -160,22 +176,30 @@ namespace Axle {
     }
 
     void ShaderManager::UseProgramImpl(u32 id) {
+        TracyGpuZone("Use program");
         glUseProgram(id);
     }
     void ShaderManager::SetBoolImpl(u32 id, const std::string& name, bool value) {
+        TracyGpuZone("Set bool uniform program");
         glUniform1i(glGetUniformLocation(id, name.c_str()), static_cast<i32>(value));
     }
     void ShaderManager::SetIntImpl(u32 id, const std::string& name, i32 value) {
+        TracyGpuZone("Set int uniform program");
         glUniform1i(glGetUniformLocation(id, name.c_str()), value);
     }
     void ShaderManager::SetFloatImpl(u32 id, const std::string& name, f32 value) {
+        TracyGpuZone("Set float uniform program");
         glUniform1f(glGetUniformLocation(id, name.c_str()), value);
     }
     void ShaderManager::SetMat4Impl(u32 id, const std::string& name, const glm::mat4& value) {
+        TracyGpuZone("Set mat4 uniform program");
         glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
     }
 
     void ShaderManager::ClearImpl() {
+        ZoneScopedN("Clear all shaders and programs");
+        TracyGpuZone("Clear all shaders and programs");
+
         for (auto it = m_IDToShader.begin(); it != m_IDToShader.end(); it++) {
             glDeleteShader(it->first);
         }
@@ -191,6 +215,8 @@ namespace Axle {
     }
 
     void ShaderManager::CheckShaderProgramLinkingErrors(u32 id) {
+        TracyGpuZone("Check program linking errors");
+
         i32 success;
         char infoLog[1024];
 
