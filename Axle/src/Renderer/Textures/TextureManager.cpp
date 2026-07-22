@@ -191,20 +191,18 @@ namespace Axle {
             ResourceManager::ReadGuard readGuard = ResourceManager::DataConst(handle).Unwrap();
 
             // Inerpret loaded data
-            stbi_set_flip_vertically_on_load(flipVertically);
             data = stbi_load_from_memory(reinterpret_cast<const u8*>(readGuard.Data()),
                                          static_cast<i32>(readGuard.Size()),
                                          &width,
                                          &height,
                                          &nrChannels,
                                          0);
-            stbi_set_flip_vertically_on_load(false);
 
             AX_ENSURE(data != nullptr, LogChannel::Renderer, "Error interpreting image of file: {0}", path);
             // TODO: Default to an ugly texture if it couldn't load it
         } else {
             std::pair<u8*, ResourceManager::ManagedFileHandle> pair =
-                LoadTextureFromFile(path, width, height, nrChannels, flipVertically);
+                LoadTextureFromFile(path, width, height, nrChannels, false);
 
             handle = std::move(pair.second);
             data = pair.first;

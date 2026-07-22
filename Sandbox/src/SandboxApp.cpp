@@ -44,7 +44,7 @@ public:
         InputManager::SetCursorMode(CursorMode::CursorDisabled);
 
         // Skybox
-        skybox = Skybox("assets/tests/skybox.png", "Sandbox/src/Shaders/skybox.bin");
+        skybox = Skybox("assets/tests/skybox1.png", "Sandbox/src/Shaders/skybox.bin");
     }
 
     void OnDettachRender() override {
