@@ -10,6 +10,7 @@
 #include "Renderer/Camera/Camera.hpp"
 #include "Renderer/Meshes/Model.hpp"
 #include "Renderer/Shaders/ShaderManager.hpp"
+#include "Renderer/Skybox/Skybox.hpp"
 
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
@@ -41,10 +42,14 @@ public:
         model = Model("assets/tests/backpack/backpack.obj");
 
         InputManager::SetCursorMode(CursorMode::CursorDisabled);
+
+        // Skybox
+        skybox = Skybox("assets/tests/skybox.png", "Sandbox/src/Shaders/skybox.bin");
     }
 
     void OnDettachRender() override {
         model = Model();
+        skybox = Skybox();
     }
 
     void OnRender(f64 deltaTime) override {
@@ -65,6 +70,10 @@ public:
             glm::scale(modelMatrix, glm::vec3(1.0f, 1.0f, 1.0f)); // it's a bit too big for our scene, so scale it down
         ShaderManager::SetMat4(program, "model", modelMatrix);
         model.Draw(program);
+
+        // Draw Skybox
+        skybox.SetViewProjectionMatrix(projection * glm::mat4(glm::mat3(view)));
+        skybox.Draw();
     }
 
     bool OnFrameBufferResize(FrameBufferResizeEvent& event) {
@@ -81,6 +90,7 @@ public:
 private:
     u32 program;
     Model model;
+    Skybox skybox;
 
     f32 width = 1280.0f, height = 720.0f;
 };

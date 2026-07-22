@@ -62,9 +62,9 @@ namespace Axle {
         TracyGpuZone("SetupMesh");
 
         // Create buffers
-        glCreateVertexArrays(1, &m_VAO);
-        glCreateBuffers(1, &m_VBO);
-        glCreateBuffers(1, &m_EBO);
+        AX_GL_CALL(glCreateVertexArrays(1, &m_VAO));
+        AX_GL_CALL(glCreateBuffers(1, &m_VBO));
+        AX_GL_CALL(glCreateBuffers(1, &m_EBO));
 
         // Store data
         AX_GL_CALL(glNamedBufferData(m_VBO, sizeof(Vertex) * m_Vertices.size(), m_Vertices.data(), GL_STATIC_DRAW));
