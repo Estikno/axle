@@ -7,6 +7,7 @@
 #include "Core/Logger/Log.hpp"
 #include "Core/Resource/ResourceManager.hpp"
 #include "Renderer/Shaders/Shader.hpp"
+#include "Renderer/GLDebug.hpp"
 
 #include "glm/gtc/type_ptr.hpp"
 #include <ShaderSource_generated.h>
@@ -96,18 +97,18 @@ namespace Axle {
         // Compile the shader
         const GLchar* dataCon = reinterpret_cast<const GLchar*>(data);
         GLint sizeCon = static_cast<GLint>(size);
-        glShaderSource(id, 1, &dataCon, &sizeCon);
-        glCompileShader(id);
+        AX_GL_CALL(glShaderSource(id, 1, &dataCon, &sizeCon));
+        AX_GL_CALL(glCompileShader(id));
 
         // Check compilation errors
         i32 success;
         char infoLog[1024];
-        glGetShaderiv(id, GL_COMPILE_STATUS, &success);
+        AX_GL_CALL(glGetShaderiv(id, GL_COMPILE_STATUS, &success));
 
         if (success) {
             AX_CORE_TRACE(LogChannel::Renderer, "Shader {0} compiled successfully", id);
         } else {
-            glGetShaderInfoLog(id, sizeof(infoLog), nullptr, infoLog);
+            AX_GL_CALL(glGetShaderInfoLog(id, sizeof(infoLog), nullptr, infoLog));
             AX_PANIC(
                 LogChannel::Renderer, "Error compiling shader {0}, from file: {1}. Log: {2}", id, filename, infoLog);
         }
@@ -127,9 +128,9 @@ namespace Axle {
         u32 id = glCreateProgram();
 
         // Link shaders
-        glAttachShader(id, shader1);
-        glAttachShader(id, shader2);
-        glLinkProgram(id);
+        AX_GL_CALL(glAttachShader(id, shader1));
+        AX_GL_CALL(glAttachShader(id, shader2));
+        AX_GL_CALL(glLinkProgram(id));
 
         CheckShaderProgramLinkingErrors(id);
 
@@ -144,10 +145,10 @@ namespace Axle {
         u32 id = glCreateProgram();
 
         // Link shaders
-        glAttachShader(id, shader1);
-        glAttachShader(id, shader2);
-        glAttachShader(id, shader3);
-        glLinkProgram(id);
+        AX_GL_CALL(glAttachShader(id, shader1));
+        AX_GL_CALL(glAttachShader(id, shader2));
+        AX_GL_CALL(glAttachShader(id, shader3));
+        AX_GL_CALL(glLinkProgram(id));
 
         CheckShaderProgramLinkingErrors(id);
 
@@ -162,11 +163,11 @@ namespace Axle {
         u32 id = glCreateProgram();
 
         // Link shaders
-        glAttachShader(id, shader1);
-        glAttachShader(id, shader2);
-        glAttachShader(id, shader3);
-        glAttachShader(id, shader4);
-        glLinkProgram(id);
+        AX_GL_CALL(glAttachShader(id, shader1));
+        AX_GL_CALL(glAttachShader(id, shader2));
+        AX_GL_CALL(glAttachShader(id, shader3));
+        AX_GL_CALL(glAttachShader(id, shader4));
+        AX_GL_CALL(glLinkProgram(id));
 
         CheckShaderProgramLinkingErrors(id);
 
@@ -177,23 +178,23 @@ namespace Axle {
 
     void ShaderManager::UseProgramImpl(u32 id) {
         TracyGpuZone("Use program");
-        glUseProgram(id);
+        AX_GL_CALL(glUseProgram(id));
     }
     void ShaderManager::SetBoolImpl(u32 id, const std::string& name, bool value) {
         TracyGpuZone("Set bool uniform program");
-        glUniform1i(glGetUniformLocation(id, name.c_str()), static_cast<i32>(value));
+        AX_GL_CALL(glUniform1i(glGetUniformLocation(id, name.c_str()), static_cast<i32>(value)));
     }
     void ShaderManager::SetIntImpl(u32 id, const std::string& name, i32 value) {
         TracyGpuZone("Set int uniform program");
-        glUniform1i(glGetUniformLocation(id, name.c_str()), value);
+        AX_GL_CALL(glUniform1i(glGetUniformLocation(id, name.c_str()), value));
     }
     void ShaderManager::SetFloatImpl(u32 id, const std::string& name, f32 value) {
         TracyGpuZone("Set float uniform program");
-        glUniform1f(glGetUniformLocation(id, name.c_str()), value);
+        AX_GL_CALL(glUniform1f(glGetUniformLocation(id, name.c_str()), value));
     }
     void ShaderManager::SetMat4Impl(u32 id, const std::string& name, const glm::mat4& value) {
         TracyGpuZone("Set mat4 uniform program");
-        glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
+        AX_GL_CALL(glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, glm::value_ptr(value)));
     }
 
     void ShaderManager::ClearImpl() {
@@ -201,11 +202,11 @@ namespace Axle {
         TracyGpuZone("Clear all shaders and programs");
 
         for (auto it = m_IDToShader.begin(); it != m_IDToShader.end(); it++) {
-            glDeleteShader(it->first);
+            AX_GL_CALL(glDeleteShader(it->first));
         }
 
         for (auto it = m_ProgramsIDs.begin(); it != m_ProgramsIDs.end(); it++) {
-            glDeleteProgram(*it);
+            AX_GL_CALL(glDeleteProgram(*it));
         }
 
         m_IDToShader.clear();
@@ -220,12 +221,12 @@ namespace Axle {
         i32 success;
         char infoLog[1024];
 
-        glGetProgramiv(id, GL_LINK_STATUS, &success);
+        AX_GL_CALL(glGetProgramiv(id, GL_LINK_STATUS, &success));
 
         if (success) {
             AX_CORE_TRACE(LogChannel::Renderer, "Successfully linked shader program: {0}", id);
         } else {
-            glGetProgramInfoLog(id, sizeof(infoLog), nullptr, infoLog);
+            AX_GL_CALL(glGetProgramInfoLog(id, sizeof(infoLog), nullptr, infoLog));
             AX_PANIC(LogChannel::Renderer, "Error linking program {0}. Log: {1}", id, infoLog);
         }
     }

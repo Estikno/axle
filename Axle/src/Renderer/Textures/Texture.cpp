@@ -1,6 +1,7 @@
 #include "axpch.hpp"
 
 #include <glad/gl.h>
+#include <cstring>
 
 #include "Texture.hpp"
 
@@ -65,6 +66,25 @@ namespace Axle {
                 return GL_DEPTH24_STENCIL8;
             case TextureFormat::Depth32F:
                 return GL_DEPTH_COMPONENT32F;
+        }
+    }
+
+    void ExtractFaceFromHorizontalCross(const u8* data,
+                                        i32 width,
+                                        i32 nrChannels,
+                                        i32 col,
+                                        i32 row,
+                                        i32 faceWidth,
+                                        u8* dst) {
+        /*
+              .  [+Y] .   .
+            [-X] [+Z] [+X] [-Z]
+              .  [-Y] .   .
+        */
+        for (u32 y = 0; y < faceWidth; ++y) {
+            const u8* srcRow = data + ((row * faceWidth + y) * width + col * faceWidth) * nrChannels;
+            u8* dstRow = dst + y * faceWidth * nrChannels;
+            std::memcpy(dstRow, srcRow, faceWidth * nrChannels);
         }
     }
 } // namespace Axle

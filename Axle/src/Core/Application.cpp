@@ -15,6 +15,7 @@
 #include "Renderer/Textures/TextureManager.hpp"
 #include "Renderer/Shaders/ShaderManager.hpp"
 #include "Renderer/Camera/Camera.hpp"
+#include "Renderer/GLDebug.hpp"
 
 #include "ImGui/ImGuiLayer.hpp"
 
@@ -80,19 +81,15 @@ namespace Axle {
     void Application::Run() {
         m_Running.store(true, std::memory_order_release);
 
-#ifdef TRACY_ENABLE
-        mainId = cw::JobSystem::ConvertToWorkerThread("Main/Update");
-#else
-        mainId = cw::JobSystem::GetInstance().ConvertToWorkerThread();
-#endif // TRACY_ENABLE
+        mainId = CW_CONVERT_TO_WORKER("Main/Update");
 
         // Schedule the main loop to the main thread's id
         cw::JobCoroutine<void> updateCor = AppInternalManagement::UpdateLoop(this);
-        cw::JobSystem::Schedule(updateCor, mainId, cw::JobPriority::Medium, cw::InvalidTag, "Main/Update Loop");
+        CW_SCHEDULE(updateCor, cw::JobPriority::Medium, mainId, cw::InvalidTag, "Main/Update loop");
 
         // The main thread will now be a worker
         cw::JobSystem::RunWorkerUntil(source.get_token());
-        cw::JobSystem::DeregisterWorkerThread();
+        CW_DEREGISTER_WORKER;
 
         cw::JobSystem::Shutdown();
     }
@@ -109,7 +106,7 @@ namespace Axle {
 
         // Schedule the render loop
         cw::JobCoroutine<void> renderCor = AppInternalManagement::RenderLoop(app);
-        cw::JobSystem::Schedule(renderCor, RENDER_THREAD_ID, cw::JobPriority::Medium, cw::InvalidTag, "Render Loop");
+        CW_SCHEDULE(renderCor, cw::JobPriority::Medium, RENDER_THREAD_ID, cw::InvalidTag, "Render Loop");
 
         // Main loop logic
         // ---------------
@@ -236,8 +233,8 @@ namespace Axle {
                 TracyGpuZone("Frame");
 
                 // Temporary background color
-                glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                AX_GL_CALL(glClearColor(0.2f, 0.3f, 0.3f, 1.0f));
+                AX_GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
                 for (Layer* layer : *(app->m_LayerStack)) {
                     ZoneScopedN("Layer OnRender");

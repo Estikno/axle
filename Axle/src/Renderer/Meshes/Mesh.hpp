@@ -31,6 +31,7 @@ namespace Axle {
 
     private:
         void SetupMesh();
+        void Clear();
 
         u32 m_VAO = 0, m_VBO = 0, m_EBO = 0;
 

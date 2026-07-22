@@ -97,6 +97,10 @@ namespace Axle {
             return s_Instance->CreateTextureImpl(path, mipmaps, internalFormat, dataFormat, flipVertically);
         }
 
+        inline static u32 CreateCubeMap(const std::string& path, bool flipVertically = true) {
+            return s_Instance->CreateCubeMapImpl(path, flipVertically);
+        }
+
         /**
          * Sets the wrapping mode for the s and t coordinate
          *
@@ -165,6 +169,7 @@ namespace Axle {
                               TextureFormat internalFormat,
                               TextureFormat dataFormat,
                               bool flipVertically);
+        u32 CreateCubeMapImpl(const std::string& path, bool flipVertically);
         void SetWrappingImpl(u32 ID, TextureWrapMode s, TextureWrapMode t);
         void SetFilteringImpl(u32 ID, TextureFilteringMode min, TextureFilteringMode mag);
         void GenerateMipmapsImpl(u32 ID);
