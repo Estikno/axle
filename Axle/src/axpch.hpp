@@ -28,6 +28,7 @@
 #include <tuple>
 #include <bit>
 #include <concepts>
+#include <initializer_list>
 
 // Error handling
 #include <stdexcept>

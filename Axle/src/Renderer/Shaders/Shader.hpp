@@ -3,11 +3,14 @@
 #include "axpch.hpp"
 
 #include "Core/Core.hpp"
+#include "Core/Error/Panic.hpp"
+#include "Core/Logger/Log.hpp"
 #include "Core/Resource/ResourceManager.hpp"
 #include "Core/Types.hpp"
 
 namespace Axle {
     enum class ShaderType : u8 { Unknown = 0, Vertex, TessControl, TessEval, Geometry, Fragment, MaxShaderTypes };
+    enum class ShaderDataType : u8 { None = 0, Float, Vec2, Vec3, Vec4, Mat3, Mat4, Int, Int2, Int3, Int4, Bool };
 
     struct Shader {
         ShaderType type;
@@ -17,6 +20,9 @@ namespace Axle {
             return type == other.type && path == other.path;
         }
     };
+
+    u32 ShaderDataTypeSize(ShaderDataType type);
+    u32 ShaderDataTypeToOpenGLBaseType(ShaderDataType type);
 
 } // namespace Axle
 
