@@ -25,7 +25,8 @@ namespace Axle {
     }
 
     VertexBuffer::VertexBuffer(VertexBuffer&& other) noexcept
-        : m_ID(other.m_ID) {
+        : m_ID(other.m_ID),
+          m_Layout(other.m_Layout) {
         other.m_ID = 0;
     }
 
@@ -34,6 +35,8 @@ namespace Axle {
             Reset();
 
             m_ID = other.m_ID;
+            m_Layout = other.m_Layout;
+
             other.m_ID = 0;
         }
         return *this;
