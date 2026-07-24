@@ -4,6 +4,7 @@
 
 #include "Core/Types.hpp"
 #include "Renderer/Shaders/Shader.hpp"
+#include "Other/CustomTypes/Ref.hpp"
 
 namespace Axle {
     struct BufferElement {
@@ -99,11 +100,11 @@ namespace Axle {
     /**
      * RAII wrapper of an OpenGL vertex buffer
      * */
-    class VertexBuffer {
+    class VertexBuffer : public RefCounted {
     public:
         VertexBuffer() = default;
         VertexBuffer(u32 size, f32* vertices);
-        ~VertexBuffer();
+        ~VertexBuffer() override;
 
         VertexBuffer(VertexBuffer&& other) noexcept;
         VertexBuffer& operator=(VertexBuffer&& other) noexcept;
@@ -123,6 +124,8 @@ namespace Axle {
         }
 
     private:
+        void Reset();
+
         u32 m_ID = 0;
         BufferLayout m_Layout;
     };
@@ -130,11 +133,11 @@ namespace Axle {
     /**
      * RAII wrapper of an OpenGL index/element buffer
      * */
-    class IndexBuffer {
+    class IndexBuffer : public RefCounted {
     public:
         IndexBuffer() = default;
         IndexBuffer(u32 count, u32* indices);
-        ~IndexBuffer();
+        ~IndexBuffer() override;
 
         IndexBuffer(IndexBuffer&& other) noexcept;
         IndexBuffer& operator=(IndexBuffer&& other) noexcept;
@@ -151,6 +154,8 @@ namespace Axle {
         }
 
     private:
+        void Reset();
+
         u32 m_ID = 0;
         u32 m_Count = 0;
     };

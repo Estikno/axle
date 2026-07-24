@@ -4,6 +4,9 @@
 
 #include "Core/Types.hpp"
 #include "Buffer.hpp"
+#include "Renderer/GLDebug.hpp"
+
+#include <tracy/TracyOpenGL.hpp>
 
 namespace Axle {
     // -----------------------------------------------------
@@ -11,12 +14,14 @@ namespace Axle {
     // -----------------------------------------------------
 
     VertexBuffer::VertexBuffer(u32 size, f32* vertices) {
-        glCreateBuffers(1, &m_ID);
-        glNamedBufferData(m_ID, size, vertices, GL_STATIC_DRAW);
+        TracyGpuZone("Create VertexBuffer");
+
+        AX_GL_CALL(glCreateBuffers(1, &m_ID));
+        AX_GL_CALL(glNamedBufferData(m_ID, size, vertices, GL_STATIC_DRAW));
     }
 
     VertexBuffer::~VertexBuffer() {
-        glDeleteBuffers(1, &m_ID);
+        Reset();
     }
 
     VertexBuffer::VertexBuffer(VertexBuffer&& other) noexcept
@@ -26,12 +31,18 @@ namespace Axle {
 
     VertexBuffer& VertexBuffer::operator=(VertexBuffer&& other) noexcept {
         if (this != &other) {
-            glDeleteBuffers(1, &m_ID);
+            Reset();
 
             m_ID = other.m_ID;
             other.m_ID = 0;
         }
         return *this;
+    }
+
+    void VertexBuffer::Reset() {
+        if (m_ID != 0) {
+            AX_GL_CALL(glDeleteBuffers(1, &m_ID));
+        }
     }
 
     // -----------------------------------------------------
@@ -40,12 +51,14 @@ namespace Axle {
 
     IndexBuffer::IndexBuffer(u32 count, u32* indices)
         : m_Count(count) {
-        glCreateBuffers(1, &m_ID);
-        glNamedBufferData(m_ID, sizeof(u32) * count, indices, GL_STATIC_DRAW);
+        TracyGpuZone("Create IndexBuffer");
+
+        AX_GL_CALL(glCreateBuffers(1, &m_ID));
+        AX_GL_CALL(glNamedBufferData(m_ID, sizeof(u32) * count, indices, GL_STATIC_DRAW));
     }
 
     IndexBuffer::~IndexBuffer() {
-        glDeleteBuffers(1, &m_ID);
+        Reset();
     }
 
     IndexBuffer::IndexBuffer(IndexBuffer&& other) noexcept
@@ -57,7 +70,7 @@ namespace Axle {
 
     IndexBuffer& IndexBuffer::operator=(IndexBuffer&& other) noexcept {
         if (this != &other) {
-            glDeleteBuffers(1, &m_ID);
+            Reset();
 
             m_ID = other.m_ID;
             m_Count = other.m_Count;
@@ -66,5 +79,11 @@ namespace Axle {
             other.m_Count = 0;
         }
         return *this;
+    }
+
+    void IndexBuffer::Reset() {
+        if (m_ID != 0) {
+            AX_GL_CALL(glDeleteBuffers(1, &m_ID));
+        }
     }
 } // namespace Axle

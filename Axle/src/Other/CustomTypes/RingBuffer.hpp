@@ -2,8 +2,9 @@
 
 #include "axpch.hpp"
 
+#include "Core/Error/Error.hpp"
 #include "Core/Types.hpp"
-#include "Other/CustomTypes/Expected.hpp"
+#include "Core/Error/Result.hpp"
 
 namespace Axle {
     /**
@@ -48,7 +49,7 @@ namespace Axle {
          * @returns An Expected value, it's valid if there was an element to pop and the value is that poped element,
          * otherwise it's invalid.
          * */
-        Expected<T> Pop();
+        Result<T> Pop();
 
         bool Empty() const {
             return m_Head.load(std::memory_order_acquire) == m_Tail.load(std::memory_order_acquire);
@@ -119,13 +120,13 @@ namespace Axle {
     }
 
     template <typename T, std::size_t N>
-    Expected<T> RingBuffer<T, N>::Pop() {
+    Result<T> RingBuffer<T, N>::Pop() {
         const u32 tail = m_Tail.load(std::memory_order_relaxed);
 
         if (tail == m_HeadCached) [[unlikely]] {
             m_HeadCached = m_Head.load(std::memory_order_acquire);
             if (tail == m_HeadCached)
-                return Expected<T>::FromException("The RingBuffer is empty");
+                return Result<T>::Err(Error(ErrorCode::OutOfRange, "The buffer is empty"));
         }
 
         T value = std::move(m_Buffer[tail]);
