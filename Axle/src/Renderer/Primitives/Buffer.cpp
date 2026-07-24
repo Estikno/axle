@@ -52,7 +52,7 @@ namespace Axle {
     // Index Buffer
     // -----------------------------------------------------
 
-    IndexBuffer::IndexBuffer(u32 count, u32* indices)
+    ElementBuffer::ElementBuffer(u32 count, u32* indices)
         : m_Count(count) {
         TracyGpuZone("Create IndexBuffer");
 
@@ -60,18 +60,18 @@ namespace Axle {
         AX_GL_CALL(glNamedBufferData(m_ID, sizeof(u32) * count, indices, GL_STATIC_DRAW));
     }
 
-    IndexBuffer::~IndexBuffer() {
+    ElementBuffer::~ElementBuffer() {
         Reset();
     }
 
-    IndexBuffer::IndexBuffer(IndexBuffer&& other) noexcept
+    ElementBuffer::ElementBuffer(ElementBuffer&& other) noexcept
         : m_ID(other.m_ID),
           m_Count(other.m_Count) {
         other.m_ID = 0;
         other.m_Count = 0;
     }
 
-    IndexBuffer& IndexBuffer::operator=(IndexBuffer&& other) noexcept {
+    ElementBuffer& ElementBuffer::operator=(ElementBuffer&& other) noexcept {
         if (this != &other) {
             Reset();
 
@@ -84,7 +84,7 @@ namespace Axle {
         return *this;
     }
 
-    void IndexBuffer::Reset() {
+    void ElementBuffer::Reset() {
         if (m_ID != 0) {
             AX_GL_CALL(glDeleteBuffers(1, &m_ID));
         }

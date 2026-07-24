@@ -133,17 +133,17 @@ namespace Axle {
     /**
      * RAII wrapper of an OpenGL index/element buffer
      * */
-    class IndexBuffer : public RefCounted {
+    class ElementBuffer : public RefCounted {
     public:
-        IndexBuffer() = default;
-        IndexBuffer(u32 count, u32* indices);
-        ~IndexBuffer() override;
+        ElementBuffer() = default;
+        ElementBuffer(u32 count, u32* indices);
+        ~ElementBuffer() override;
 
-        IndexBuffer(IndexBuffer&& other) noexcept;
-        IndexBuffer& operator=(IndexBuffer&& other) noexcept;
+        ElementBuffer(ElementBuffer&& other) noexcept;
+        ElementBuffer& operator=(ElementBuffer&& other) noexcept;
 
-        IndexBuffer(const IndexBuffer&) = delete;
-        IndexBuffer& operator=(const IndexBuffer&) = delete;
+        ElementBuffer(const ElementBuffer&) = delete;
+        ElementBuffer& operator=(const ElementBuffer&) = delete;
 
         inline u32 GetID() const {
             return m_ID;

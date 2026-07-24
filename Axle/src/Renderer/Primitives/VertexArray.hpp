@@ -22,7 +22,7 @@ namespace Axle {
         VertexArray& operator=(const VertexArray&) = delete;
 
         void AddVertexBuffer(const Ref<VertexBuffer>& vertexBuffer);
-        void SetIndexBuffer(const Ref<IndexBuffer>& indexBuffer);
+        void SetIndexBuffer(const Ref<ElementBuffer>& indexBuffer);
 
         void Bind() const;
         void Unbind() const;
@@ -31,8 +31,8 @@ namespace Axle {
             return m_VertexBuffers;
         }
 
-        inline const Ref<IndexBuffer>& GetIndexBuffer() const {
-            return m_IndexBuffer;
+        inline const Ref<ElementBuffer>& GetElementBuffer() const {
+            return m_ElementBuffer;
         }
 
         inline u32 GetID() const {
@@ -46,6 +46,6 @@ namespace Axle {
         u32 m_AttribIndex = 0;
 
         std::vector<Ref<VertexBuffer>> m_VertexBuffers;
-        Ref<IndexBuffer> m_IndexBuffer;
+        Ref<ElementBuffer> m_ElementBuffer;
     };
 } // namespace Axle

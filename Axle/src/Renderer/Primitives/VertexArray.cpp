@@ -24,7 +24,7 @@ namespace Axle {
         : m_ID(other.m_ID),
           m_AttribIndex(other.m_AttribIndex),
           m_VertexBuffers(std::move(other.m_VertexBuffers)),
-          m_IndexBuffer(std::move(other.m_IndexBuffer)) {
+          m_ElementBuffer(std::move(other.m_ElementBuffer)) {
         other.m_ID = 0;
     }
 
@@ -35,7 +35,7 @@ namespace Axle {
             m_ID = other.m_ID;
             m_AttribIndex = other.m_AttribIndex;
             m_VertexBuffers = std::move(other.m_VertexBuffers);
-            m_IndexBuffer = std::move(other.m_IndexBuffer);
+            m_ElementBuffer = std::move(other.m_ElementBuffer);
 
             other.m_ID = 0;
         }
@@ -69,12 +69,12 @@ namespace Axle {
         m_VertexBuffers.push_back(vertexBuffer);
     }
 
-    void VertexArray::SetIndexBuffer(const Ref<IndexBuffer>& indexBuffer) {
+    void VertexArray::SetIndexBuffer(const Ref<ElementBuffer>& indexBuffer) {
         TracyGpuZone("Add IndexBuffer to VertexArray");
 
         AX_GL_CALL(glVertexArrayElementBuffer(m_ID, indexBuffer->GetID()));
 
-        m_IndexBuffer = indexBuffer;
+        m_ElementBuffer = indexBuffer;
     }
 
     void VertexArray::Bind() const {
