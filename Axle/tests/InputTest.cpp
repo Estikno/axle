@@ -61,7 +61,7 @@ struct InputFixture {
     }
 
     void process() {
-        EventHandler::ProcessEvents(stack.rbegin(), stack.rend());
+        EventHandler::ProcessEventsTest(stack.rbegin(), stack.rend());
     }
 };
 

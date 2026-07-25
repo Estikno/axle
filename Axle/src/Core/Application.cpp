@@ -140,25 +140,6 @@ namespace Axle {
             while (lag >= app->m_DeltaTime) {
                 // Update logic
                 // --------------------------
-                cw::JobSystem::Schedule(
-                    [app]() {
-                        ZoneScopedN("Process Events");
-                        EventHandler::ProcessEvents(app->m_LayerStack->rbegin(), app->m_LayerStack->rend());
-                    },
-                    cw::JobPriority::Medium,
-                    cw::InvalidThreadIndex,
-                    EVENT_INPUT_TAG);
-
-                cw::JobSystem::Schedule(
-                    []() {
-                        ZoneScopedN("Input update");
-                        InputManager::Update();
-                    },
-                    cw::JobPriority::Medium,
-                    cw::InvalidThreadIndex,
-                    EVENT_INPUT_TAG);
-
-                AX_SCHEDULE_TAG_AND_WAIT(EVENT_INPUT_TAG);
 
                 for (Layer* layer : *(app->m_LayerStack))
                     cw::JobSystem::Schedule(
@@ -229,19 +210,32 @@ namespace Axle {
             // Render logic
             // --------------------------
 
+            // Temporary background color
+            AX_GL_CALL(glClearColor(0.2f, 0.3f, 0.3f, 1.0f));
+            AX_GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+
             {
-                TracyGpuZone("Frame");
-
-                // Temporary background color
-                AX_GL_CALL(glClearColor(0.2f, 0.3f, 0.3f, 1.0f));
-                AX_GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-
-                for (Layer* layer : *(app->m_LayerStack)) {
-                    ZoneScopedN("Layer OnRender");
-                    layer->OnRender(elapsed);
-                }
+                ZoneScopedN("ProcessCurrentPresses");
+                InputManager::ProcessCurrentPresses();
             }
 
+            {
+                ZoneScopedN("Process Events");
+                EventHandler::ProcessEvents(app->m_LayerStack->rbegin(), app->m_LayerStack->rend());
+            }
+
+            AX_SCHEDULE_TAG_AND_WAIT(EVENT_INPUT_TAG);
+
+            for (Layer* layer : *(app->m_LayerStack)) {
+                ZoneScopedN("Layer OnRender");
+                layer->OnRender(elapsed);
+            }
+
+            {
+                ZoneScopedN("Update inputs");
+                InputManager::Update();
+                app->m_Window->PollEvents();
+            }
             app->m_Window->OnUpdate();
             TracyGpuCollect;
 

@@ -117,7 +117,7 @@ struct EHFixture {
         EventHandler::ShutDown();
     }
     void process(LayerStack& stack) {
-        EventHandler::ProcessEvents(stack.rbegin(), stack.rend());
+        EventHandler::ProcessEventsTest(stack.rbegin(), stack.rend());
     }
 };
 
@@ -363,7 +363,7 @@ TEST_CASE("Dispatcher returning false leaves event unhandled and propagation con
 
 // ─── Queue semantics ─────────────────────────────────────────────────────────
 
-TEST_CASE("Queue is drained after ProcessEvents") {
+TEST_CASE("Queue is drained after ProcessEventsTest") {
     EHFixture f;
     LayerStack stack;
     TestLayer* layer = new TestLayer();

@@ -32,6 +32,12 @@ namespace Axle {
 
     void InputManager::UpdateImpl() {
         std::unique_lock lock(m_Mutex);
+        m_InputState.m_KeyboardPrevious = m_InputState.m_KeyboardCurrent;
+        m_InputState.m_MousePrevious = m_InputState.m_MouseCurrent;
+    }
+
+    void InputManager::ProcessCurrentPressesImpl() {
+        std::shared_lock lock(m_Mutex);
 
         for (u16 i = 0; i < static_cast<u16>(Keys::MaxKeys); ++i) {
             // Send events if keys are pressed
@@ -48,9 +54,6 @@ namespace Axle {
                 AX_SUBMIT_EVENT(std::move(event));
             }
         }
-
-        m_InputState.m_KeyboardPrevious = m_InputState.m_KeyboardCurrent;
-        m_InputState.m_MousePrevious = m_InputState.m_MouseCurrent;
     }
 
     void InputManager::SetKeyImpl(Keys key, bool pressed) {
@@ -333,6 +336,7 @@ namespace Axle {
         SetMouseWheel(deltax, deltay);
     }
     void InputManager::SimulateUpdateImpl() {
+        ProcessCurrentPresses();
         Update();
     }
     void InputManager::SimulateResetImpl() {

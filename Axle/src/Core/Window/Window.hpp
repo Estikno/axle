@@ -35,6 +35,7 @@ namespace Axle {
          * Method to be called every frame to update the window.
          * */
         void OnUpdate();
+        void PollEvents();
 
         inline u32 GetWidth() const noexcept {
             return m_Data.Width;

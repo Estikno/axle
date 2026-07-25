@@ -268,6 +268,9 @@ namespace Axle {
             s_Instance->UpdateImpl();
         }
 
+        inline static void ProcessCurrentPresses() {
+            s_Instance->ProcessCurrentPressesImpl();
+        }
 
         // For testing purposes only
 #ifdef AXLE_TESTING
@@ -313,6 +316,7 @@ namespace Axle {
         void SetMousePositionImpl(const glm::vec2& position);
         void SetMouseWheelImpl(f64 xOffset, f64 yOffset);
         void UpdateImpl();
+        void ProcessCurrentPressesImpl();
 #ifdef AXLE_TESTING
         void SimulateKeyStateImpl(Keys key, bool pressed);
         void SimulateMouseButtonStateImpl(MouseButtons button, bool pressed);

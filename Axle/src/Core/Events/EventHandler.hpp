@@ -61,6 +61,24 @@ namespace Axle {
             s_Instance->ProcessEventsImpl(begin, end);
         }
 
+#ifdef AXLE_TESTING
+        // Version withouth the parallelized job system
+        inline static void ProcessEventsTest(std::vector<Layer*>::reverse_iterator begin,
+                                             std::vector<Layer*>::reverse_iterator end) {
+            std::vector<std::unique_ptr<Event>> eventsToProcess;
+
+            // Swap the event queue with a local vector to minimize lock time and to also clear the queue for new events
+            {
+                std::scoped_lock lock(s_Instance->m_Mutex);
+                eventsToProcess.swap(s_Instance->m_EventQueue);
+            }
+
+            for (auto& event : eventsToProcess) {
+                s_Instance->Notify(*event, begin, end);
+            }
+        }
+#endif // AXLE_TESTING
+
     private:
         // Static methods implementations
         void SubmitEventImpl(std::unique_ptr<Event> event);

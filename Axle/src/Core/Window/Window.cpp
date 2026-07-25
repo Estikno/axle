@@ -120,8 +120,11 @@ namespace Axle {
         }
     }
 
-    void Window::OnUpdate() {
+    void Window::PollEvents() {
         glfwPollEvents();
+    }
+
+    void Window::OnUpdate() {
         glfwSwapBuffers(m_Window);
     }
 

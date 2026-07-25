@@ -6,6 +6,9 @@
 #include "../Logger/Log.hpp"
 #include "Event.hpp"
 
+#include <tracy/Tracy.hpp>
+#include <CoroWeaver.hpp>
+
 namespace Axle {
     std::unique_ptr<EventHandler> EventHandler::s_Instance;
 
@@ -57,7 +60,16 @@ namespace Axle {
         }
 
         for (auto& event : eventsToProcess) {
-            Notify(*event, begin, end);
+            Event* ptr = event.release();
+            cw::JobSystem::Schedule(
+                [this, ptr, begin, end]() {
+                    ZoneScopedN("Notify Event");
+                    Notify(*ptr, begin, end);
+                    delete ptr;
+                },
+                cw::JobPriority::Medium,
+                cw::InvalidThreadIndex,
+                EVENT_INPUT_TAG);
         }
     }
 } // namespace Axle
