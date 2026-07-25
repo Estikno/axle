@@ -4,6 +4,11 @@
 #include "Core/Input/InputManager.hpp"
 #include "Core/Input/InputState.hpp"
 
+#include "glm/ext/quaternion_geometric.hpp"
+#include "glm/ext/quaternion_trigonometric.hpp"
+#include "glm/ext/vector_float3.hpp"
+#include "glm/fwd.hpp"
+#include "glm/geometric.hpp"
 #include "glm/trigonometric.hpp"
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/euler_angles.hpp>
@@ -14,7 +19,7 @@ namespace Axle {
         // Mouse input
         glm::vec2 offsets = InputManager::GetMousePositionOffset() * p_MouseSensitivity;
 
-        m_Yaw += offsets.x;
+        m_Yaw -= offsets.x;
         m_Pitch += offsets.y;
 
         // make sure that when pitch is out of bounds, screen doesn't get flipped
@@ -22,6 +27,12 @@ namespace Axle {
             m_Pitch = 89.0f;
         if (m_Pitch < -89.0f)
             m_Pitch = -89.0f;
+
+        // Optional: wrap yaw to avoid float growing unbounded over a long session
+        if (m_Yaw > 180.0f)
+            m_Yaw -= 360.0f;
+        if (m_Yaw < -180.0f)
+            m_Yaw += 360.0f;
 
         UpdateCameraVectors();
 
@@ -54,14 +65,14 @@ namespace Axle {
     }
 
     void CameraPositionerDebug::UpdateCameraVectors() {
-        glm::vec3 forward;
-        forward.x = cos(glm::radians(m_Yaw)) * cos(glm::radians(m_Pitch));
-        forward.y = sin(glm::radians(m_Pitch));
-        forward.z = sin(glm::radians(m_Yaw)) * cos(glm::radians(m_Pitch));
-        m_Forward = glm::normalize(forward);
+        glm::quat qPitch = glm::angleAxis(glm::radians(m_Pitch), glm::vec3(1.0f, 0.0f, 0.0f));
+        glm::quat qYaw = glm::angleAxis(glm::radians(m_Yaw), m_WorldUp);
 
-        m_Right = glm::normalize(glm::cross(m_Forward, m_WorldUp));
-        m_Up = glm::normalize(glm::cross(m_Right, m_Forward));
+        m_Orientation = glm::normalize(qYaw * qPitch);
+
+        m_Forward = glm::normalize(m_Orientation * glm::vec3(0.0f, 0.0f, -1.0f));
+        m_Right = glm::normalize(m_Orientation * glm::vec3(1.0f, 0.0f, 0.0f));
+        m_Up = glm::normalize(m_Orientation * glm::vec3(0.0f, 1.0f, 0.0f));
     }
 
     void CameraPositionerMoveTo::Update(f32 deltaTime) {

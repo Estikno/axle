@@ -7,6 +7,7 @@
 #include "Core/Types.hpp"
 #include "Core/Config/Config.hpp"
 
+#include "glm/gtc/quaternion.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/matrix_transform.hpp"
 #include "glm/ext/vector_float3.hpp"
@@ -147,6 +148,7 @@ namespace Axle {
         void UpdateCameraVectors();
 
         glm::vec3 m_Position;
+        glm::quat m_Orientation;
         glm::vec3 m_Forward;
         glm::vec3 m_Right;
         glm::vec3 m_Up;
