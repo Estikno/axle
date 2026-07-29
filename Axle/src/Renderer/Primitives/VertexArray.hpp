@@ -2,6 +2,7 @@
 
 #include "axpch.hpp"
 
+#include "Core/Logger/Log.hpp"
 #include "Core/Types.hpp"
 #include "Renderer/Primitives/Buffer.hpp"
 #include "Other/CustomTypes/Ref.hpp"
@@ -10,7 +11,7 @@ namespace Axle {
     /**
      * RAII wrapper of an OpenGL vertex array
      * */
-    class VertexArray : RefCounted {
+    class VertexArray : public RefCounted {
     public:
         VertexArray();
         ~VertexArray() override;

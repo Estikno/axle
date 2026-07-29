@@ -4,6 +4,8 @@
 
 #include "Core/Types.hpp"
 #include "../Textures/Texture.hpp"
+#include "Renderer/Primitives/VertexArray.hpp"
+#include "Other/CustomTypes/Ref.hpp"
 
 #include <glm/glm.hpp>
 
@@ -19,7 +21,6 @@ namespace Axle {
         Mesh(const std::vector<Vertex>& vertices,
              const std::vector<u32>& indices,
              std::vector<std::pair<u32, TextureType>>&& textures);
-        ~Mesh();
 
         Mesh(const Mesh&) = delete;
         Mesh& operator=(const Mesh&) = delete;
@@ -31,9 +32,8 @@ namespace Axle {
 
     private:
         void SetupMesh();
-        void Clear();
 
-        u32 m_VAO = 0, m_VBO = 0, m_EBO = 0;
+        Ref<VertexArray> m_VAO;
 
         // Data
         std::vector<Vertex> m_Vertices;

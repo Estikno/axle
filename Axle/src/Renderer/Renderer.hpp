@@ -3,15 +3,25 @@
 #include "axpch.hpp"
 
 #include "Renderer/Primitives/VertexArray.hpp"
+#include "Renderer/Camera/Camera.hpp"
+
+#include "glm/fwd.hpp"
 
 namespace Axle {
     class Renderer {
     public:
-        static void BeginScene();
+        static void BeginScene(Camera& camera);
         static void EndScene();
 
-        static void Submit(const Ref<VertexArray>& vertexArray);
+        static void Submit(const Ref<VertexArray>& vertexArray, u32 shader);
 
     private:
+        struct SceneData {
+            glm::mat4 ViewProjectionMatrix;
+            glm::mat4 ViewMatrix;
+            glm::mat4 ProjectionMatrix;
+        };
+
+        static SceneData* s_SceneData;
     };
 } // namespace Axle

@@ -1,9 +1,13 @@
 #include "axpch.hpp"
 
 #include "Camera.hpp"
+#include "Core/Application.hpp"
+#include "Core/Logger/Log.hpp"
+#include "Core/Window/Window.hpp"
 #include "Core/Input/InputManager.hpp"
 #include "Core/Input/InputState.hpp"
 
+#include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/quaternion_geometric.hpp"
 #include "glm/ext/quaternion_trigonometric.hpp"
 #include "glm/ext/vector_float3.hpp"
@@ -15,6 +19,18 @@
 #include <glm/glm.hpp>
 
 namespace Axle {
+    glm::mat4 CameraPositionerDebug::GetProjectionMatrix() const {
+        const WindowData& data = Application::GetInstance().GetWindow().GetWindowData();
+
+        if (data.FramebufferWidth == 0 || data.FramebufferHeight == 0)
+            return glm::mat4(1.0f);
+
+        return glm::perspective(glm::radians(m_FOV),
+                                static_cast<f32>(data.FramebufferWidth) / static_cast<f32>(data.FramebufferHeight),
+                                0.1f,
+                                1000.0f);
+    }
+
     void CameraPositionerDebug::Update(f32 deltaTime) {
         // Mouse input
         glm::vec2 offsets = InputManager::GetMousePositionOffset() * p_MouseSensitivity;
@@ -89,6 +105,18 @@ namespace Axle {
 
         const glm::vec3 a = glm::radians(m_AnglesCurrent);
         m_CurrentTransform = glm::translate(glm::yawPitchRoll(a.y, a.x, a.z), -m_PositionCurrent);
+    }
+
+    inline glm::mat4 CameraPositionerMoveTo::GetProjectionMatrix() const {
+        const WindowData& data = Application::GetInstance().GetWindow().GetWindowData();
+
+        if (data.FramebufferWidth == 0 || data.FramebufferHeight == 0)
+            return glm::mat4(1.0f);
+
+        return glm::perspective(glm::radians(m_FOV),
+                                static_cast<f32>(data.FramebufferWidth) / static_cast<f32>(data.FramebufferHeight),
+                                0.1f,
+                                1000.0f);
     }
 
 } // namespace Axle

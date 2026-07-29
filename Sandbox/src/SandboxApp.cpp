@@ -11,6 +11,7 @@
 #include "Renderer/Meshes/Model.hpp"
 #include "Renderer/Shaders/ShaderManager.hpp"
 #include "Renderer/Skybox/Skybox.hpp"
+#include "Renderer/Renderer.hpp"
 
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
@@ -56,24 +57,26 @@ public:
         Camera& cam = Application::GetInstance().GetCamera();
         cam.GetPositioner()->Update(deltaTime);
 
-        ShaderManager::UseProgram(program);
+        Renderer::BeginScene(cam);
+
         glm::mat4 projection =
             glm::perspective(glm::radians(cam.GetPositioner()->GetFOV()), width / height, 0.1f, 1000.0f);
         glm::mat4 view = cam.GetPositioner()->GetViewMatrix();
-        ShaderManager::SetMat4(program, "projection", projection);
-        ShaderManager::SetMat4(program, "view", view);
-
         glm::mat4 modelMatrix = glm::mat4(1.0f);
         modelMatrix = glm::translate(
             modelMatrix, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
         modelMatrix =
             glm::scale(modelMatrix, glm::vec3(1.0f, 1.0f, 1.0f)); // it's a bit too big for our scene, so scale it down
+
+        ShaderManager::UseProgram(program);
         ShaderManager::SetMat4(program, "model", modelMatrix);
         model.Draw(program);
 
         // Draw Skybox
         skybox.SetViewProjectionMatrix(projection * glm::mat4(glm::mat3(view)));
         skybox.Draw();
+
+        Renderer::EndScene();
     }
 
     bool OnFrameBufferResize(FrameBufferResizeEvent& event) {

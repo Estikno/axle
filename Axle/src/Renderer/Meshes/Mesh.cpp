@@ -1,3 +1,4 @@
+#include "Renderer/Shaders/Shader.hpp"
 #include "axpch.hpp"
 
 #include <glad/gl.h>
@@ -9,6 +10,9 @@
 #include "Renderer/Textures/Texture.hpp"
 #include "Renderer/Textures/TextureManager.hpp"
 #include "Renderer/GLDebug.hpp"
+#include "Renderer/Primitives/VertexArray.hpp"
+#include "Renderer/Primitives/Buffer.hpp"
+#include "Renderer/Renderer.hpp"
 
 #include <tracy/Tracy.hpp>
 #include <tracy/TracyOpenGL.hpp>
@@ -23,32 +27,14 @@ namespace Axle {
         SetupMesh();
     }
 
-    Mesh::~Mesh() {
-        Clear();
-    }
-
     Mesh::Mesh(Mesh&& other) noexcept
-        : m_VAO(other.m_VAO),
-          m_EBO(other.m_EBO),
-          m_VBO(other.m_VBO),
+        : m_VAO(std::move(other.m_VAO)),
           m_Vertices(std::move(other.m_Vertices)),
           m_Indices(std::move(other.m_Indices)),
-          m_Textures(std::move(other.m_Textures)) {
-        other.m_VAO = 0;
-        other.m_VBO = 0;
-        other.m_EBO = 0;
-    }
+          m_Textures(std::move(other.m_Textures)) {}
     Mesh& Mesh::operator=(Mesh&& other) noexcept {
         if (this != &other) {
-            Clear();
-
             m_VAO = other.m_VAO;
-            m_VBO = other.m_VBO;
-            m_EBO = other.m_EBO;
-
-            other.m_VAO = 0;
-            other.m_VBO = 0;
-            other.m_EBO = 0;
 
             m_Vertices = std::move(other.m_Vertices);
             m_Indices = std::move(other.m_Indices);
@@ -62,30 +48,19 @@ namespace Axle {
         TracyGpuZone("SetupMesh");
 
         // Create buffers
-        AX_GL_CALL(glCreateVertexArrays(1, &m_VAO));
-        AX_GL_CALL(glCreateBuffers(1, &m_VBO));
-        AX_GL_CALL(glCreateBuffers(1, &m_EBO));
+        Ref<VertexBuffer> vbuffer =
+            Ref<VertexBuffer>::Create(m_Vertices.size() * sizeof(Vertex), reinterpret_cast<f32*>(m_Vertices.data()));
 
-        // Store data
-        AX_GL_CALL(glNamedBufferData(m_VBO, sizeof(Vertex) * m_Vertices.size(), m_Vertices.data(), GL_STATIC_DRAW));
-        AX_GL_CALL(glVertexArrayVertexBuffer(m_VAO, 0, m_VBO, 0, sizeof(Vertex)));
-        AX_GL_CALL(glNamedBufferData(m_EBO, sizeof(u32) * m_Indices.size(), m_Indices.data(), GL_STATIC_DRAW));
-        AX_GL_CALL(glVertexArrayElementBuffer(m_VAO, m_EBO));
+        BufferLayout layout = {{ShaderDataType::Vec3, "position"},
+                               {ShaderDataType::Vec3, "normal"},
+                               {ShaderDataType::Vec2, "textureCoords"}};
+        vbuffer->SetLayout(layout);
 
-        // Vertex positions
-        AX_GL_CALL(glEnableVertexArrayAttrib(m_VAO, 0));
-        AX_GL_CALL(glVertexArrayAttribBinding(m_VAO, 0, 0));
-        AX_GL_CALL(glVertexArrayAttribFormat(m_VAO, 0, 3, GL_FLOAT, GL_FALSE, 0));
+        Ref<ElementBuffer> eBuffer = Ref<ElementBuffer>::Create(m_Indices.size(), m_Indices.data());
 
-        // Vertex normals
-        AX_GL_CALL(glEnableVertexArrayAttrib(m_VAO, 1));
-        AX_GL_CALL(glVertexArrayAttribBinding(m_VAO, 1, 0));
-        AX_GL_CALL(glVertexArrayAttribFormat(m_VAO, 1, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal)));
-
-        // Vertex texture coordinates
-        AX_GL_CALL(glEnableVertexArrayAttrib(m_VAO, 2));
-        AX_GL_CALL(glVertexArrayAttribBinding(m_VAO, 2, 0));
-        AX_GL_CALL(glVertexArrayAttribFormat(m_VAO, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, textureCoords)));
+        m_VAO = Ref<VertexArray>::Create();
+        m_VAO->AddVertexBuffer(vbuffer);
+        m_VAO->SetIndexBuffer(eBuffer);
     }
 
     // This basically means how many texture of a specific type can we have
@@ -129,21 +104,6 @@ namespace Axle {
         }
 
         // Draw the mesh
-        AX_GL_CALL(glBindVertexArray(m_VAO));
-        AX_GL_CALL(glDrawElements(GL_TRIANGLES, m_Indices.size(), GL_UNSIGNED_INT, 0));
-    }
-
-    void Mesh::Clear() {
-        TracyGpuZone("Delete mesh");
-
-        if (m_VAO != 0) {
-            AX_GL_CALL(glDeleteVertexArrays(1, &m_VAO));
-        }
-        if (m_EBO != 0) {
-            AX_GL_CALL(glDeleteBuffers(1, &m_EBO));
-        }
-        if (m_VBO != 0) {
-            AX_GL_CALL(glDeleteBuffers(1, &m_VBO));
-        }
+        Renderer::Submit(m_VAO, program);
     }
 } // namespace Axle

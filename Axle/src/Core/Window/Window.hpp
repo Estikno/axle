@@ -21,9 +21,9 @@ namespace Axle {
 
     struct WindowData {
         std::string Title;
-        u32 Width, Height;
-        u32 FramebufferWidth, FramebufferHeight;
-        bool VSync;
+        u32 Width = 0, Height = 0;
+        u32 FramebufferWidth = 0, FramebufferHeight = 0;
+        bool VSync = true;
     };
 
     class AXLE_API Window {
@@ -53,6 +53,10 @@ namespace Axle {
          * @param enabled True to enable VSync, false to disable it.
          * */
         void SetVSync(bool enabled);
+
+        inline const WindowData& GetWindowData() const {
+            return m_Data;
+        }
 
         inline GLFWwindow* GetNativeWindow() {
             return m_Window;

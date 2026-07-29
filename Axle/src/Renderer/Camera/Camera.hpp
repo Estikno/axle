@@ -7,6 +7,7 @@
 #include "Core/Types.hpp"
 #include "Core/Config/Config.hpp"
 
+#include "glm/ext/matrix_clip_space.hpp"
 #include "glm/gtc/quaternion.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/matrix_transform.hpp"
@@ -18,6 +19,7 @@ namespace Axle {
     public:
         virtual ~ICameraPositioner() = default;
         virtual glm::mat4 GetViewMatrix() const = 0;
+        virtual glm::mat4 GetProjectionMatrix() const = 0;
         virtual f32 GetFOV() const = 0;
         virtual glm::vec3 GetPosition() const = 0;
         virtual void Update(f32 deltaTime) = 0;
@@ -54,6 +56,13 @@ namespace Axle {
                       LogChannel::Renderer,
                       "Must add a positioner before calling any method.");
             return m_Positioner.load(std::memory_order_acquire)->GetViewMatrix();
+        }
+
+        inline glm::mat4 GetProjectionMatrix() const {
+            AX_ASSERT(m_Positioner.load(std::memory_order_acquire) != nullptr,
+                      LogChannel::Renderer,
+                      "Must add a positioner before calling any method.");
+            return m_Positioner.load(std::memory_order_acquire)->GetProjectionMatrix();
         }
 
         inline glm::vec3 GetPosition() const {
@@ -124,6 +133,8 @@ namespace Axle {
         inline virtual glm::mat4 GetViewMatrix() const override {
             return glm::lookAt(m_Position, m_Position + m_Forward, m_Up);
         }
+
+        virtual glm::mat4 GetProjectionMatrix() const override;
 
         inline f32 GetFOV() const override {
             return m_FOV;
@@ -198,6 +209,8 @@ namespace Axle {
         inline virtual f32 GetFOV() const override {
             return m_FOV;
         }
+
+        virtual glm::mat4 GetProjectionMatrix() const override;
 
         f32 p_DampingLinear;
         glm::vec3 p_DampingEulerAngles;

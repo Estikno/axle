@@ -55,6 +55,34 @@ namespace Axle {
             IncRef();
         }
 
+        Ref(const Ref& other)
+            : m_Instance(other.m_Instance) {
+            IncRef();
+        }
+
+        Ref& operator=(const Ref& other) {
+            if (this != &other) {
+                DecRef();
+                m_Instance = other.m_Instance;
+                IncRef();
+            }
+            return *this;
+        }
+
+        Ref(Ref&& other) noexcept
+            : m_Instance(other.m_Instance) {
+            other.m_Instance = nullptr;
+        }
+
+        Ref& operator=(Ref&& other) noexcept {
+            if (this != &other) {
+                DecRef();
+                m_Instance = other.m_Instance;
+                other.m_Instance = nullptr;
+            }
+            return *this;
+        }
+
         template <typename U>
             requires(std::is_base_of_v<U, T> || std::is_base_of_v<T, U>)
         Ref(Ref<U>&& other) {
@@ -113,10 +141,10 @@ namespace Axle {
         }
 
         T* Raw() {
-            return *m_Instance;
+            return m_Instance;
         }
         const T* Raw() const {
-            return *m_Instance;
+            return m_Instance;
         }
 
         void Reset(T* instance = nullptr) {
