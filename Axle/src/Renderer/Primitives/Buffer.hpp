@@ -52,6 +52,9 @@ namespace Axle {
         }
     };
 
+    /**
+     * Layout used in vertex buffer for easily setting attributes and all of their information.
+     * */
     class BufferLayout {
     public:
         BufferLayout() = default;
@@ -102,7 +105,15 @@ namespace Axle {
      * */
     class VertexBuffer : public RefCounted {
     public:
+        /// This constructor does nothing
         VertexBuffer() = default;
+
+        /**
+         * Create a vertex buffer
+         *
+         * @param size Size of the attribute data (in bytes)
+         * @param vertices Pointer to the attribute data
+         * */
         VertexBuffer(u32 size, f32* vertices);
         ~VertexBuffer() override;
 
@@ -112,18 +123,34 @@ namespace Axle {
         VertexBuffer(const VertexBuffer&) = delete;
         VertexBuffer& operator=(const VertexBuffer&) = delete;
 
+        /**
+         * Sets how the data shall be interpreted.
+         *
+         * @param layout Data layout
+         * */
         inline void SetLayout(const BufferLayout& layout) {
             m_Layout = layout;
         }
+
+        /**
+         * Returns the layout of the vertex data (if any)
+         * */
         inline const BufferLayout& GetLayout() const {
             return m_Layout;
         }
 
+        /**
+         * Returns the underlying id provided by OpenGL. All OpenGL related stuff will automatically be handled by this
+         * class. Usage of the ID in OpenGL calls is not recommended.
+         * */
         inline u32 GetID() const {
             return m_ID;
         }
 
     private:
+        /**
+         * Deallocated all GPU memory (if any was allocated in the first place)
+         * */
         void Reset();
 
         u32 m_ID = 0;
@@ -135,7 +162,15 @@ namespace Axle {
      * */
     class ElementBuffer : public RefCounted {
     public:
+        /// This constructor does nothing
         ElementBuffer() = default;
+
+        /**
+         * Create an element buffer
+         *
+         * @param count How many indices does it have.
+         * @param indices Pointer to the indices array
+         * */
         ElementBuffer(u32 count, u32* indices);
         ~ElementBuffer() override;
 
@@ -145,15 +180,25 @@ namespace Axle {
         ElementBuffer(const ElementBuffer&) = delete;
         ElementBuffer& operator=(const ElementBuffer&) = delete;
 
+        /**
+         * Returns the underlying id provided by OpenGL. All OpenGL related stuff will automatically be handled by this
+         * class. Usage of the ID in OpenGL calls is not recommended.
+         * */
         inline u32 GetID() const {
             return m_ID;
         }
 
+        /**
+         * Gets the count of the element buffer
+         * */
         inline u32 GetCount() const {
             return m_Count;
         }
 
     private:
+        /**
+         * Deallocated all GPU memory (if any was allocated in the first place)
+         * */
         void Reset();
 
         u32 m_ID = 0;

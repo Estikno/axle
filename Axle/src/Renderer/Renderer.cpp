@@ -16,10 +16,11 @@ namespace Axle {
     }
     void Renderer::EndScene() {}
 
-    void Renderer::Submit(const Ref<VertexArray>& vertexArray, u32 shader) {
+    void Renderer::Submit(u32 shader, const Ref<VertexArray>& vertexArray, const glm::mat4& transform) {
         ShaderManager::UseProgram(shader);
         ShaderManager::SetMat4(shader, "view", s_SceneData->ViewMatrix);
         ShaderManager::SetMat4(shader, "projection", s_SceneData->ProjectionMatrix);
+        // ShaderManager::SetMat4(shader, "model", transform);
 
         vertexArray->Bind();
         RenderCommand::DrawElements(vertexArray);

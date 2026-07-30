@@ -104,6 +104,6 @@ namespace Axle {
         }
 
         // Draw the mesh
-        Renderer::Submit(m_VAO, program);
+        Renderer::Submit(program, m_VAO);
     }
 } // namespace Axle
