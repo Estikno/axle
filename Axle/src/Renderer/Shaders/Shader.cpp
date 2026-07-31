@@ -9,6 +9,7 @@
 #include "Core/Error/Panic.hpp"
 #include "Core/Error/Result.hpp"
 #include "Core/Logger/Log.hpp"
+#include "Other/CustomTypes/Ref.hpp"
 
 #include <ShaderSource_generated.h>
 #include <flatbuffers/flatbuffers.h>
@@ -77,10 +78,8 @@ namespace Axle {
         AX_PANIC(LogChannel::Renderer, "Unknown ShaderDataType!");
     }
 
-    Shader::Shader(const std::string& filename, bool checkCached) {
+    Shader::Shader(const std::string& filename) {
         ZoneScopedN("Create shader from file");
-
-        // TODO: Check if the shader has already been created
 
         auto exp = ResourceManager::Load(filename);
         AX_ENSURE(exp.IsOk(), LogChannel::Renderer, "Couldn't open {0} shader file", filename);
@@ -118,9 +117,6 @@ namespace Axle {
         }
 
         AX_GL_CALL(glLinkProgram(m_ID));
-        for (u32& id : shaderIDs) {
-            AX_GL_CALL(glDeleteShader(id));
-        }
 
 #ifdef AX_DEBUG
         // Check linking errors
@@ -137,7 +133,9 @@ namespace Axle {
         }
 #endif // AX_DEBUG
 
-        // TODO: Add shader entry to shader manager for cache
+        for (u32& id : shaderIDs) {
+            AX_GL_CALL(glDeleteShader(id));
+        }
     }
 
     Result<u32> Shader::CompileShader(ShaderType type, const void* source) {
@@ -160,6 +158,7 @@ namespace Axle {
             if (collection->pipeline()->geometry() == nullptr) {
                 return Result<u32>::Err(Error(ErrorCode::NotFound, "There is no geometry shader in the given file"));
             }
+            id = glCreateShader(GL_GEOMETRY_SHADER);
             data = collection->pipeline()->geometry()->source()->Data();
             size = collection->pipeline()->geometry()->source()->size();
         } else if (type == ShaderType::TessControl) {
@@ -233,28 +232,43 @@ namespace Axle {
             AX_GL_CALL(glDeleteProgram(m_ID));
     }
 
-    void Shader::Use() {
+    void Shader::Use() const {
         TracyGpuZone("Use program");
         AX_GL_CALL(glUseProgram(m_ID));
     }
 
-    void Shader::SetBoolUniform(const std::string& name, bool value) {
+    void Shader::SetBoolUniform(const std::string& name, bool value) const {
         TracyGpuZone("Set bool uniform program");
         AX_GL_CALL(glUniform1i(glGetUniformLocation(m_ID, name.c_str()), static_cast<i32>(value)));
     }
 
-    void Shader::SetIntUniform(const std::string& name, i32 value) {
+    void Shader::SetIntUniform(const std::string& name, i32 value) const {
         TracyGpuZone("Set int uniform program");
         AX_GL_CALL(glUniform1i(glGetUniformLocation(m_ID, name.c_str()), value));
     }
 
-    void Shader::SetFloatUniform(const std::string& name, f32 value) {
+    void Shader::SetFloatUniform(const std::string& name, f32 value) const {
         TracyGpuZone("Set float uniform program");
         AX_GL_CALL(glUniform1f(glGetUniformLocation(m_ID, name.c_str()), value));
     }
 
-    void Shader::SetMat4Uniform(const std::string& name, const glm::mat4& value) {
+    void Shader::SetMat4Uniform(const std::string& name, const glm::mat4& value) const {
         TracyGpuZone("Set mat4 uniform program");
         AX_GL_CALL(glUniformMatrix4fv(glGetUniformLocation(m_ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(value)));
+    }
+
+    Ref<Shader> Shader::Create(const std::string& filename, bool checkCached) {
+        if (checkCached) {
+            Result<Ref<Shader>> res = ShaderManager::IsCached(filename);
+            if (res.IsOk())
+                return res.Unwrap();
+        }
+
+        Ref<Shader> shader = Ref<Shader>::Create(filename); // strong count now 1, safely
+
+        if (checkCached)
+            ShaderManager::CacheShader(filename, shader); // takes a WeakRef from an already-owned Ref
+
+        return shader;
     }
 } // namespace Axle

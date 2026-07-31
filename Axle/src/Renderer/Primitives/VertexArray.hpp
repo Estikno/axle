@@ -10,6 +10,8 @@
 namespace Axle {
     /**
      * RAII wrapper of an OpenGL vertex array
+     *
+     * All the functionality of this class is NOT THREAD SAFE and should only be accessed by the render thread.
      * */
     class VertexArray : public RefCounted {
     public:

@@ -3,6 +3,9 @@
 #include "axpch.hpp"
 
 #include "Core/Types.hpp"
+#include "Renderer/Primitives/VertexArray.hpp"
+#include "Renderer/Shaders/Shader.hpp"
+#include "Other/CustomTypes/Ref.hpp"
 
 #include <glm/glm.hpp>
 
@@ -29,10 +32,10 @@ namespace Axle {
     private:
         void Clear();
 
-        u32 m_VAO = 0, m_EBO = 0, m_VBO = 0;
+        Ref<VertexArray> m_VAO;
+        Ref<Shader> m_Shader;
 
         u32 m_CubemapTexture = 0;
-        u32 m_Program = 0, m_VertexShader = 0, m_FragmentShader = 0;
 
         // Plane information
         std::array<f32, 12> m_Vertices = {

@@ -6,6 +6,8 @@
 #include "Core/Types.hpp"
 
 namespace Axle {
+    template <typename T>
+    class WeakRef;
     class RefCounted;
 
     class RefControlBlock {
@@ -110,6 +112,16 @@ namespace Axle {
         Ref(const Ref& other)
             : m_Instance(other.m_Instance) {
             IncRef();
+        }
+
+        static Ref FromWeak(const WeakRef<T>& weak) {
+            return weak.Lock();
+        }
+
+        static Ref AdoptAlreadyIncremented(T* instance) {
+            Ref r;
+            r.m_Instance = instance; // deliberately skip IncRef()
+            return r;
         }
 
         Ref& operator=(const Ref& other) {

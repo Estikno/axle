@@ -102,6 +102,8 @@ namespace Axle {
 
     /**
      * RAII wrapper of an OpenGL vertex buffer
+     *
+     * All the functionality of this class is NOT THREAD SAFE and should only be accessed by the render thread.
      * */
     class VertexBuffer : public RefCounted {
     public:
@@ -159,6 +161,8 @@ namespace Axle {
 
     /**
      * RAII wrapper of an OpenGL index/element buffer
+     *
+     * All the functionality of this class is NOT THREAD SAFE and should only be accessed by the render thread.
      * */
     class ElementBuffer : public RefCounted {
     public:

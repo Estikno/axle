@@ -20,7 +20,9 @@ namespace Axle {
     class Shader : public RefCounted {
     public:
         Shader() = default;
-        Shader(const std::string& filename, bool checkCached = true);
+        Shader(const std::string& filename);
+
+        static Ref<Shader> Create(const std::string& filename, bool checkCached = true);
 
         ~Shader();
 
@@ -30,16 +32,16 @@ namespace Axle {
         Shader(const Shader&) = delete;
         Shader& operator=(const Shader&) = delete;
 
-        void Use();
+        void Use() const;
 
         inline u32 GetID() const {
             return m_ID;
         }
 
-        void SetBoolUniform(const std::string& name, bool value);
-        void SetIntUniform(const std::string& name, i32 value);
-        void SetFloatUniform(const std::string& name, f32 value);
-        void SetMat4Uniform(const std::string& name, const glm::mat4& value);
+        void SetBoolUniform(const std::string& name, bool value) const;
+        void SetIntUniform(const std::string& name, i32 value) const;
+        void SetFloatUniform(const std::string& name, f32 value) const;
+        void SetMat4Uniform(const std::string& name, const glm::mat4& value) const;
 
     private:
         void Reset();

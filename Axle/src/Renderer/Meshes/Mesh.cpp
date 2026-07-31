@@ -66,7 +66,7 @@ namespace Axle {
     // This basically means how many texture of a specific type can we have
     static constexpr u8 TextureUnitOffset = 3;
 
-    void Mesh::Draw(u32 program) {
+    void Mesh::Draw(const Ref<Shader>& shader) {
         ZoneScopedN("Draw mesh");
         TracyGpuZone("Draw mesh");
 
@@ -104,6 +104,6 @@ namespace Axle {
         }
 
         // Draw the mesh
-        Renderer::Submit(program, m_VAO);
+        Renderer::Submit(shader, m_VAO);
     }
 } // namespace Axle

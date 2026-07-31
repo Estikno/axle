@@ -5,6 +5,7 @@
 #include "Core/Types.hpp"
 #include "../Textures/Texture.hpp"
 #include "Renderer/Primitives/VertexArray.hpp"
+#include "Renderer/Shaders/Shader.hpp"
 #include "Other/CustomTypes/Ref.hpp"
 
 #include <glm/glm.hpp>
@@ -28,7 +29,7 @@ namespace Axle {
         Mesh(Mesh&& other) noexcept;
         Mesh& operator=(Mesh&& other) noexcept;
 
-        void Draw(u32 program);
+        void Draw(const Ref<Shader>& shader);
 
     private:
         void SetupMesh();

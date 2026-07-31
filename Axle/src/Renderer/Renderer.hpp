@@ -4,6 +4,7 @@
 
 #include "Renderer/Primitives/VertexArray.hpp"
 #include "Renderer/Camera/Camera.hpp"
+#include "Renderer/Shaders/Shader.hpp"
 
 #include "glm/fwd.hpp"
 
@@ -13,8 +14,9 @@ namespace Axle {
         static void BeginScene(Camera& camera);
         static void EndScene();
 
-        static void
-        Submit(u32 shader, const Ref<VertexArray>& vertexArray, const glm::mat4& transform = glm::mat4(1.0f));
+        static void Submit(const Ref<Shader>& shader,
+                           const Ref<VertexArray>& vertexArray,
+                           const glm::mat4& transform = glm::mat4(1.0f));
 
     private:
         struct SceneData {

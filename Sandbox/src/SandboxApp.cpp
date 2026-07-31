@@ -9,7 +9,6 @@
 #include "Renderer/Shaders/Shader.hpp"
 #include "Renderer/Camera/Camera.hpp"
 #include "Renderer/Meshes/Model.hpp"
-#include "Renderer/Shaders/ShaderManager.hpp"
 #include "Renderer/Skybox/Skybox.hpp"
 #include "Renderer/Renderer.hpp"
 
@@ -34,10 +33,7 @@ public:
 
     void OnAttachRender() override {
         // Shaders
-        u32 vertexShader = ShaderManager::CreateShader("Sandbox/src/Shaders/default.bin", ShaderType::Vertex);
-        u32 fragmentShader = ShaderManager::CreateShader("Sandbox/src/Shaders/default.bin", ShaderType::Fragment);
-        program = ShaderManager::CreateShaderProgram(vertexShader, fragmentShader);
-        ShaderManager::UseProgram(program);
+        shader = Shader::Create("Sandbox/src/Shaders/default.bin");
 
         // Model
         model = Model("assets/tests/backpack/backpack.obj");
@@ -49,6 +45,7 @@ public:
     }
 
     void OnDettachRender() override {
+        shader.Reset();
         model = Model();
         skybox = Skybox();
     }
@@ -68,9 +65,9 @@ public:
         modelMatrix =
             glm::scale(modelMatrix, glm::vec3(1.0f, 1.0f, 1.0f)); // it's a bit too big for our scene, so scale it down
 
-        ShaderManager::UseProgram(program);
-        ShaderManager::SetMat4(program, "model", modelMatrix);
-        model.Draw(program);
+        shader->Use();
+        shader->SetMat4Uniform("model", modelMatrix);
+        model.Draw(shader);
 
         // Draw Skybox
         skybox.SetViewProjectionMatrix(projection * glm::mat4(glm::mat3(view)));
@@ -91,9 +88,9 @@ public:
     }
 
 private:
-    u32 program;
     Model model;
     Skybox skybox;
+    Ref<Shader> shader;
 
     f32 width = 1280.0f, height = 720.0f;
 };
