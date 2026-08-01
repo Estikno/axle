@@ -17,11 +17,35 @@ namespace Axle {
     u32 ShaderDataTypeSize(ShaderDataType type);
     u32 ShaderDataTypeToOpenGLBaseType(ShaderDataType type);
 
+    /**
+     * RAII wrapper of an OpenGL shader program
+     *
+     * All the functionality of this class is NOT THREAD SAFE and should only be accessed by the render thread.
+     * */
     class Shader : public RefCounted {
     public:
+        /// This constructor does nothing
         Shader() = default;
+
+        /**
+         * Creates a shader program. This constructor does not check cached shaders nor does it caches, so even though
+         * the shader you are looking may have already been loaded, linked and compiled, this will do the process all
+         * over again. It's recommended to instead use the static Create method to have that functionality.
+         *
+         * @param filename File containing all shaders needed
+         * */
         Shader(const std::string& filename);
 
+        /**
+         * Creates a shader program. Unlike the base constructor this method supports caching and it's the recommended
+         * way of creating a shader program.
+         *
+         * @param filename File containing all shaders needed
+         * @param checkCached Indicated wether or not to check for cached programs with the same filename. If set to
+         * false this method behaves like the constructor version.
+         *
+         * @returns A counted reference to the program
+         * */
         static Ref<Shader> Create(const std::string& filename, bool checkCached = true);
 
         ~Shader();
@@ -44,8 +68,19 @@ namespace Axle {
         void SetMat4Uniform(const std::string& name, const glm::mat4& value) const;
 
     private:
+        /**
+         * Manages the deallocation of memory
+         * */
         void Reset();
 
+        /**
+         * Compiles a shader and returns its id
+         *
+         * @param type The type of shader to compile
+         * @param source A pointer to the source of the shader
+         *
+         * @returns A result with the shader id (given by OpenGL) if it succeeded
+         * */
         static Result<u32> CompileShader(ShaderType type, const void* source);
 
         u32 m_ID = 0;
