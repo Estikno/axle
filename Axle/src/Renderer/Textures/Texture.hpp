@@ -73,19 +73,55 @@ namespace Axle {
 
     class Texture2D : public Texture {
     public:
+        /// This constructor does nothing
         Texture2D() = default;
+
+        /**
+         * Create a texture but does not assign any data to it. Usefull for texture rendering...
+         *
+         * @param width Width of the texture
+         * @param height Height of the texture
+         * @param internalFormat What format does the texture have internally
+         * @param mipmaps Indicates the number of mipmaps to have. Leave at -1 to automatically calculate.
+         * @param type The type of the texture
+         * */
         Texture2D(u32 width,
                   u32 height,
                   TextureFormat internalFormat,
-                  u32 mipmaps = 0,
+                  i32 mipmaps = 0,
                   TextureType type = TextureType::Unknown);
+
+        /**
+         * Creates a texture. This constructor does not check cached textures nor does it caches, so even though
+         * the texture you are looking may have already been loaded, this will do the process all
+         * over again. It's recommended to instead use the static Create method to have that functionality.
+         *
+         * @param filename File containing the texture
+         * @param mipmaps Indicates the number of mipmaps to have. Leave at -1 to automatically calculate.
+         * @param flipVertically wether or not to flip the image vertically
+         * @param type The type of the texture
+         * */
         Texture2D(const std::string& path,
-                  u32 mipmaps = 0,
+                  i32 mipmaps = 0,
                   bool flipVertically = true,
                   TextureType type = TextureType::Unknown);
 
-        static Ref<Texture2D>
-        Create(const std::string& filename, bool checkCached = true, TextureType type = TextureType::Unknown);
+        /**
+         * Creates a texture. Unlike the base constructor this method supports caching and it's the recommended
+         * way of creating a texture.
+         *
+         * @param filename File containing the texture
+         * @param mipmaps Indicates the number of mipmaps to have. Leave at -1 to automatically calculate.
+         * @param type The type of the texture
+         * @param checkCached Indicates wether or not to check for cached programs with the same filename. If set to
+         * false this method behaves like the constructor version.
+         *
+         * @returns A counted reference to the texture
+         * */
+        static Ref<Texture2D> Create(const std::string& filename,
+                                     i32 mipmaps = 0,
+                                     TextureType type = TextureType::Unknown,
+                                     bool checkCached = true);
 
         virtual ~Texture2D() override;
 
@@ -110,6 +146,9 @@ namespace Axle {
         virtual void Bind(u32 textureUnit) const override;
 
     private:
+        /**
+         * Deallocates all used memory
+         * */
         void Reset();
 
         u32 m_ID = 0;
@@ -121,9 +160,29 @@ namespace Axle {
 
     class TextureCubemap : public Texture {
     public:
+        /// This constructor does nothing
         TextureCubemap() = default;
+
+        /**
+         * Creates a texture cubemap. This constructor does not check cached textures nor does it caches, so even though
+         * the texture cubemap you are looking may have already been loaded and processed, this will do the process all
+         * over again. It's recommended to instead use the static Create method to have that functionality.
+         *
+         * @param filename File containing the texture cubemap
+         * @param flipVertically wether or not to flip the image vertically
+         * */
         TextureCubemap(const std::string& path, bool flipVertically = false);
 
+        /**
+         * Creates a texture cubemap. Unlike the base constructor this method supports caching and it's the recommended
+         * way of creating a texture.
+         *
+         * @param filename File containing the texture
+         * @param checkCached Indicates wether or not to check for cached programs with the same filename. If set to
+         * false this method behaves like the constructor version.
+         *
+         * @returns A counted reference to the texture
+         * */
         static Ref<TextureCubemap> Create(const std::string& filename, bool checkCached = true);
 
         virtual ~TextureCubemap() override;
@@ -149,6 +208,9 @@ namespace Axle {
         virtual void Bind(u32 textureUnit) const override;
 
     private:
+        /**
+         * Deallocates all used memory
+         * */
         void Reset();
 
         u32 m_ID = 0;

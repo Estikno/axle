@@ -5,7 +5,9 @@
 
 #include "Texture.hpp"
 #include "Renderer/GLDebug.hpp"
+#include "Core/Error/Panic.hpp"
 #include "Core/Error/Result.hpp"
+#include "Core/Logger/Log.hpp"
 #include "Core/Resource/ResourceManager.hpp"
 #include "Renderer/Textures/TextureManager.hpp"
 
@@ -101,7 +103,7 @@ namespace Axle {
     // Texture 2D
     // --------------
 
-    Texture2D::Texture2D(u32 width, u32 height, TextureFormat internalFormat, u32 mipmaps, TextureType type)
+    Texture2D::Texture2D(u32 width, u32 height, TextureFormat internalFormat, i32 mipmaps, TextureType type)
         : m_Width(width),
           m_Height(height),
           m_Type(type) {
@@ -109,7 +111,7 @@ namespace Axle {
 
         AX_GL_CALL(glCreateTextures(GL_TEXTURE_2D, 1, &m_ID));
         AX_GL_CALL(glTextureStorage2D(m_ID,
-                                      (mipmaps == 0) ? 1 + CalculateMipmaps(m_Width, m_Height) : 1 + mipmaps,
+                                      (mipmaps < 0) ? 1 + CalculateMipmaps(m_Width, m_Height) : 1 + mipmaps,
                                       TextureFormatToOpenGL(internalFormat),
                                       m_Width,
                                       m_Height));
@@ -121,7 +123,7 @@ namespace Axle {
         AX_GL_CALL(glTextureParameteri(m_ID, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
     }
 
-    Texture2D::Texture2D(const std::string& path, u32 mipmaps, bool flipVertically, TextureType type)
+    Texture2D::Texture2D(const std::string& path, i32 mipmaps, bool flipVertically, TextureType type)
         : m_Type(type) {
         ZoneScopedN("Create texture with source");
 
@@ -162,6 +164,8 @@ namespace Axle {
         } else if (nrChannels == 4) {
             internalFormat = GL_RGBA8;
             dataFormat = GL_RGBA;
+        } else {
+            AX_PANIC(LogChannel::Renderer, "Image format not supported");
         }
 
         TracyGpuZone("Create texture");
@@ -169,7 +173,7 @@ namespace Axle {
         // OpenGL stuff
         AX_GL_CALL(glCreateTextures(GL_TEXTURE_2D, 1, &m_ID));
         AX_GL_CALL(glTextureStorage2D(m_ID,
-                                      (mipmaps == 0) ? 1 + CalculateMipmaps(m_Width, m_Height) : 1 + mipmaps,
+                                      (mipmaps < 0) ? 1 + CalculateMipmaps(m_Width, m_Height) : 1 + mipmaps,
                                       internalFormat,
                                       m_Width,
                                       m_Height));
@@ -186,14 +190,14 @@ namespace Axle {
         stbi_image_free(data);
     }
 
-    Ref<Texture2D> Texture2D::Create(const std::string& filename, bool checkCached, TextureType type) {
+    Ref<Texture2D> Texture2D::Create(const std::string& filename, i32 mipmaps, TextureType type, bool checkCached) {
         if (checkCached) {
             Result<Ref<Texture2D>> res = TextureManager::IsCached2D(filename);
             if (res.IsOk())
                 return res.Unwrap();
         }
 
-        Ref<Texture2D> tex = Ref<Texture2D>::Create(filename, 0, true, type); // strong count now 1, safely
+        Ref<Texture2D> tex = Ref<Texture2D>::Create(filename, mipmaps, true, type); // strong count now 1, safely
 
         if (checkCached)
             TextureManager::Cache2D(filename, tex); // takes a WeakRef from an already-owned Ref
@@ -285,6 +289,8 @@ namespace Axle {
         } else if (nrChannels == 4) {
             internalFormat = GL_RGBA8;
             dataFormat = GL_RGBA;
+        } else {
+            AX_PANIC(LogChannel::Renderer, "Image format not supported");
         }
 
         // OpenGL sutuff

@@ -102,7 +102,7 @@ namespace Axle {
         }
 #endif // AX_DEBUG
 
-        // Enable depth testing
+        // Enable OpenGL features
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
     }

@@ -41,7 +41,7 @@ namespace Axle {
          * way of creating a shader program.
          *
          * @param filename File containing all shaders needed
-         * @param checkCached Indicated wether or not to check for cached programs with the same filename. If set to
+         * @param checkCached Indicates wether or not to check for cached programs with the same filename. If set to
          * false this method behaves like the constructor version.
          *
          * @returns A counted reference to the program
@@ -69,7 +69,7 @@ namespace Axle {
 
     private:
         /**
-         * Manages the deallocation of memory
+         * Deallocates all used memory
          * */
         void Reset();
 
