@@ -3,11 +3,11 @@
 #include <glad/gl.h>
 
 #include "Skybox.hpp"
-#include "Renderer/Textures/TextureManager.hpp"
 #include "Renderer/Shaders/Shader.hpp"
 #include "Renderer/GLDebug.hpp"
 #include "Renderer/Primitives/Buffer.hpp"
 #include "Renderer/Primitives/VertexArray.hpp"
+#include "Renderer/Textures/Texture.hpp"
 
 #include <tracy/Tracy.hpp>
 #include <tracy/TracyOpenGL.hpp>
@@ -29,7 +29,7 @@ namespace Axle {
         m_VAO->SetIndexBuffer(eBuffer);
 
         // Setup texture and program
-        m_CubemapTexture = TextureManager::CreateCubeMap(texture);
+        m_CubemapTexture = TextureCubemap::Create(texture);
         m_Shader = Shader::Create(program);
     }
 
@@ -61,7 +61,7 @@ namespace Axle {
         m_VAO->Bind();
 
         m_Shader->SetMat4Uniform("viewProjection", m_ViewProjection);
-        TextureManager::Bind(m_CubemapTexture, 0);
+        m_CubemapTexture->Bind(0);
 
         AX_GL_CALL(glDepthMask(GL_FALSE));
         AX_GL_CALL(glDrawElements(GL_TRIANGLES, m_Indices.size(), GL_UNSIGNED_INT, 0));

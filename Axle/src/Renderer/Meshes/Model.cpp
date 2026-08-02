@@ -5,7 +5,6 @@
 #include "Renderer/Textures/Texture.hpp"
 #include "Core/Logger/Log.hpp"
 #include "Core/Resource/ResourceManager.hpp"
-#include "Renderer/Textures/TextureManager.hpp"
 
 #include "assimp/Importer.hpp"
 #include "assimp/scene.h"
@@ -20,7 +19,7 @@ namespace Axle {
     struct Model::InternalMethods {
         static void ProcessNode(aiNode* node, const aiScene* scene, Model* model);
         static Mesh ProcessMesh(aiMesh* mesh, const aiScene* scene, Model* model);
-        static std::vector<std::pair<u32, TextureType>>
+        static std::vector<Ref<Texture2D>>
         LoadMaterialTextures(aiMaterial* mat, aiTextureType aiType, TextureType type, const std::string& directory);
     };
 
@@ -76,7 +75,7 @@ namespace Axle {
 
         std::vector<Vertex> vertices;
         std::vector<u32> indices;
-        std::vector<std::pair<u32, TextureType>> textures;
+        std::vector<Ref<Texture2D>> textures;
 
         // Vertex data
         for (u32 i = 0; i < mesh->mNumVertices; ++i) {
@@ -102,12 +101,12 @@ namespace Axle {
         // Material
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-        std::vector<std::pair<u32, TextureType>> diffuseMaps =
+        std::vector<Ref<Texture2D>> diffuseMaps =
             LoadMaterialTextures(material, aiTextureType_DIFFUSE, TextureType::Diffuse, model->m_Directory);
         textures.insert(
             textures.end(), std::make_move_iterator(diffuseMaps.begin()), std::make_move_iterator(diffuseMaps.end()));
 
-        std::vector<std::pair<u32, TextureType>> specularMaps =
+        std::vector<Ref<Texture2D>> specularMaps =
             LoadMaterialTextures(material, aiTextureType_SPECULAR, TextureType::Specular, model->m_Directory);
         textures.insert(
             textures.end(), std::make_move_iterator(specularMaps.begin()), std::make_move_iterator(specularMaps.end()));
@@ -115,14 +114,13 @@ namespace Axle {
         return Mesh(vertices, indices, std::move(textures));
     }
 
-    std::vector<std::pair<u32, TextureType>>
-    Model::InternalMethods::LoadMaterialTextures(aiMaterial* mat,
-                                                 aiTextureType aiType,
-                                                 TextureType type,
-                                                 const std::string& directory) {
+    std::vector<Ref<Texture2D>> Model::InternalMethods::LoadMaterialTextures(aiMaterial* mat,
+                                                                             aiTextureType aiType,
+                                                                             TextureType type,
+                                                                             const std::string& directory) {
         ZoneScopedN("Load material textures");
 
-        std::vector<std::pair<u32, TextureType>> textures;
+        std::vector<Ref<Texture2D>> textures;
 
         for (u32 i = 0; i < mat->GetTextureCount(aiType); ++i) {
             aiString str;
@@ -130,10 +128,8 @@ namespace Axle {
 
             std::string filename = directory + "/" + std::string(str.C_Str());
 
-            u32 textId = TextureManager::CreateTexture(filename, -1);
-            TextureManager::SetWrapping(textId, TextureWrapMode::Repeat, TextureWrapMode::Repeat);
-            TextureManager::SetFiltering(textId, TextureFilteringMode::Linear, TextureFilteringMode::Linear);
-            textures.push_back(std::make_pair(textId, type));
+            Ref<Texture2D> tex = Texture2D::Create(filename, true, type);
+            textures.push_back(std::move(tex));
         }
 
         return textures;

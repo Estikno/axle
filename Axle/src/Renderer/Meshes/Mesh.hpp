@@ -3,7 +3,7 @@
 #include "axpch.hpp"
 
 #include "Core/Types.hpp"
-#include "../Textures/Texture.hpp"
+#include "Renderer/Textures/Texture.hpp"
 #include "Renderer/Primitives/VertexArray.hpp"
 #include "Renderer/Shaders/Shader.hpp"
 #include "Other/CustomTypes/Ref.hpp"
@@ -21,7 +21,7 @@ namespace Axle {
     public:
         Mesh(const std::vector<Vertex>& vertices,
              const std::vector<u32>& indices,
-             std::vector<std::pair<u32, TextureType>>&& textures);
+             std::vector<Ref<Texture2D>>&& textures);
 
         Mesh(const Mesh&) = delete;
         Mesh& operator=(const Mesh&) = delete;
@@ -39,6 +39,6 @@ namespace Axle {
         // Data
         std::vector<Vertex> m_Vertices;
         std::vector<u32> m_Indices;
-        std::vector<std::pair<u32, TextureType>> m_Textures;
+        std::vector<Ref<Texture2D>> m_Textures;
     };
 } // namespace Axle

@@ -6,6 +6,7 @@
 #include "Renderer/Primitives/VertexArray.hpp"
 #include "Renderer/Shaders/Shader.hpp"
 #include "Other/CustomTypes/Ref.hpp"
+#include "Renderer/Textures/Texture.hpp"
 
 #include <glm/glm.hpp>
 
@@ -35,7 +36,7 @@ namespace Axle {
         Ref<VertexArray> m_VAO;
         Ref<Shader> m_Shader;
 
-        u32 m_CubemapTexture = 0;
+        Ref<TextureCubemap> m_CubemapTexture;
 
         // Plane information
         std::array<f32, 12> m_Vertices = {

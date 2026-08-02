@@ -17,6 +17,13 @@ namespace Axle {
      * */
     class ShaderManager {
     public:
+        // Constructor and destructor do nothing as everything is constroled via Init/Shutdown
+        ShaderManager() {}
+        ~ShaderManager() {}
+
+        ShaderManager(const ShaderManager&) = delete;
+        ShaderManager& operator=(const ShaderManager&) = delete;
+
         /**
          * Initializes the manager
          * */

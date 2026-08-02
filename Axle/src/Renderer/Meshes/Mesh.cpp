@@ -1,4 +1,3 @@
-#include "Renderer/Shaders/Shader.hpp"
 #include "axpch.hpp"
 
 #include <glad/gl.h>
@@ -8,11 +7,10 @@
 #include "Core/Error/Panic.hpp"
 #include "Core/Logger/Log.hpp"
 #include "Renderer/Textures/Texture.hpp"
-#include "Renderer/Textures/TextureManager.hpp"
-#include "Renderer/GLDebug.hpp"
 #include "Renderer/Primitives/VertexArray.hpp"
 #include "Renderer/Primitives/Buffer.hpp"
 #include "Renderer/Renderer.hpp"
+#include "Renderer/Shaders/Shader.hpp"
 
 #include <tracy/Tracy.hpp>
 #include <tracy/TracyOpenGL.hpp>
@@ -20,7 +18,7 @@
 namespace Axle {
     Mesh::Mesh(const std::vector<Vertex>& vertices,
                const std::vector<u32>& indices,
-               std::vector<std::pair<u32, TextureType>>&& textures)
+               std::vector<Ref<Texture2D>>&& textures)
         : m_Vertices(vertices),
           m_Indices(indices),
           m_Textures(std::move(textures)) {
@@ -76,14 +74,13 @@ namespace Axle {
 
         // Texture binding
         for (u32 i = 0; i < m_Textures.size(); ++i) {
-            switch (m_Textures[i].second) {
+            switch (m_Textures[i]->GetType()) {
                 case TextureType::Diffuse:
                     // TODO: Instead of panicking simply log a warn message
                     AX_ENSURE(DiffuseTextureNr < TextureUnitOffset,
                               LogChannel::Renderer,
                               "Reached maximum number of diffuse textures. Can't bind more");
-                    TextureManager::Bind(m_Textures[i].first,
-                                         DiffuseTextureNr + static_cast<u8>(TextureType::Diffuse) * TextureUnitOffset);
+                    m_Textures[i]->Bind(DiffuseTextureNr + static_cast<u32>(TextureType::Diffuse) * TextureUnitOffset);
                     DiffuseTextureNr++;
                     break;
                 case TextureType::Specular:
@@ -91,9 +88,8 @@ namespace Axle {
                     AX_ENSURE(SpecularTextureNr < TextureUnitOffset,
                               LogChannel::Renderer,
                               "Reached maximum number of specular textures. Can't bind more");
-                    TextureManager::Bind(m_Textures[i].first,
-                                         SpecularTextureNr +
-                                             static_cast<u8>(TextureType::Specular) * TextureUnitOffset);
+                    m_Textures[i]->Bind(SpecularTextureNr +
+                                        static_cast<u32>(TextureType::Specular) * TextureUnitOffset);
                     SpecularTextureNr++;
                     break;
                 case TextureType::Unknown:
