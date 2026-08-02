@@ -128,7 +128,7 @@ namespace Axle {
 
             std::string filename = directory + "/" + std::string(str.C_Str());
 
-            Ref<Texture2D> tex = Texture2D::Create(filename, true, type);
+            Ref<Texture2D> tex = Texture2D::Create(filename, -1, type);
             textures.push_back(std::move(tex));
         }
 
