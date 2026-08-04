@@ -20,21 +20,40 @@ namespace Axle {
         AX_CORE_INFO(LogChannel::Renderer, "ShaderManager has been deleted");
     }
 
-    Result<Ref<Shader>> ShaderManager::IsCached(const std::string& filename) {
-        auto found = s_Instance->m_Shaders.find(filename);
+    Result<Ref<Shader>> ShaderManager::GetImpl(const std::string& name) {
+        auto foundW = m_ShadersWeak.find(name);
+        auto foundS = m_ShadersStrong.find(name);
 
-        if (found != s_Instance->m_Shaders.end()) {
-            if (found->second.Expired())
+        if (foundS != m_ShadersStrong.end())
+            return foundS->second;
+
+        if (foundW != m_ShadersWeak.end()) {
+            if (foundW->second.Expired()) {
+                m_ShadersWeak.erase(foundW);
                 return Result<Ref<Shader>>::Err(
-                    Error(ErrorCode::NotFound, "Shader with file " + filename + " is not cached"));
-            else
-                return found->second.Lock();
+                    Error(ErrorCode::NotFound, "Shader with name: " + name + " is not cached"));
+            } else
+                return foundW->second.Lock();
         }
 
-        return Result<Ref<Shader>>::Err(Error(ErrorCode::NotFound, "Shader with file " + filename + " is not cached"));
+        return Result<Ref<Shader>>::Err(Error(ErrorCode::NotFound, "Shader with name " + name + " is not cached"));
     }
 
-    void ShaderManager::CacheShader(const std::string& filename, const Ref<Shader>& shader) {
-        s_Instance->m_Shaders[filename] = WeakRef<Shader>(shader);
+    void ShaderManager::AddImpl(const std::string& name, const Ref<Shader>& shader, bool onlyCache) {
+        if (onlyCache)
+            m_ShadersWeak[name] = WeakRef<Shader>(shader);
+        else
+            m_ShadersStrong[name] = shader;
+    }
+
+    Ref<Shader> ShaderManager::LoadImpl(const std::string& name, const std::string& path, bool onlyCache) {
+        // The create method already caches the loaded shader
+        Ref<Shader> ref = Shader::Create(path, name);
+
+        // Only add it to the strong refence map if specified
+        if (!onlyCache)
+            AddImpl(name, ref, false);
+
+        return ref;
     }
 } // namespace Axle

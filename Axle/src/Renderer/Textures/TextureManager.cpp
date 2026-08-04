@@ -31,10 +31,11 @@ namespace Axle {
         auto found = s_Instance->m_Texture2Ds.find(filename);
 
         if (found != s_Instance->m_Texture2Ds.end()) {
-            if (found->second.Expired())
+            if (found->second.Expired()) {
+                s_Instance->m_Texture2Ds.erase(found);
                 return Result<Ref<Texture2D>>::Err(
                     Error(ErrorCode::NotFound, "Shader with file " + filename + " is not cached"));
-            else
+            } else
                 return found->second.Lock();
         }
 
@@ -46,10 +47,11 @@ namespace Axle {
         auto found = s_Instance->m_TextureCubemaps.find(filename);
 
         if (found != s_Instance->m_TextureCubemaps.end()) {
-            if (found->second.Expired())
+            if (found->second.Expired()) {
+                s_Instance->m_TextureCubemaps.erase(found);
                 return Result<Ref<TextureCubemap>>::Err(
                     Error(ErrorCode::NotFound, "Shader with file " + filename + " is not cached"));
-            else
+            } else
                 return found->second.Lock();
         }
 

@@ -7,8 +7,6 @@
 #include "Core/Input/InputManager.hpp"
 #include "Core/Resource/ResourceManager.hpp"
 #include "Core/Config/Config.hpp"
-#include "Renderer/Textures/TextureManager.hpp"
-#include "Renderer/Shaders/ShaderManager.hpp"
 #include <CoroWeaver.hpp>
 
 namespace Axle {
@@ -19,8 +17,6 @@ namespace Axle {
         Axle::InputManager::Init();
         Axle::ResourceManager::Init();
         cw::JobSystem::Init(Config::GetOrSet<u8>("jobsystem", "threads", 3));
-        ShaderManager::Init();
-        TextureManager::Init();
     }
 
     void ShutdownSystems() {

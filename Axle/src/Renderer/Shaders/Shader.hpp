@@ -37,6 +37,16 @@ namespace Axle {
         Shader(const std::string& filename);
 
         /**
+         * Creates a shader program. This constructor does not check cached shaders nor does it caches, so even though
+         * the shader you are looking may have already been loaded, linked and compiled, this will do the process all
+         * over again. It's recommended to instead use the static Create method to have that functionality.
+         *
+         * @param filename File containing all shaders needed
+         * @param name Custom name for the shader
+         * */
+        Shader(const std::string& filename, const std::string& name);
+
+        /**
          * Creates a shader program. Unlike the base constructor this method supports caching and it's the recommended
          * way of creating a shader program.
          *
@@ -47,6 +57,19 @@ namespace Axle {
          * @returns A counted reference to the program
          * */
         static Ref<Shader> Create(const std::string& filename, bool checkCached = true);
+
+        /**
+         * Creates a shader program. Unlike the base constructor this method supports caching and it's the recommended
+         * way of creating a shader program.
+         *
+         * @param filename File containing all shaders needed
+         * @param name Custom name for the shader
+         * @param checkCached Indicates wether or not to check for cached programs with the same filename. If set to
+         * false this method behaves like the constructor version.
+         *
+         * @returns A counted reference to the program
+         * */
+        static Ref<Shader> Create(const std::string& filename, const std::string& name, bool checkCached = true);
 
         ~Shader();
 
@@ -60,6 +83,10 @@ namespace Axle {
 
         inline u32 GetID() const {
             return m_ID;
+        }
+
+        inline const std::string& GetName() const {
+            return m_Name;
         }
 
         void SetBoolUniform(const std::string& name, bool value) const;
@@ -84,6 +111,7 @@ namespace Axle {
         static Result<u32> CompileShader(ShaderType type, const void* source);
 
         u32 m_ID = 0;
+        std::string m_Name;
         ResourceManager::ManagedFileHandle m_Handle;
     };
 } // namespace Axle

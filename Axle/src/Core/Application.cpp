@@ -12,10 +12,9 @@
 #include "Core/Layer/Layer.hpp"
 #include "Window/Window.hpp"
 #include "Types.hpp"
-#include "Renderer/Textures/TextureManager.hpp"
-#include "Renderer/Shaders/ShaderManager.hpp"
 #include "Renderer/Camera/Camera.hpp"
 #include "Renderer/GLDebug.hpp"
+#include "Renderer/Renderer.hpp"
 
 #include "ImGui/ImGuiLayer.hpp"
 
@@ -97,6 +96,9 @@ namespace Axle {
     cw::JobCoroutine<void> Application::AppInternalManagement::CreateMainWindow(Application* app) {
         app->m_Window = std::unique_ptr<Window>(Window::Create()); // GLFW + GLAD init
         TracyGpuContext;
+
+        Renderer::Init();
+
         co_return;
     }
 
@@ -173,8 +175,10 @@ namespace Axle {
 
             // Sleep until the next tick is due, minus a small margin
             f64 timeUntilNextTick = app->m_DeltaTime - lag;
+            // if (timeUntilNextTick > 0.002) // only sleep if more than 2ms away
+            //     std::this_thread::sleep_for(std::chrono::duration<f64>(timeUntilNextTick - 0.001)); // wake 1ms early
             if (timeUntilNextTick > 0.002) // only sleep if more than 2ms away
-                std::this_thread::sleep_for(std::chrono::duration<f64>(timeUntilNextTick - 0.001)); // wake 1ms early
+                co_await cw::WaitFor(std::chrono::milliseconds(static_cast<u64>((timeUntilNextTick - 0.001) * 1000)));
         }
 
         for (Layer* layer : *(app->m_LayerStack))
@@ -254,8 +258,7 @@ namespace Axle {
 
         // We shut down the rendering related systems on the render thread here so everything gets deleted correctly
         // (GLFW, OpenGL, ...)
-        TextureManager::Shutdown();
-        ShaderManager::Shutdown();
+        Renderer::Shutdown();
         // We delete the main window and termninate GLFW
         app->m_Window.reset();
 

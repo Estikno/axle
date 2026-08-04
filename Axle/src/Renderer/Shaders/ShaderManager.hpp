@@ -8,8 +8,6 @@
 #include "Core/Error/Result.hpp"
 
 namespace Axle {
-    class Shader;
-
     /**
      * This manager ensures that no shader program is compiled/linked more times than necessary by caching.
      *
@@ -35,25 +33,41 @@ namespace Axle {
         static void Shutdown();
 
         /**
-         * Checks wether a shader is cached or not
+         * Gets a shader reference by its name
          *
-         * @param filename Path to the desired shader
+         * @param name Name of the shader to get
          *
-         * @returns A result that contains a reference to a cached shader if the request succeedes
+         * @returns A Result containing a shader reference if the query succeeded
          * */
-        static Result<Ref<Shader>> IsCached(const std::string& filename);
+        inline static Result<Ref<Shader>> Get(const std::string& name) {
+            return s_Instance->GetImpl(name);
+        }
 
-        /**
-         * Caches a shader
-         *
-         * @param filename Path of the shader to cache
-         * @param shader Counted reference to the shader to cache
-         * */
-        static void CacheShader(const std::string& filename, const Ref<Shader>& shader);
+        inline static void Add(const Ref<Shader>& shader, bool onlyCache) {
+            return s_Instance->AddImpl(shader->GetName(), shader, onlyCache);
+        }
+
+        inline static void Add(const std::string& name, const Ref<Shader>& shader, bool onlyCache) {
+            return s_Instance->AddImpl(name, shader, onlyCache);
+        }
+
+        inline static Ref<Shader> Load(const std::string& path, bool onlyCache) {
+            return s_Instance->LoadImpl(path, path, onlyCache);
+        }
+
+        inline static Ref<Shader> Load(const std::string& name, const std::string& path, bool onlyCache) {
+            return s_Instance->LoadImpl(name, path, onlyCache);
+        }
 
     private:
+        // Static methods' implementations
+        Result<Ref<Shader>> GetImpl(const std::string& name);
+        void AddImpl(const std::string& name, const Ref<Shader>& shader, bool onlyCache);
+        Ref<Shader> LoadImpl(const std::string& name, const std::string& path, bool onlyCache);
+
         static std::unique_ptr<ShaderManager> s_Instance;
 
-        std::unordered_map<std::string, WeakRef<Shader>> m_Shaders;
+        std::unordered_map<std::string, WeakRef<Shader>> m_ShadersWeak;
+        std::unordered_map<std::string, Ref<Shader>> m_ShadersStrong;
     };
 } // namespace Axle

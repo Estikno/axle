@@ -4,10 +4,21 @@
 #include "RenderCommand.hpp"
 
 #include "Renderer/Camera/Camera.hpp"
-#include "Renderer/Shaders/Shader.hpp"
+#include "Renderer/Shaders/ShaderManager.hpp"
+#include "Renderer/Textures/TextureManager.hpp"
 
 namespace Axle {
     Renderer::SceneData* Renderer::s_SceneData = new Renderer::SceneData;
+
+    void Renderer::Init() {
+        ShaderManager::Init();
+        TextureManager::Init();
+    }
+
+    void Renderer::Shutdown() {
+        TextureManager::Shutdown();
+        ShaderManager::Shutdown();
+    }
 
     void Renderer::BeginScene(Camera& camera) {
         s_SceneData->ViewMatrix = camera.GetViewMatrix();

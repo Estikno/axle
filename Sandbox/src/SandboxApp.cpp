@@ -41,13 +41,13 @@ public:
         InputManager::SetCursorMode(CursorMode::CursorDisabled);
 
         // Skybox
-        skybox = Skybox("assets/tests/skybox1.png", "Sandbox/src/Shaders/skybox.bin");
+        skybox = new Skybox("assets/tests/skybox1.png", "Sandbox/src/Shaders/skybox.bin");
     }
 
     void OnDettachRender() override {
         shader.Reset();
         model = Model();
-        skybox = Skybox();
+        delete skybox;
     }
 
     void OnRender(f64 deltaTime) override {
@@ -70,8 +70,8 @@ public:
         model.Draw(shader);
 
         // Draw Skybox
-        skybox.SetViewProjectionMatrix(projection * glm::mat4(glm::mat3(view)));
-        skybox.Draw();
+        skybox->SetViewProjectionMatrix(projection * glm::mat4(glm::mat3(view)));
+        skybox->Draw();
 
         Renderer::EndScene();
     }
@@ -89,7 +89,7 @@ public:
 
 private:
     Model model;
-    Skybox skybox;
+    Skybox* skybox = nullptr;
     Ref<Shader> shader;
 
     f32 width = 1280.0f, height = 720.0f;

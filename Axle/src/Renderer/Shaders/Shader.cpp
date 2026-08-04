@@ -78,7 +78,11 @@ namespace Axle {
         AX_PANIC(LogChannel::Renderer, "Unknown ShaderDataType!");
     }
 
-    Shader::Shader(const std::string& filename) {
+    Shader::Shader(const std::string& filename)
+        : Shader(filename, filename) {}
+
+    Shader::Shader(const std::string& filename, const std::string& name)
+        : m_Name(name) {
         ZoneScopedN("Create shader from file");
 
         auto exp = ResourceManager::Load(filename);
@@ -110,9 +114,9 @@ namespace Axle {
                 shaderIDs.push_back(res.Unwrap());
             } else if (static_cast<ShaderType>(i) == ShaderType::Vertex ||
                        static_cast<ShaderType>(i) == ShaderType::Fragment) {
-                AX_PANIC(LogChannel::Renderer, res.UnwrapErr().message);
+                AX_PANIC(LogChannel::Renderer, "{0}", res.UnwrapErr());
             } else {
-                AX_CORE_WARN(LogChannel::Renderer, res.UnwrapErr().message);
+                AX_CORE_TRACE(LogChannel::Renderer, "{0}", res.UnwrapErr());
             }
         }
 
@@ -211,7 +215,8 @@ namespace Axle {
 
     Shader::Shader(Shader&& other) noexcept
         : m_ID(other.m_ID),
-          m_Handle(std::move(other.m_Handle)) {
+          m_Handle(std::move(other.m_Handle)),
+          m_Name(other.m_Name) {
         other.m_ID = 0;
     }
 
@@ -221,6 +226,7 @@ namespace Axle {
 
             m_ID = other.m_ID;
             m_Handle = std::move(other.m_Handle);
+            m_Name = other.m_Name;
 
             other.m_ID = 0;
         }
@@ -258,16 +264,20 @@ namespace Axle {
     }
 
     Ref<Shader> Shader::Create(const std::string& filename, bool checkCached) {
+        return Create(filename, filename, checkCached);
+    }
+
+    Ref<Shader> Shader::Create(const std::string& filename, const std::string& name, bool checkCached) {
         if (checkCached) {
-            Result<Ref<Shader>> res = ShaderManager::IsCached(filename);
+            Result<Ref<Shader>> res = ShaderManager::Get(filename);
             if (res.IsOk())
                 return res.Unwrap();
         }
 
-        Ref<Shader> shader = Ref<Shader>::Create(filename); // strong count now 1, safely
+        Ref<Shader> shader = Ref<Shader>::Create(filename, name); // strong count now 1, safely
 
         if (checkCached)
-            ShaderManager::CacheShader(filename, shader); // takes a WeakRef from an already-owned Ref
+            ShaderManager::Add(filename, shader, true); // takes a WeakRef from an already-owned Ref
 
         return shader;
     }
