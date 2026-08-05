@@ -52,7 +52,8 @@ public:
 
     void OnRender(f64 deltaTime) override {
         Camera& cam = Application::GetInstance().GetCamera();
-        cam.GetPositioner()->Update(deltaTime);
+        if (updateCamera.load())
+            cam.GetPositioner()->Update(deltaTime);
 
         Renderer::BeginScene(cam);
 
@@ -82,15 +83,28 @@ public:
         return false;
     }
 
+    bool OnKeyPressedEvent(KeyPressedEvent& event) {
+        if (event.GetKey() == Keys::F4) {
+            bool previous = updateCamera.load();
+            updateCamera.store(!previous);
+
+            InputManager::SetCursorMode((!previous ? CursorMode::CursorDisabled : CursorMode::CursorNormal));
+        }
+
+        return false;
+    }
+
     void OnEvent(Event& event) override {
         EventDispatcher dispatcher(event);
         dispatcher.Dispatch<FrameBufferResizeEvent>(AX_BIND_EVENT_FN(OnFrameBufferResize));
+        dispatcher.Dispatch<KeyPressedEvent>(AX_BIND_EVENT_FN(OnKeyPressedEvent));
     }
 
 private:
     Model model;
     Skybox* skybox = nullptr;
     Ref<Shader> shader;
+    std::atomic_bool updateCamera = true;
 
     f32 width = 1280.0f, height = 720.0f;
 };
