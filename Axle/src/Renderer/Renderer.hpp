@@ -9,6 +9,11 @@
 #include "glm/fwd.hpp"
 
 namespace Axle {
+    /**
+     * Renederer for 3D graphics
+     *
+     * All the functionality of this class is NOT THREAD SAFE and should only be accessed by the render thread.
+     * */
     class Renderer {
     public:
         static void Init();
@@ -20,6 +25,8 @@ namespace Axle {
         static void Submit(const Ref<Shader>& shader,
                            const Ref<VertexArray>& vertexArray,
                            const glm::mat4& transform = glm::mat4(1.0f));
+
+        static void OnFrameBufferResize(u32 widht, u32 height);
 
     private:
         struct SceneData {

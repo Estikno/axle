@@ -50,11 +50,15 @@ namespace Axle {
 
         bool OnWindowClose(WindowCloseEvent& event);
         bool OnKeyPressed(KeyPressedEvent& event);
+        bool OnWindowResize(WindowResizeEvent& event);
 
         static Application* s_Instance;
 
         std::unique_ptr<Window> m_Window;
+
         std::atomic<bool> m_Running = false;
+        std::atomic<bool> m_Minimized = false;
+
         LayerStack* m_LayerStack;
 
         /// Time between update loops

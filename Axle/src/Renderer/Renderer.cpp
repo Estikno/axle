@@ -36,4 +36,8 @@ namespace Axle {
         vertexArray->Bind();
         RenderCommand::DrawElements(vertexArray);
     }
+
+    void Renderer::OnFrameBufferResize(u32 widht, u32 height) {
+        RenderCommand::SetViewport(0, 0, widht, height);
+    }
 } // namespace Axle

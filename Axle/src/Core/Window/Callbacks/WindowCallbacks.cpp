@@ -7,9 +7,9 @@
 #include "Core/Events/EventHandler.hpp"
 #include "Core/Events/Event.hpp"
 #include "../Window.hpp"
+#include "Renderer/Renderer.hpp"
 
 #include <GLFW/glfw3.h>
-#include <glad/gl.h>
 
 namespace Axle {
     void WindowCloseCallback(GLFWwindow* window) {
@@ -18,11 +18,6 @@ namespace Axle {
     }
 
     void WindowSizeCallback(GLFWwindow* window, int width, int height) {
-        if (width == 0 || height == 0) {
-            AX_CORE_WARN(LogChannel::Window, "Window minimized or has zero size!");
-            return;
-        }
-
         // Update the window data
         WindowData* data = static_cast<WindowData*>(glfwGetWindowUserPointer(window));
         data->Width = static_cast<u32>(width);
@@ -37,12 +32,14 @@ namespace Axle {
     }
 
     void FrameBufferSizeCallback(GLFWwindow* window, int width, int height) {
-        glViewport(0, 0, width, height);
-
         // Update the window data
         WindowData* data = static_cast<WindowData*>(glfwGetWindowUserPointer(window));
         data->FramebufferWidth = static_cast<u32>(width);
         data->FramebufferHeight = static_cast<u32>(height);
+
+        // Notify the renderer of the change (We do it here because this method is guaranteed to be excecuted by the
+        // rendere thread)
+        Renderer::OnFrameBufferResize(static_cast<u32>(width), static_cast<u32>(height));
 
         AX_SUBMIT_EVENT(FrameBufferResizeEvent(static_cast<u32>(width), static_cast<u32>(height)));
     }

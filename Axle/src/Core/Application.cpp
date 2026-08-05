@@ -13,8 +13,8 @@
 #include "Window/Window.hpp"
 #include "Types.hpp"
 #include "Renderer/Camera/Camera.hpp"
-#include "Renderer/GLDebug.hpp"
 #include "Renderer/Renderer.hpp"
+#include "Renderer/RenderCommand.hpp"
 
 #include "ImGui/ImGuiLayer.hpp"
 
@@ -215,8 +215,8 @@ namespace Axle {
             // --------------------------
 
             // Temporary background color
-            AX_GL_CALL(glClearColor(0.2f, 0.3f, 0.3f, 1.0f));
-            AX_GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+            RenderCommand::SetClearColor(glm::vec4(0.2f, 0.3f, 0.3f, 1.0f));
+            RenderCommand::Clear();
 
             {
                 ZoneScopedN("ProcessCurrentPresses");
@@ -230,9 +230,11 @@ namespace Axle {
 
             AX_SCHEDULE_TAG_AND_WAIT(EVENT_INPUT_TAG);
 
-            for (Layer* layer : *(app->m_LayerStack)) {
-                ZoneScopedN("Layer OnRender");
-                layer->OnRender(elapsed);
+            if (!app->m_Minimized.load(std::memory_order_acquire)) {
+                for (Layer* layer : *(app->m_LayerStack)) {
+                    ZoneScopedN("Layer OnRender");
+                    layer->OnRender(elapsed);
+                }
             }
 
             {
@@ -287,5 +289,15 @@ namespace Axle {
 
         Close();
         return true;
+    }
+
+    bool Application::OnWindowResize(WindowResizeEvent& event) {
+        if (event.GetWidth() == 0 || event.GetHeight() == 0) {
+            m_Minimized.store(true, std::memory_order_release);
+            return false;
+        }
+
+        m_Minimized.store(false, std::memory_order_release);
+        return false;
     }
 } // namespace Axle

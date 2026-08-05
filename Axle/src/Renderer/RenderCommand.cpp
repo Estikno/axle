@@ -19,4 +19,8 @@ namespace Axle {
     void RenderCommand::DrawElements(const Ref<VertexArray>& vertexArray) {
         AX_GL_CALL(glDrawElements(GL_TRIANGLES, vertexArray->GetElementBuffer()->GetCount(), GL_UNSIGNED_INT, nullptr));
     }
+
+    void RenderCommand::SetViewport(u32 x, u32 y, u32 width, u32 height) {
+        AX_GL_CALL(glViewport(x, y, width, height));
+    }
 } // namespace Axle

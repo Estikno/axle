@@ -43,18 +43,52 @@ namespace Axle {
             return s_Instance->GetImpl(name);
         }
 
+        /**
+         * Adds a shader for future use
+         *
+         * @param shader A reference to the shader to add
+         * @param onlyCache Set to true if the purpose is only going to be to have the shader cached to not
+         * recompile/relink again. This functionality also works if it's set to false but it's a bit more expensive
+         * because of other factors
+         * */
         inline static void Add(const Ref<Shader>& shader, bool onlyCache) {
             return s_Instance->AddImpl(shader->GetName(), shader, onlyCache);
         }
 
+        /**
+         * Adds a shader for future use
+         *
+         * @param name Custom name for the added shader
+         * @param shader A reference to the shader to add
+         * @param onlyCache Set to true if the purpose is only going to be to have the shader cached to not
+         * recompile/relink again. This functionality also works if it's set to false but it's a bit more expensive
+         * because of other factors
+         * */
         inline static void Add(const std::string& name, const Ref<Shader>& shader, bool onlyCache) {
             return s_Instance->AddImpl(name, shader, onlyCache);
         }
 
+        /**
+         * Loads a shader and automatically addes it for future use
+         *
+         * @param path The path of the shader file
+         * @param onlyCache Set to true if the purpose is only going to be to have the shader cached to not
+         * recompile/relink again. This functionality also works if it's set to false but it's a bit more expensive
+         * because of other factors
+         * */
         inline static Ref<Shader> Load(const std::string& path, bool onlyCache) {
             return s_Instance->LoadImpl(path, path, onlyCache);
         }
 
+        /**
+         * Loads a shader and automatically addes it for future use
+         *
+         * @param name Custom name for the loaded shader
+         * @param path The path of the shader file
+         * @param onlyCache Set to true if the purpose is only going to be to have the shader cached to not
+         * recompile/relink again. This functionality also works if it's set to false but it's a bit more expensive
+         * because of other factors
+         * */
         inline static Ref<Shader> Load(const std::string& name, const std::string& path, bool onlyCache) {
             return s_Instance->LoadImpl(name, path, onlyCache);
         }
