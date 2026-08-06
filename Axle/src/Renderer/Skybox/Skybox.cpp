@@ -8,6 +8,7 @@
 #include "Renderer/Primitives/Buffer.hpp"
 #include "Renderer/Primitives/VertexArray.hpp"
 #include "Renderer/Textures/Texture.hpp"
+#include "Renderer/Renderer.hpp"
 
 #include <tracy/Tracy.hpp>
 #include <tracy/TracyOpenGL.hpp>
@@ -57,14 +58,10 @@ namespace Axle {
         ZoneScopedN("Draw Skybox");
         TracyGpuZone("Draw Skybox");
 
-        m_Shader->Use();
-        m_VAO->Bind();
-
-        m_Shader->SetMat4Uniform("viewProjection", m_ViewProjection);
         m_CubemapTexture->Bind(0);
 
         AX_GL_CALL(glDepthMask(GL_FALSE));
-        AX_GL_CALL(glDrawElements(GL_TRIANGLES, m_Indices.size(), GL_UNSIGNED_INT, 0));
+        Renderer::Submit(m_Shader, m_VAO);
         AX_GL_CALL(glDepthMask(GL_TRUE));
     }
 

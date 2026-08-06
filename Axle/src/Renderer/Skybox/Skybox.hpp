@@ -11,7 +11,7 @@
 #include <glm/glm.hpp>
 
 namespace Axle {
-    class Skybox {
+    class Skybox : public RefCounted {
     public:
         Skybox() = default;
         Skybox(const std::string& texture, const std::string& program);

@@ -47,11 +47,11 @@ namespace Axle {
         InternalMethods::ProcessNode(scene->mRootNode, scene, this);
     }
 
-    void Model::Draw(const Ref<Shader>& shader) {
+    void Model::Draw(const Ref<Shader>& shader, const glm::mat4& transform) {
         ZoneScopedN("Draw model");
 
         for (u32 i = 0; i < m_Meshes.size(); ++i) {
-            m_Meshes[i].Draw(shader);
+            m_Meshes[i].Draw(shader, transform);
         }
     }
 

@@ -67,6 +67,7 @@ namespace Axle {
         virtual u32 GetWidth() const = 0;
         virtual u32 GetHeight() const = 0;
         virtual TextureType GetType() const = 0;
+        virtual u32 GetID() const = 0;
 
         virtual void Bind(u32 textureUnit) const = 0;
     };
@@ -143,6 +144,10 @@ namespace Axle {
             return m_Type;
         }
 
+        inline virtual u32 GetID() const override {
+            return m_ID;
+        }
+
         virtual void Bind(u32 textureUnit) const override;
 
     private:
@@ -203,6 +208,10 @@ namespace Axle {
 
         inline virtual TextureType GetType() const override {
             return m_Type;
+        }
+
+        inline virtual u32 GetID() const override {
+            return m_ID;
         }
 
         virtual void Bind(u32 textureUnit) const override;

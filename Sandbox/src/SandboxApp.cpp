@@ -11,6 +11,8 @@
 #include "Renderer/Meshes/Model.hpp"
 #include "Renderer/Skybox/Skybox.hpp"
 #include "Renderer/Renderer.hpp"
+#include "Other/CustomTypes/Ref.hpp"
+#include "Renderer/Textures/Texture.hpp"
 
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
@@ -41,13 +43,13 @@ public:
         InputManager::SetCursorMode(CursorMode::CursorDisabled);
 
         // Skybox
-        skybox = new Skybox("assets/tests/skybox1.png", "Sandbox/src/Shaders/skybox.bin");
+        skybox = Ref<Skybox>::Create("assets/tests/skybox1.png", "Sandbox/src/Shaders/skybox.bin");
     }
 
     void OnDettachRender() override {
         shader.Reset();
         model = Model();
-        delete skybox;
+        skybox.Reset();
     }
 
     void OnRender(f64 deltaTime) override {
@@ -55,26 +57,27 @@ public:
         if (updateCamera.load())
             cam.GetPositioner()->Update(deltaTime);
 
-        Renderer::BeginScene(cam);
+        SceneHandle handle1 = Renderer::BeginScene(cam, nullptr, nullptr);
 
-        glm::mat4 projection =
-            glm::perspective(glm::radians(cam.GetPositioner()->GetFOV()), width / height, 0.1f, 1000.0f);
-        glm::mat4 view = cam.GetPositioner()->GetViewMatrix();
+        Ref<Texture2D> tex = Ref<Texture2D>::Create(width, height, TextureFormat::RGB8, 0);
+        Ref<FrameBuffer> fBuffer = Ref<FrameBuffer>::Create(tex, true, false);
+
+        SceneHandle handle2 = Renderer::BeginScene(cam, skybox, fBuffer);
+
         glm::mat4 modelMatrix = glm::mat4(1.0f);
         modelMatrix = glm::translate(
             modelMatrix, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
         modelMatrix =
             glm::scale(modelMatrix, glm::vec3(1.0f, 1.0f, 1.0f)); // it's a bit too big for our scene, so scale it down
 
-        shader->Use();
-        shader->SetMat4Uniform("model", modelMatrix);
-        model.Draw(shader);
+        model.Draw(shader, modelMatrix);
 
-        // Draw Skybox
-        skybox->SetViewProjectionMatrix(projection * glm::mat4(glm::mat3(view)));
-        skybox->Draw();
+        Renderer::EndScene(handle2);
 
-        Renderer::EndScene();
+        tex->Bind(0);
+        Renderer::Submit(tex);
+
+        Renderer::EndScene(handle1);
     }
 
     bool OnFrameBufferResize(FrameBufferResizeEvent& event) {
@@ -102,7 +105,7 @@ public:
 
 private:
     Model model;
-    Skybox* skybox = nullptr;
+    Ref<Skybox> skybox;
     Ref<Shader> shader;
     std::atomic_bool updateCamera = true;
 

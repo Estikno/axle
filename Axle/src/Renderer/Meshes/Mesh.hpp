@@ -29,7 +29,7 @@ namespace Axle {
         Mesh(Mesh&& other) noexcept;
         Mesh& operator=(Mesh&& other) noexcept;
 
-        void Draw(const Ref<Shader>& shader);
+        void Draw(const Ref<Shader>& shader, const glm::mat4& transform = glm::mat4(1.0f));
 
     private:
         void SetupMesh();
