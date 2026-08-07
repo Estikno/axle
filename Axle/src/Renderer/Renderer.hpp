@@ -8,6 +8,7 @@
 #include "Renderer/Primitives/FrameBuffer.hpp"
 #include "Renderer/Skybox/Skybox.hpp"
 #include "Renderer/Textures/Texture.hpp"
+#include "Renderer/Primitives/UniformBuffer.hpp"
 
 #include "glm/fwd.hpp"
 
@@ -50,7 +51,7 @@ namespace Axle {
     /**
      * Renederer for 3D graphics
      *
-     * All the functionality of this class is NOT THREAD SAFE and should only be accessed by the render thread.
+     * All the functionality of this class is NOT THREAD SAFE and must only be accessed by the render thread.
      * */
     class Renderer {
     public:
@@ -92,7 +93,7 @@ namespace Axle {
         static std::vector<SceneData> s_SceneData;
 
         // NOTE: Temporal variables
-        static u32 s_UBO;
+        static Ref<UniformBuffer> s_UBO;
         static Ref<VertexArray> s_DTextureVAO;
         static Ref<Shader> s_TexShader;
     };

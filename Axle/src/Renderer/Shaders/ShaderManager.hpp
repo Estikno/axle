@@ -11,7 +11,7 @@ namespace Axle {
     /**
      * This manager ensures that no shader program is compiled/linked more times than necessary by caching.
      *
-     * All the functionality of this class is NOT THREAD SAFE and should only be accessed by the render thread.
+     * All the functionality of this class is NOT THREAD SAFE and must only be accessed by the render thread.
      * */
     class ShaderManager {
     public:

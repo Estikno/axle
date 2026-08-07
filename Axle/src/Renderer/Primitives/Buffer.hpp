@@ -116,7 +116,7 @@ namespace Axle {
          * @param size Size of the attribute data (in bytes)
          * @param vertices Pointer to the attribute data
          * */
-        VertexBuffer(u32 size, f32* vertices);
+        VertexBuffer(u32 size, const f32* vertices);
         ~VertexBuffer() override;
 
         VertexBuffer(VertexBuffer&& other) noexcept;
@@ -175,7 +175,7 @@ namespace Axle {
          * @param count How many indices does it have.
          * @param indices Pointer to the indices array
          * */
-        ElementBuffer(u32 count, u32* indices);
+        ElementBuffer(u32 count, const u32* indices);
         ~ElementBuffer() override;
 
         ElementBuffer(ElementBuffer&& other) noexcept;

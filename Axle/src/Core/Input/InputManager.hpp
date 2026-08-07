@@ -209,14 +209,14 @@ namespace Axle {
          *
          * @param mode The desired cursor mode
          *
-         * This function is NOT thread safe and should only be called from the render thread. If not it's undefined
+         * This function is NOT thread safe and must only be called from the render thread. If not it's undefined
          * behavior.
          * */
         inline static void SetCursorMode(CursorMode mode) {
             return s_Instance->SetCursorModeImpl(mode);
         }
 
-        // Modify the keys state. This should only be called by the event system and should not be available to the end
+        // Modify the keys state. This must only be called by the event system and should not be available to the end
         // user.
 
         /**

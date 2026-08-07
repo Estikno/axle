@@ -26,35 +26,12 @@ namespace Axle {
 
         void Draw();
 
-        inline void SetViewProjectionMatrix(const glm::mat4& viewProject) {
-            m_ViewProjection = viewProject;
-        }
-
     private:
-        void Clear();
+        void Reset();
 
         Ref<VertexArray> m_VAO;
         Ref<Shader> m_Shader;
 
         Ref<TextureCubemap> m_CubemapTexture;
-
-        // Plane information
-        std::array<f32, 12> m_Vertices = {
-            -1.0f,
-            1.0f,
-            0.999f,
-            -1.0f,
-            -1.0f,
-            0.999f,
-            1.0f,
-            -1.0f,
-            0.999f,
-            1.0f,
-            1.0f,
-            0.999f,
-        };
-        std::array<u32, 6> m_Indices = {0, 1, 2, 0, 2, 3};
-
-        glm::mat4 m_ViewProjection = glm::mat4(0.0f);
     };
 } // namespace Axle

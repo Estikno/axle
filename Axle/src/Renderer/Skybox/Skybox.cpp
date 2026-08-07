@@ -5,7 +5,6 @@
 #include "Skybox.hpp"
 #include "Renderer/Shaders/Shader.hpp"
 #include "Renderer/GLDebug.hpp"
-#include "Renderer/Primitives/Buffer.hpp"
 #include "Renderer/Primitives/VertexArray.hpp"
 #include "Renderer/Textures/Texture.hpp"
 #include "Renderer/Renderer.hpp"
@@ -18,16 +17,8 @@ namespace Axle {
         ZoneScopedN("Setup Skybox");
         TracyGpuZone("Setup Skybox");
 
-        // Setup buffers
-        Ref<VertexBuffer> vBuffer = Ref<VertexBuffer>::Create(sizeof(f32) * m_Vertices.size(), m_Vertices.data());
-        Ref<ElementBuffer> eBuffer = Ref<ElementBuffer>::Create(m_Indices.size(), m_Indices.data());
-        m_VAO = Ref<VertexArray>::Create();
-
-        BufferLayout layout = {{ShaderDataType::Vec3, "aPos"}};
-        vBuffer->SetLayout(layout);
-
-        m_VAO->AddVertexBuffer(vBuffer);
-        m_VAO->SetIndexBuffer(eBuffer);
+        // Setup buffer
+        m_VAO = VertexArray::ScreenQuad();
 
         // Setup texture and program
         m_CubemapTexture = TextureCubemap::Create(texture);
@@ -35,7 +26,7 @@ namespace Axle {
     }
 
     Skybox::~Skybox() {
-        Clear();
+        Reset();
     }
 
     Skybox::Skybox(Skybox&& other) noexcept
@@ -45,7 +36,7 @@ namespace Axle {
 
     Skybox& Skybox::operator=(Skybox&& other) noexcept {
         if (this != &other) {
-            Clear();
+            Reset();
 
             m_VAO = std::move(other.m_VAO);
             m_CubemapTexture = other.m_CubemapTexture;
@@ -65,7 +56,7 @@ namespace Axle {
         AX_GL_CALL(glDepthMask(GL_TRUE));
     }
 
-    void Skybox::Clear() {
+    void Skybox::Reset() {
         TracyGpuZone("Delete Skybox");
 
         m_VAO.Reset();

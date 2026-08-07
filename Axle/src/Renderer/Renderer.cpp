@@ -11,6 +11,7 @@
 #include "Renderer/Textures/TextureManager.hpp"
 #include "Renderer/Primitives/FrameBuffer.hpp"
 #include "Renderer/Primitives/VertexArray.hpp"
+#include "Renderer/Primitives/UniformBuffer.hpp"
 #include "Renderer/Skybox/Skybox.hpp"
 #include "Renderer/Shaders/Shader.hpp"
 #include "Other/CustomTypes/Ref.hpp"
@@ -19,7 +20,7 @@
 
 namespace Axle {
     std::vector<SceneData> Renderer::s_SceneData;
-    u32 Renderer::s_UBO;
+    Ref<UniformBuffer> Renderer::s_UBO;
     Ref<VertexArray> Renderer::s_DTextureVAO;
     Ref<Shader> Renderer::s_TexShader;
 
@@ -27,43 +28,15 @@ namespace Axle {
         ShaderManager::Init();
         TextureManager::Init();
 
-        AX_GL_CALL(glCreateBuffers(1, &s_UBO));
-        AX_GL_CALL(glNamedBufferData(s_UBO, sizeof(ScenePOD), nullptr, GL_DYNAMIC_DRAW));
-
-        // Plane information
-        std::array<f32, 12> m_Vertices = {
-            -1.0f,
-            1.0f,
-            0.999f,
-            -1.0f,
-            -1.0f,
-            0.999f,
-            1.0f,
-            -1.0f,
-            0.999f,
-            1.0f,
-            1.0f,
-            0.999f,
-        };
-        std::array<u32, 6> m_Indices = {0, 1, 2, 0, 2, 3};
-
-        Ref<VertexBuffer> vBuffer = Ref<VertexBuffer>::Create(sizeof(f32) * m_Vertices.size(), m_Vertices.data());
-        Ref<ElementBuffer> eBuffer = Ref<ElementBuffer>::Create(m_Indices.size(), m_Indices.data());
-        s_DTextureVAO = Ref<VertexArray>::Create();
-
-        BufferLayout layout = {{ShaderDataType::Vec3, "aPos"}};
-        vBuffer->SetLayout(layout);
-
-        s_DTextureVAO->AddVertexBuffer(vBuffer);
-        s_DTextureVAO->SetIndexBuffer(eBuffer);
-
+        s_UBO = Ref<UniformBuffer>::Create(sizeof(ScenePOD), nullptr);
+        s_DTextureVAO = VertexArray::ScreenQuad();
         s_TexShader = Shader::Create("Sandbox/src/Shaders/textureDraw.bin");
     }
 
     void Renderer::Shutdown() {
         s_TexShader.Reset();
         s_DTextureVAO.Reset();
-        AX_GL_CALL(glDeleteBuffers(1, &s_UBO));
+        s_UBO.Reset();
 
         TextureManager::Shutdown();
         ShaderManager::Shutdown();
@@ -127,8 +100,8 @@ namespace Axle {
     void Renderer::BindSceneState(SceneData& data) {
         // Update UBO
         ScenePOD podData(data);
-        AX_GL_CALL(glNamedBufferSubData(s_UBO, 0, sizeof(ScenePOD), &podData));
-        AX_GL_CALL(glBindBufferBase(GL_UNIFORM_BUFFER, 0, s_UBO));
+        s_UBO->UpdateData(0, sizeof(ScenePOD), &podData);
+        s_UBO->Bind(0);
 
         // Bind FrameBuffer
         if (data.RenderTarget)

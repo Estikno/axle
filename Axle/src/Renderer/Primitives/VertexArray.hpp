@@ -2,7 +2,6 @@
 
 #include "axpch.hpp"
 
-#include "Core/Logger/Log.hpp"
 #include "Core/Types.hpp"
 #include "Renderer/Primitives/Buffer.hpp"
 #include "Other/CustomTypes/Ref.hpp"
@@ -11,12 +10,14 @@ namespace Axle {
     /**
      * RAII wrapper of an OpenGL vertex array
      *
-     * All the functionality of this class is NOT THREAD SAFE and should only be accessed by the render thread.
+     * All the functionality of this class is NOT THREAD SAFE and must only be accessed by the render thread.
      * */
     class VertexArray : public RefCounted {
     public:
         VertexArray();
         ~VertexArray() override;
+
+        static Ref<VertexArray> ScreenQuad();
 
         VertexArray(VertexArray&& other) noexcept;
         VertexArray& operator=(VertexArray&& other) noexcept;

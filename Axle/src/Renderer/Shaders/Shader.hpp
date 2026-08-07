@@ -20,7 +20,7 @@ namespace Axle {
     /**
      * RAII wrapper of an OpenGL shader program
      *
-     * All the functionality of this class is NOT THREAD SAFE and should only be accessed by the render thread.
+     * All the functionality of this class is NOT THREAD SAFE and must only be accessed by the render thread.
      * */
     class Shader : public RefCounted {
     public:

@@ -8,6 +8,11 @@
 #include "Renderer/Textures/Texture.hpp"
 
 namespace Axle {
+    /**
+     * RAII wrapper of an OpenGL FrameBuffer
+     *
+     * All the functionality of this class is NOT THREAD SAFE and must only be accessed by the render thread.
+     * */
     class AXLE_API FrameBuffer : public RefCounted {
     public:
         FrameBuffer() = default;

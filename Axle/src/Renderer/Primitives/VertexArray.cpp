@@ -8,6 +8,7 @@
 #include "Core/Error/Panic.hpp"
 #include "Core/Logger/Log.hpp"
 #include "Renderer/Shaders/Shader.hpp"
+#include "Other/CustomTypes/Ref.hpp"
 
 #include <tracy/TracyOpenGL.hpp>
 
@@ -18,6 +19,37 @@ namespace Axle {
 
     VertexArray::~VertexArray() {
         Reset();
+    }
+
+    Ref<VertexArray> VertexArray::ScreenQuad() {
+        // Quad information
+        static constexpr std::array<f32, 12> vertices = {
+            -1.0f,
+            1.0f,
+            0.999f,
+            -1.0f,
+            -1.0f,
+            0.999f,
+            1.0f,
+            -1.0f,
+            0.999f,
+            1.0f,
+            1.0f,
+            0.999f,
+        };
+        static constexpr std::array<u32, 6> indices = {0, 1, 2, 0, 2, 3};
+        static const BufferLayout layout = {{ShaderDataType::Vec3, "aPos"}};
+
+        Ref<VertexArray> vArray = Ref<VertexArray>::Create();
+        Ref<VertexBuffer> vBuffer = Ref<VertexBuffer>::Create(sizeof(f32) * vertices.size(), vertices.data());
+        Ref<ElementBuffer> eBuffer = Ref<ElementBuffer>::Create(indices.size(), indices.data());
+
+        vBuffer->SetLayout(layout);
+
+        vArray->AddVertexBuffer(vBuffer);
+        vArray->SetIndexBuffer(eBuffer);
+
+        return vArray;
     }
 
     VertexArray::VertexArray(VertexArray&& other) noexcept

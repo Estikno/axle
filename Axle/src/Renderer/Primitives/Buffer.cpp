@@ -13,7 +13,7 @@ namespace Axle {
     // Vertex Buffer
     // -----------------------------------------------------
 
-    VertexBuffer::VertexBuffer(u32 size, f32* vertices) {
+    VertexBuffer::VertexBuffer(u32 size, const f32* vertices) {
         TracyGpuZone("Create VertexBuffer");
 
         AX_GL_CALL(glCreateBuffers(1, &m_ID));
@@ -52,7 +52,7 @@ namespace Axle {
     // Index Buffer
     // -----------------------------------------------------
 
-    ElementBuffer::ElementBuffer(u32 count, u32* indices)
+    ElementBuffer::ElementBuffer(u32 count, const u32* indices)
         : m_Count(count) {
         TracyGpuZone("Create IndexBuffer");
 
