@@ -26,6 +26,9 @@ namespace Axle {
 
         void OnEvent(Event& event) override;
 
+        static void InitFrame();
+        static void EndFrame();
+
     private:
         bool OnKeyPressed(KeyPressedEvent& event);
         bool OnKeyIsPressed(KeyIsPressedEvent& event);

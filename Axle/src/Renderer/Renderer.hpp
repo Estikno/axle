@@ -32,8 +32,6 @@ namespace Axle {
         // Target
         Ref<FrameBuffer> RenderTarget;
         bool Resize = true;
-        f32 WidthRatioScreen = 1.0f;
-        f32 HeightRatioScreen = 1.0f;
     };
 
     struct SceneHandle {

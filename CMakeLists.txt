@@ -122,6 +122,7 @@ endif()
 add_subdirectory(Axle)
 add_subdirectory(Sandbox)
 add_subdirectory(AAP)
+add_subdirectory(Editor)
 
 # Tests only exist for Debug builds.
 # For multi-config generators we add the directory and let the Tests

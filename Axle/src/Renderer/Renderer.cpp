@@ -1,7 +1,6 @@
 #include "axpch.hpp"
 
 #include <glad/gl.h>
-#include "GLDebug.hpp"
 
 #include "Renderer.hpp"
 #include "RenderCommand.hpp"
@@ -100,12 +99,8 @@ namespace Axle {
         }
 
         SceneData& data = s_SceneData.back();
-        if (data.Resize) {
-            RenderCommand::SetViewport(0,
-                                       0,
-                                       static_cast<f32>(width) * data.WidthRatioScreen,
-                                       static_cast<f32>(height) * data.HeightRatioScreen);
-        }
+        if (data.Resize)
+            RenderCommand::SetViewport(0, 0, width, height);
     }
 
     void Renderer::BindSceneState(SceneData& data) {

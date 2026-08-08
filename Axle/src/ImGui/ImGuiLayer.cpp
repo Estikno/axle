@@ -89,6 +89,9 @@ namespace Axle {
         Debug::Inspector::Shutdown();
     }
 
+    void ImGuiLayer::InitFrame() {}
+    void ImGuiLayer::EndFrame() {}
+
     void ImGuiLayer::OnEvent(Event& event) {
         EventDispatcher dispatcher(event);
 

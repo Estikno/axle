@@ -273,6 +273,7 @@ set_target_properties(Axle PROPERTIES
 # ── Post-build: copy the Axle DLL/SO into Sandbox and Tests output dirs ────────
 set(AXLE_LIB_OUTPUT "${OUTPUT_BASE}/$<CONFIG>/${CMAKE_SYSTEM_NAME}-x64/Axle")
 set(SANDBOX_OUTPUT  "${OUTPUT_BASE}/$<CONFIG>/${CMAKE_SYSTEM_NAME}-x64/Sandbox")
+set(EDITOR_OUTPUT  "${OUTPUT_BASE}/$<CONFIG>/${CMAKE_SYSTEM_NAME}-x64/Editor")
 set(TESTS_OUTPUT    "${OUTPUT_BASE}/$<CONFIG>/${CMAKE_SYSTEM_NAME}-x64/Tests")
 # If the engine is needed by the Asset Pipeline unvomment this and the other 2 lines
 # below for copying the shared library
