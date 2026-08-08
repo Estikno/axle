@@ -117,8 +117,8 @@ namespace Axle {
                                       m_Height));
 
         // Set default parameters
-        AX_GL_CALL(glTextureParameteri(m_ID, GL_TEXTURE_WRAP_S, GL_REPEAT));
-        AX_GL_CALL(glTextureParameteri(m_ID, GL_TEXTURE_WRAP_T, GL_REPEAT));
+        AX_GL_CALL(glTextureParameteri(m_ID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+        AX_GL_CALL(glTextureParameteri(m_ID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
         AX_GL_CALL(glTextureParameteri(m_ID, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
         AX_GL_CALL(glTextureParameteri(m_ID, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
     }

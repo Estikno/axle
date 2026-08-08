@@ -93,8 +93,19 @@ namespace Axle {
         RenderCommand::DrawElements(s_DTextureVAO);
     }
 
-    void Renderer::OnFrameBufferResize(u32 widht, u32 height) {
-        RenderCommand::SetViewport(0, 0, widht, height);
+    void Renderer::OnFrameBufferResize(u32 width, u32 height) {
+        if (s_SceneData.empty()) {
+            RenderCommand::SetViewport(0, 0, width, height);
+            return;
+        }
+
+        SceneData& data = s_SceneData.back();
+        if (data.Resize) {
+            RenderCommand::SetViewport(0,
+                                       0,
+                                       static_cast<f32>(width) * data.WidthRatioScreen,
+                                       static_cast<f32>(height) * data.HeightRatioScreen);
+        }
     }
 
     void Renderer::BindSceneState(SceneData& data) {

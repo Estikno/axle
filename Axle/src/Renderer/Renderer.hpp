@@ -31,6 +31,9 @@ namespace Axle {
 
         // Target
         Ref<FrameBuffer> RenderTarget;
+        bool Resize = true;
+        f32 WidthRatioScreen = 1.0f;
+        f32 HeightRatioScreen = 1.0f;
     };
 
     struct SceneHandle {
@@ -66,7 +69,7 @@ namespace Axle {
                            const glm::mat4& transform = glm::mat4(1.0f));
         static void Submit(const Ref<Texture2D>& texture);
 
-        static void OnFrameBufferResize(u32 widht, u32 height);
+        static void OnFrameBufferResize(u32 width, u32 height);
 
     private:
         static void BindSceneState(SceneData& data);

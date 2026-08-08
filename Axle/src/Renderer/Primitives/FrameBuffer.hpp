@@ -16,6 +16,15 @@ namespace Axle {
     class AXLE_API FrameBuffer : public RefCounted {
     public:
         FrameBuffer() = default;
+
+        /**
+         * Creates a FrameBuffer
+         *
+         * @param color Texture2D that will be the color attachment. From the texture will the width and height be
+         * implied
+         * @param isDepthNeeded Does it need a depth buffer?
+         * @param isStencilNeeded Does it need a stencil buffer?
+         * */
         FrameBuffer(const Ref<Texture2D>& color, bool isDepthNeeded, bool isStencilNeeded);
 
         ~FrameBuffer() override;
@@ -34,8 +43,19 @@ namespace Axle {
             return m_RenderBufferID;
         }
 
+        /**
+         * Binds the FrameBuffer and also sets the render viewport based on the ouput texture
+         * */
         void Bind() const;
+
+        /**
+         * Unbinds the FrameBuffer (binds the default one). Automcatically sets the viewport to full screen.
+         * */
         void UnBind() const;
+
+        /**
+         * Binds the default FrameBuffer. Automcatically sets the viewport to full screen.
+         * */
         static void BindDefault();
 
     private:

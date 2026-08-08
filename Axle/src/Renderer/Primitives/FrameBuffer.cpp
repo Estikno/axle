@@ -5,8 +5,12 @@
 #include "FrameBuffer.hpp"
 #include "Renderer/GLDebug.hpp"
 #include "Renderer/RenderCommand.hpp"
+#include "Core/Application.hpp"
 #include "Core/Error/Panic.hpp"
 #include "Core/Logger/Log.hpp"
+#include "Core/Window/Window.hpp"
+
+#include <GLFW/glfw3.h>
 
 namespace Axle {
     FrameBuffer::FrameBuffer(const Ref<Texture2D>& color, bool isDepthNeeded, bool isStencilNeeded)
@@ -17,11 +21,25 @@ namespace Axle {
 
         // Attach renderbuffer only if necessary
         if (isDepthNeeded || isStencilNeeded) {
+            u32 internalFormat;
+            u32 attachmentPoint;
+
+            if (isDepthNeeded && isStencilNeeded) {
+                internalFormat = GL_DEPTH24_STENCIL8;
+                attachmentPoint = GL_DEPTH_STENCIL_ATTACHMENT;
+            } else if (isDepthNeeded) {
+                internalFormat = GL_DEPTH_COMPONENT24;
+                attachmentPoint = GL_DEPTH_ATTACHMENT;
+            } else { // stencil only
+                internalFormat = GL_STENCIL_INDEX8;
+                attachmentPoint = GL_STENCIL_ATTACHMENT;
+            }
+
             AX_GL_CALL(glCreateRenderbuffers(1, &m_RenderBufferID));
+
             AX_GL_CALL(glNamedRenderbufferStorage(
-                m_RenderBufferID, GL_DEPTH24_STENCIL8, m_Color->GetWidth(), m_Color->GetHeight()));
-            AX_GL_CALL(
-                glNamedFramebufferRenderbuffer(m_ID, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_RenderBufferID));
+                m_RenderBufferID, internalFormat, m_Color->GetWidth(), m_Color->GetHeight()));
+            AX_GL_CALL(glNamedFramebufferRenderbuffer(m_ID, attachmentPoint, GL_RENDERBUFFER, m_RenderBufferID));
         }
 
         glNamedFramebufferDrawBuffer(m_ID, GL_COLOR_ATTACHMENT0);
@@ -71,6 +89,11 @@ namespace Axle {
 
     void FrameBuffer::BindDefault() {
         AX_GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+
+        // Set Viewport to full screen
+        WindowData* data = static_cast<WindowData*>(
+            glfwGetWindowUserPointer(Application::GetInstance().GetWindow().GetNativeWindow()));
+        RenderCommand::SetViewport(0, 0, data->FramebufferWidth, data->FramebufferHeight);
     }
 
     void FrameBuffer::Reset() {
